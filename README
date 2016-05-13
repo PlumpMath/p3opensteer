@@ -1,0 +1,18 @@
+p3opensteer
+***********
+
+p3opensteer is project which integrates (some functionality of) OpenSteer
+library (http://opensteer.sourceforge.net/) into Panda3d game engine 
+(https://www.panda3d.org) as a extension module.
+
+OpenSteer is a C++ library to help construct "steering behaviors" for 
+autonomous characters in games and animation. 
+
+p3opensteer are currently developed and tested on GNU/Linux (Debian 8 - 
+jessie) platform. Since there is no platform specific code, it should builds 
+and run successfully on other platforms supported by Panda3d.  
+
+p3opensteer is a GPL v3 licensed open source project. A copy of the GNU 
+General Public License is reported into COPYING file. 
+See also <http://www.gnu.org/licenses/>.
+
