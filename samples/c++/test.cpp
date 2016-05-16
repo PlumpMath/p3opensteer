@@ -1,20 +1,15 @@
 /**
  * \file main.cpp
  *
- * \date 2016-05-13
+ * \date 2016-05-16
  * \author consultit
  */
 
 #include <pandaFramework.h>
-#include <auto_bind.h>
 #include <load_prc_file.h>
 #include <osSteerManager.h>
 #include <osSteerPlugIn.h>
 #include <osSteerVehicle.h>
-#include <collisionRay.h>
-#include <mouseWatcher.h>
-#include <random>
-#include <bamFile.h>
 
 #include "main.h"
 
@@ -23,14 +18,6 @@
 ///global data
 PandaFramework framework;
 WindowFramework *window;
-CollideMask mask = BitMask32(0x10);
-
-//models and animations
-
-//bame file
-string bamFileName("steer_plugin.boo");
-//support
-random_device rd;
 
 int main(int argc, char *argv[])
 {
@@ -59,19 +46,6 @@ int main(int argc, char *argv[])
 //	OSSteerPlugIn::register_with_read_factory();
 //	OSSteerVehicle::register_with_read_factory();
 	///
-	// print some help to screen
-	PT(TextNode) text;
-	text = new TextNode("Help");
-	text->set_text(
-			"- press \"d\" to toggle debug drawing\n"
-			"- press \"s\" to toggle setup cleanup\n"
-			"- press \"p\" to place agents randomly\n"
-			"- press \"t\" to set agents' target under mouse cursor\n"
-			"- press \"o\" to add obstacle under mouse cursor\n"
-			"- press \"shift-o\" to remove obstacle under mouse cursor\n");
-	NodePath textNodePath = window->get_aspect_2d().attach_new_node(text);
-	textNodePath.set_pos(-1.25, 0.0, 0.9);
-	textNodePath.set_scale(0.035);
 
 	// place camera trackball (local coordinate)
 	PT(Trackball)trackball = DCAST(Trackball, window->get_mouse().find("**/+Trackball").node());

@@ -7,23 +7,15 @@
 #ifndef OSSTEERVEHICLE_H_
 #define OSSTEERVEHICLE_H_
 
-#include "ObjectModel/PandaNode.h"
-#include "ObjectModel/Object.h"
-#include "Support/OpenSteerLocal/common.h"
-#include <bulletWorld.h>
-#include <bulletClosestHitRayResult.h>
-#include <throw_event.h>
+#include "osSteerPlugIn.h"
+#include "osSteerManager.h"
+#include "osTools.h"
+#include "opensteer_includes.h"
+#include "nodePath.h"
 
-class SteerVehicleTemplate;
-class SteerPlugIn;
-
-///OSSteerVehicle movement type.
-enum SteerVehicleMovType
-{
-	OPENSTEER,
-	OPENSTEER_KINEMATIC,
-	VehicleMovType_NONE
-};
+#ifndef CPPPARSER
+#include "support/common.h"
+#endif //CPPPARSER
 
 /**
  * \brief Component implementing OpenSteer Vehicles.
@@ -70,33 +62,44 @@ enum SteerVehicleMovType
  *
  * \note parts inside [] are optional.\n
  */
-class OSSteerVehicle: public PandaNode
+class EXPORT_CLASS OSSteerVehicle: public PandaNode
 {
-protected:
-	friend class SteerVehicleTemplate;
-	friend class SteerPlugIn;
+PUBLISHED:
+	/**
+	 * OSSteerVehicle movement type.
+	 */
+	enum SteerVehicleMovType
+	{
+		OPENSTEER,
+		OPENSTEER_KINEMATIC,
+		VehicleMovType_NONE
+	};
 
-	OSSteerVehicle(SMARTPTR(SteerVehicleTemplate)tmpl);
-	virtual void reset();
-	virtual bool initialize();
-	virtual void onAddToObjectSetup();
-	virtual void onRemoveFromObjectCleanup();
-	virtual void onAddToSceneSetup();
-	virtual void onRemoveFromSceneCleanup();
+	/**
+	 * OSSteerVehicle thrown events.
+	 */
+	enum EventThrown
+	{
+		MOVEEVENT,              //!< MOVEEVENT
+		STEADYEVENT,            //!< STEADYEVENT
+		PATHFOLLOWINGEVENT,     //!< PATHFOLLOWINGEVENT
+		AVOIDOBSTACLEEVENT,     //!< AVOIDOBSTACLEEVENT
+		AVOIDCLOSENEIGHBOREVENT,//!< AVOIDCLOSENEIGHBOREVENT
+		AVOIDNEIGHBOREVENT      //!< AVOIDNEIGHBOREVENT
+	};
 
-public:
 	virtual ~OSSteerVehicle();
 
 	/**
-	 * \name Getters/setters of OSSteerVehicle default settings.
+	 * Getters/setters of OSSteerVehicle default settings.
 	 */
 	///@{
-	void setSettings(const VehicleSettings& settings);
-	VehicleSettings getSettings();
+	void setSettings(const ossup::VehicleSettings& settings);
+	ossup::VehicleSettings getSettings();
 	///@}
 
 	/**
-	 * \name AbstractVehicle reference getter & conversion function.
+	 * AbstractVehicle reference getter & conversion function.
 	 */
 	///@{
 	OpenSteer::AbstractVehicle& getAbstractVehicle();
@@ -108,18 +111,7 @@ public:
 	 *
 	 * \return The SteerPlugIn object.
 	 */
-	SMARTPTR(SteerPlugIn) getSteerPlugIn() const;
-
-	///OSSteerVehicle thrown events.
-	enum EventThrown
-	{
-		MOVEEVENT,
-		STEADYEVENT,
-		PATHFOLLOWINGEVENT,
-		AVOIDOBSTACLEEVENT,
-		AVOIDCLOSENEIGHBOREVENT,
-		AVOIDNEIGHBOREVENT
-	};
+	PT(OSSteerPlugIn) getSteerPlugIn() const;
 
 	/**
 	 * \brief Enables/disables the OSSteerVehicle event to be thrown.
@@ -129,12 +121,20 @@ public:
 	 */
 	void enableSteerVehicleEvent(EventThrown event, ThrowEventData eventData);
 
+	void output(ostream &out) const;
+
+protected:
+	friend class OSSteerManager;
+	friend class OSSteerPlugIn;
+
+	OSSteerVehicle(const string& name);
+
 private:
 	///Current underlying Vehicle.
 	OpenSteer::AbstractVehicle* mVehicle;
 	///The SteerPlugIn owner object.
-	SMARTPTR(SteerPlugIn) mSteerPlugIn;
-	ObjectId mSteerPlugInObjectId;
+	PT(OSSteerPlugIn) mSteerPlugIn;
+//	ObjectId mSteerPlugInObjectId;
 	///Input radius.
 	float mInputRadius;
 	///The movement type.
@@ -145,13 +145,17 @@ private:
 	 * \brief Physics data.
 	 */
 	///@{
-	SMARTPTR(BulletWorld) mBulletWorld;
-	float mMaxError;
-	LVector3f mDeltaRayDown, mDeltaRayOrig;
-	BulletClosestHitRayResult mHitResult;
-	BitMask32 mRayMask;
+//	SMARTPTR(BulletWorld) mBulletWorld;
+//	float mMaxError;
+//	LVector3f mDeltaRayDown, mDeltaRayOrig;
+//	BulletClosestHitRayResult mHitResult;
+//	BitMask32 mRayMask;
 	float mCorrectHeightRigidBody;
 	///@}
+
+	void do_reset();
+	void do_initialize();
+	void do_finalize();
 
 	///Called by the underlying OpenSteer component update.
 	///@{
@@ -213,183 +217,9 @@ private:
 
 };
 
-///inline definitions
+INLINE ostream &operator << (ostream &out, const OSSteerVehicle & crowdAgent);
 
-inline void OSSteerVehicle::reset()
-{
-	//
-	mVehicle = NULL;
-	mSteerPlugInObjectId = ObjectId();
-	mInputRadius = 0.0;
-	mMovType = OPENSTEER;
-	mUpAxisFixed = false;
-	mBulletWorld.clear();
-	mMaxError = 0.0;
-	mDeltaRayDown = mDeltaRayOrig = LVector3f::zero();
-	mRayMask = BitMask32::all_off();
-	mCorrectHeightRigidBody = 0.0;
-	mExternalUpdate = false;
-	mPFCallbackCalled = mAOCallbackCalled = mACNCallbackCalled =
-			mANCallbackCalled = false;
-	mMove = mSteady = mPathFollowing = mAvoidObstacle = mAvoidCloseNeighbor =
-			mAvoidNeighbor = ThrowEventData();
-	mThrownEventsParam.clear();
-}
-
-inline OpenSteer::AbstractVehicle& OSSteerVehicle::getAbstractVehicle()
-{
-	return *mVehicle;
-}
-
-inline OSSteerVehicle::operator OpenSteer::AbstractVehicle&()
-{
-	return *mVehicle;
-}
-
-inline void OSSteerVehicle::enableSteerVehicleEvent(EventThrown event,
-		ThrowEventData eventData)
-{
-	//lock (guard) the mutex
-	HOLD_REMUTEX(mMutex)
-
-	doEnableSteerVehicleEvent(event, eventData);
-}
-
-inline void OSSteerVehicle::doPathFollowing(const OpenSteer::Vec3& future,
-		const OpenSteer::Vec3& onPath, const OpenSteer::Vec3& target,
-		const float outside)
-{
-	//handle Path Following event
-	if (mPathFollowing.mEnable)
-	{
-		doThrowEvent(mPathFollowing);
-		//set the flag
-		mPFCallbackCalled = true;
-	}
-}
-
-inline void OSSteerVehicle::doAvoidObstacle(const float minDistanceToCollision)
-{
-	//handle Avoid Obstacle event
-	if (mAvoidObstacle.mEnable)
-	{
-		doThrowEvent(mAvoidObstacle);
-		//set the flag
-		mAOCallbackCalled = true;
-	}
-}
-
-inline void OSSteerVehicle::doAvoidCloseNeighbor(const OpenSteer::AbstractVehicle& other,
-		const float additionalDistance)
-{
-	//handle Avoid Close Neighbor event
-	if (mAvoidCloseNeighbor.mEnable)
-	{
-		doThrowEvent(mAvoidCloseNeighbor);
-		//set the flag
-		mACNCallbackCalled = true;
-	}
-}
-
-inline void OSSteerVehicle::doAvoidNeighbor(const OpenSteer::AbstractVehicle& threat,
-		const float steer, const OpenSteer::Vec3& ourFuture,
-		const OpenSteer::Vec3& threatFuture)
-{
-	//handle Avoid Neighbor event
-	if (mAvoidNeighbor.mEnable)
-	{
-		doThrowEvent(mAvoidNeighbor);
-		//set the flag
-		mANCallbackCalled = true;
-	}
-}
-
-inline void OSSteerVehicle::doThrowEvent(ThrowEventData& eventData)
-{
-	if (eventData.mThrown)
-	{
-		eventData.mTimeElapsed += ClockObject::get_global_clock()->get_dt();
-		if (eventData.mTimeElapsed >= eventData.mPeriod)
-		{
-			//enough time is passed: throw the event
-			throw_event(eventData.mEventName, EventParameter(this));
-			//update elapsed time
-			eventData.mTimeElapsed -= eventData.mPeriod;
-		}
-	}
-	else
-	{
-		//throw the event
-		throw_event(eventData.mEventName, EventParameter(this));
-		eventData.mThrown = true;
-	}
-}
-
-inline void OSSteerVehicle::doHandleSteerLibraryEvent(ThrowEventData& eventData, bool callbackCalled)
-{
-	if (eventData.mEnable)
-	{
-		if (callbackCalled)
-		{
-			//event was handled this (or last) frame
-			callbackCalled = false;
-		}
-		else
-		{
-			//reset event
-			if (eventData.mThrown)
-			{
-				eventData.mThrown = false;
-				eventData.mTimeElapsed = 0.0;
-			}
-		}
-	}
-}
-
-///Template
-
-class SteerVehicleTemplate: public ComponentTemplate
-{
-protected:
-
-	virtual SMARTPTR(PandaNode)makeComponent(const ComponentId& compId);
-
-public:
-	SteerVehicleTemplate(PandaFramework* pandaFramework,
-			WindowFramework* windowFramework);
-	virtual ~SteerVehicleTemplate();
-
-	virtual ComponentType componentType() const;
-	virtual ComponentFamilyType componentFamilyType() const;
-
-	virtual void setParametersDefaults();
-
-private:
-
-	///TypedObject semantics: hardcoded
-public:
-	static TypeHandle get_class_type()
-	{
-		return _type_handle;
-	}
-	static void init_type()
-	{
-		ComponentTemplate::init_type();
-		register_type(_type_handle, "SteerVehicleTemplate",
-				ComponentTemplate::get_class_type());
-	}
-	virtual TypeHandle get_type() const
-	{
-		return get_class_type();
-	}
-	virtual TypeHandle force_init_type()
-	{
-		init_type();
-		return get_class_type();
-	}
-
-private:
-	static TypeHandle _type_handle;
-};
+///inline
+#include "osSteerVehicle.I"
 
 #endif /* OSSTEERVEHICLE_H_ */

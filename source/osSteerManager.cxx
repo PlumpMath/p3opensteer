@@ -377,30 +377,15 @@ void OSSteerManager::set_parameters_defaults(RNType type)
 		///mCrowdAgentsParameterTable must be the first cleared
 		mCrowdAgentsParameterTable.clear();
 		//sets the (mandatory) parameters to their default values:
-		mCrowdAgentsParameterTable.insert(
-				ParameterNameValue("add_to_navmesh", ""));
-		mCrowdAgentsParameterTable.insert(
-				ParameterNameValue("mov_type", "recast"));
-		mCrowdAgentsParameterTable.insert(
-				ParameterNameValue("move_target", "0.0,0.0,0.0"));
-		mCrowdAgentsParameterTable.insert(
-				ParameterNameValue("move_velocity", "0.0,0.0,0.0"));
-		mCrowdAgentsParameterTable.insert(
-				ParameterNameValue("max_acceleration", "8.0"));
-		mCrowdAgentsParameterTable.insert(
-				ParameterNameValue("max_speed", "3.5"));
-		mCrowdAgentsParameterTable.insert(
-				ParameterNameValue("collision_query_range", "12.0"));
-		mCrowdAgentsParameterTable.insert(
-				ParameterNameValue("path_optimization_range", "30.0"));
-		mCrowdAgentsParameterTable.insert(
-				ParameterNameValue("separation_weight", "2.0"));
-		mCrowdAgentsParameterTable.insert(
-				ParameterNameValue("update_flags", "0x1b"));
-		mCrowdAgentsParameterTable.insert(
-				ParameterNameValue("obstacle_avoidance_type", "3"));
-		mCrowdAgentsParameterTable.insert(
-				ParameterNameValue("ray_mask", "all_on"));
+		mCrowdAgentsParameterTable.insert(ParameterNameValue("type", "one_turning"));
+		mCrowdAgentsParameterTable.insert(ParameterNameValue("external_update", "false"));
+		mCrowdAgentsParameterTable.insert(ParameterNameValue("mov_type", "opensteer"));
+		mCrowdAgentsParameterTable.insert(ParameterNameValue("up_axis_fixed", "false"));
+		mCrowdAgentsParameterTable.insert(ParameterNameValue("mass", "1.0"));
+		mCrowdAgentsParameterTable.insert(ParameterNameValue("speed", "0.0"));
+		mCrowdAgentsParameterTable.insert(ParameterNameValue("max_force", "0.1"));
+		mCrowdAgentsParameterTable.insert(ParameterNameValue("max_speed", "1.0"));
+		mCrowdAgentsParameterTable.insert(ParameterNameValue("ray_mask", "all_on"));
 	}
 }
 

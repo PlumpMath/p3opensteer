@@ -1,7 +1,7 @@
 Running the sample
 ******************
-The C++ sample code shows the use of the p3recastnavigation module.
-The C++ sample uses the autotools build system, so could be surely
+The C++ sample code shows the use of the p3opensteer module.
+The C++ samples uses the autotools build system, so could be surely
 built on GNU/Linux using these commands within the "c++" folder:
 
   autoreconf -i -v -W no-all
@@ -18,5 +18,5 @@ the global string variable "dataDir", i.e. the path to models' data).
 
 Note: it should pointed out that the style and structure of sample programs' 
 code is not really favored by the author, but it is solely intended to test 
-and show functionality exposed by the p3recastnavigation module.
+and show functionality exposed by the p3opensteer module.
 

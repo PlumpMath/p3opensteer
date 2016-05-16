@@ -15,14 +15,9 @@
 #define STRTOF strtof
 #endif
 
-#include "recastnavigation_includes.h"
+#include "opensteer_includes.h"
 #include "genericAsyncTask.h"
 #include "lpoint3.h"
-
-//
-#ifndef CPPPARSER
-#include "support/NavMeshType.h"
-#endif //CPPPARSER
 
 /**
  * \brief An automatic Singleton Utility.
@@ -286,134 +281,6 @@ string replaceCharacter(const string& source, int character,
  * @return The result string.
  */
 string eraseCharacter(const string& source, int character);
-
-///NavMesh settings.
-struct EXPORT_CLASS RNNavMeshSettings
-{
-PUBLISHED:
-	RNNavMeshSettings();
-#ifndef CPPPARSER
-	RNNavMeshSettings(const rnsup::NavMeshSettings& navMeshSettings) :
-			_navMeshSettings(navMeshSettings)
-	{
-	}
-	operator rnsup::NavMeshSettings() const
-	{
-		return _navMeshSettings;
-	}
-#endif
-	INLINE float get_cellSize() const;
-	INLINE void set_cellSize(float value);
-	INLINE float get_cellHeight() const;
-	INLINE void set_cellHeight(float value);
-	INLINE float get_agentHeight() const;
-	INLINE void set_agentHeight(float value);
-	INLINE float get_agentRadius() const;
-	INLINE void set_agentRadius(float value);
-	INLINE float get_agentMaxClimb() const;
-	INLINE void set_agentMaxClimb(float value);
-	INLINE float get_agentMaxSlope() const;
-	INLINE void set_agentMaxSlope(float value);
-	INLINE float get_regionMinSize() const;
-	INLINE void set_regionMinSize(float value);
-	INLINE float get_regionMergeSize() const;
-	INLINE void set_regionMergeSize(float value);
-	INLINE float get_edgeMaxLen() const;
-	INLINE void set_edgeMaxLen(float value);
-	INLINE float get_edgeMaxError() const;
-	INLINE void set_edgeMaxError(float value);
-	INLINE float get_vertsPerPoly() const;
-	INLINE void set_vertsPerPoly(float value);
-	INLINE float get_detailSampleDist() const;
-	INLINE void set_detailSampleDist(float value);
-	INLINE float get_detailSampleMaxError() const;
-	INLINE void set_detailSampleMaxError(float value);
-	INLINE int get_partitionType() const;
-	INLINE void set_partitionType(int value);
-private:
-	rnsup::NavMeshSettings _navMeshSettings;
-
-public:
-	void write_datagram(Datagram &dg) const;
-	void read_datagram(DatagramIterator &scan);
-};
-
-///NavMesh tile settings.
-struct EXPORT_CLASS RNNavMeshTileSettings
-{
-PUBLISHED:
-	RNNavMeshTileSettings();
-#ifndef CPPPARSER
-	RNNavMeshTileSettings(const rnsup::NavMeshTileSettings& navMeshTileSettings) :
-			_navMeshTileSettings(navMeshTileSettings)
-	{
-	}
-	operator rnsup::NavMeshTileSettings() const
-	{
-		return _navMeshTileSettings;
-	}
-#endif //CPPPARSER
-	INLINE bool get_buildAllTiles() const;
-	INLINE void set_buildAllTiles(bool value);
-	INLINE int get_maxTiles() const;
-	INLINE void set_maxTiles(int value);
-	INLINE int get_maxPolysPerTile() const;
-	INLINE void set_maxPolysPerTile(int value);
-	INLINE float get_tileSize() const;
-	INLINE void set_tileSize(float value);
-private:
-	rnsup::NavMeshTileSettings _navMeshTileSettings;
-
-public:
-	void write_datagram(Datagram &dg) const;
-	void read_datagram(DatagramIterator &scan);
-};
-
-///CrowdAgentParams
-struct EXPORT_CLASS RNCrowdAgentParams
-{
-PUBLISHED:
-	RNCrowdAgentParams();
-#ifndef CPPPARSER
-	RNCrowdAgentParams(const dtCrowdAgentParams& crowdAgentParams) :
-			_dtCrowdAgentParams(crowdAgentParams)
-	{
-	}
-	operator dtCrowdAgentParams() const
-	{
-		return _dtCrowdAgentParams;
-	}
-#endif //CPPPARSER
-	INLINE float get_radius() const;
-	INLINE void set_radius(float value);
-	INLINE float get_height() const;
-	INLINE void set_height(float value);
-	INLINE float get_maxAcceleration() const;
-	INLINE void set_maxAcceleration(float value);
-	INLINE float get_maxSpeed() const;
-	INLINE void set_maxSpeed(float value);
-	INLINE float get_collisionQueryRange() const;
-	INLINE void set_collisionQueryRange(float value);
-	INLINE float get_pathOptimizationRange() const;
-	INLINE void set_pathOptimizationRange(float value);
-	INLINE float get_separationWeight() const;
-	INLINE void set_separationWeight(float value);
-	INLINE unsigned char get_updateFlags() const;
-	INLINE void set_updateFlags(unsigned char value);
-	INLINE unsigned char get_obstacleAvoidanceType() const;
-	INLINE void set_obstacleAvoidanceType(unsigned char value);
-	INLINE unsigned char get_queryFilterType() const;
-	INLINE void set_queryFilterType(unsigned char value);
-	INLINE void* get_userData() const;
-	INLINE void set_userData(void* value);
-
-private:
-	dtCrowdAgentParams _dtCrowdAgentParams;
-
-public:
-	void write_datagram(Datagram &dg) const;
-	void read_datagram(DatagramIterator &scan);
-};
 
 ///ValueList template
 template<typename Type>

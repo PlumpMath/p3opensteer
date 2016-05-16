@@ -15,7 +15,7 @@ AM_LDFLAGS = -L/usr/lib/x86_64-linux-gnu/panda3d
 LDADD = -lp3framework -lpanda -lpandaexpress -lp3dtool -lp3dtoolconfig \
 		-lp3pystub -lXxf86dga -lpython2.7 -lpandaphysics -lpthread
 
-noinst_PROGRAMS = sample
+noinst_PROGRAMS = main test
 
 BUILT_SOURCES = main.h
 
@@ -26,54 +26,28 @@ main.h: $(srcdir)/main.h.in Makefile
 	
 EXTRA_DIST = main.h.in
 
-sample_SOURCES = \
+common_sources = \
+	$(srcdir)/../../source/config_module.cxx \
+	$(srcdir)/../../source/opensteer_composite1.cxx \
+	$(srcdir)/../../source/osSteerManager.cxx \
+	$(srcdir)/../../source/osSteerPlugIn.cxx \
+	$(srcdir)/../../source/osSteerVehicle.cxx \
+	$(srcdir)/../../source/osTools.cxx \
+	$(srcdir)/../../source/support/Draw.cpp \
+	$(srcdir)/../../source/support/DrawMeshDrawer.cpp \
+	$(srcdir)/../../source/support/SimpleVehicle.cpp
+
+
+#main
+main_SOURCES = \
 	main.cpp
-	
-nodist_sample_SOURCES = \
-	$(srcdir)/../../source/rnCrowdAgent.cxx \
-	$(srcdir)/../../source/rnNavMesh.cxx \
-	$(srcdir)/../../source/rnNavMeshManager.cxx \
-	$(srcdir)/../../source/rnTools.cxx \
-	$(srcdir)/../../source/library/DebugDraw.cpp \
-	$(srcdir)/../../source/library/DetourAlloc.cpp \
-	$(srcdir)/../../source/library/DetourCommon.cpp \
-	$(srcdir)/../../source/library/DetourCrowd.cpp \
-	$(srcdir)/../../source/library/DetourDebugDraw.cpp \
-	$(srcdir)/../../source/library/DetourLocalBoundary.cpp \
-	$(srcdir)/../../source/library/DetourNavMeshBuilder.cpp \
-	$(srcdir)/../../source/library/DetourNavMesh.cpp \
-	$(srcdir)/../../source/library/DetourNavMeshQuery.cpp \
-	$(srcdir)/../../source/library/DetourNode.cpp \
-	$(srcdir)/../../source/library/DetourObstacleAvoidance.cpp \
-	$(srcdir)/../../source/library/DetourPathCorridor.cpp \
-	$(srcdir)/../../source/library/DetourPathQueue.cpp \
-	$(srcdir)/../../source/library/DetourProximityGrid.cpp \
-	$(srcdir)/../../source/library/DetourTileCacheBuilder.cpp \
-	$(srcdir)/../../source/library/DetourTileCache.cpp \
-	$(srcdir)/../../source/library/RecastAlloc.cpp \
-	$(srcdir)/../../source/library/RecastArea.cpp \
-	$(srcdir)/../../source/library/RecastContour.cpp \
-	$(srcdir)/../../source/library/Recast.cpp \
-	$(srcdir)/../../source/library/RecastDebugDraw.cpp \
-	$(srcdir)/../../source/library/RecastDump.cpp \
-	$(srcdir)/../../source/library/RecastFilter.cpp \
-	$(srcdir)/../../source/library/RecastLayers.cpp \
-	$(srcdir)/../../source/library/RecastMesh.cpp \
-	$(srcdir)/../../source/library/RecastMeshDetail.cpp \
-	$(srcdir)/../../source/library/RecastRasterization.cpp \
-	$(srcdir)/../../source/library/RecastRegion.cpp \
-	$(srcdir)/../../source/support/ChunkyTriMesh.cpp \
-	$(srcdir)/../../source/support/ConvexVolumeTool.cpp \
-	$(srcdir)/../../source/support/CrowdTool.cpp \
-	$(srcdir)/../../source/support/DebugInterfaces.cpp \
-	$(srcdir)/../../source/support/fastlz.c \
-	$(srcdir)/../../source/support/InputGeom.cpp \
-	$(srcdir)/../../source/support/MeshLoaderObj.cpp \
-	$(srcdir)/../../source/support/NavMeshType.cpp \
-	$(srcdir)/../../source/support/NavMeshType_Obstacle.cpp \
-	$(srcdir)/../../source/support/NavMeshType_Solo.cpp \
-	$(srcdir)/../../source/support/NavMeshType_Tile.cpp \
-	$(srcdir)/../../source/support/OffMeshConnectionTool.cpp \
-	$(srcdir)/../../source/support/PerfTimer.cpp
+
+nodist_main_SOURCES = $(common_sources)
+
+#test
+test_SOURCES = \
+	test.cpp
+
+nodist_test_SOURCES = $(common_sources)
 
 CLEANFILES = main.h
