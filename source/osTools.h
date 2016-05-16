@@ -15,17 +15,33 @@
 #define STRTOF strtof
 #endif
 
-#include "recastnavigation_includes.h"
+#include "opensteer_includes.h"
 #include "genericAsyncTask.h"
 #include "lpoint3.h"
 
 //
 #ifndef CPPPARSER
-#include "support/NavMeshType.h"
+#include "support/common.h"
+#include "support/DrawMeshDrawer.h"
 #endif //CPPPARSER
 
+//continue if condition is true else return a value
+#define CONTINUE_IF_ELSE_R(condition, return_value) \
+  { \
+    if (!(condition)) { \
+      return return_value; \
+    } \
+  }
+//continue if condition is true else return (void)
+#define CONTINUE_IF_ELSE_V(condition) \
+  { \
+    if (!(condition)) { \
+      return; \
+    } \
+  }
+
 /**
- * \brief An automatic Singleton Utility.
+ * An automatic Singleton Utility.
  *
  * \note This Singleton class is based on the article "An automatic
  * Singleton Utility" by Scott Bilas in "Game Programming Gems 1" book.
@@ -62,7 +78,7 @@ public:
 template<typename T> T* Singleton<T>::ms_Singleton = 0;
 
 /**
- * \brief A std::pair wrapper
+ * A std::pair wrapper
  */
 template<typename T1, typename T2> struct Pair
 {
@@ -74,6 +90,10 @@ PUBLISHED:
 	Pair(const T1& first, const T2& second) :
 			mPair(first, second)
 	{
+	}
+	bool operator== (const Pair &other) const
+	{
+		return mPair == other.mPair;
 	}
 	INLINE void set_first(const T1& first)
 	{
@@ -106,7 +126,7 @@ private:
 };
 
 /**
- * \brief A pair that can be used with PT/CPT (C++ only)
+ * A pair that can be used with PT/CPT (C++ only)
  */
 template<typename T1, typename T2> struct PairRC: public Pair<T1, T2>,
 		public ReferenceCount
@@ -123,7 +143,7 @@ public:
 };
 
 /**
- * \brief Template struct for generic Task Function interface
+ * Template struct for generic Task Function interface
  *
  * The effective Tasks are composed by a Pair of an object and
  * a method (member function) doing the effective task.
@@ -166,7 +186,7 @@ template<typename A> struct TaskInterface
 };
 
 /**
- * \brief Throwing event data.
+ * Throwing event data.
  *
  * Data related to throwing events by components.
  */
@@ -241,7 +261,7 @@ public:
 };
 
 /**
- * \brief Declarations for parameters management.
+ * Declarations for parameters management.
  */
 typedef multimap<string, string> ParameterTable;
 typedef multimap<string, string>::iterator ParameterTableIter;
@@ -258,10 +278,10 @@ template<typename Type> string str(Type value)
 }
 
 /**
- * \brief Parses a string composed by substrings separated by a character
- * separator.\n
+ * Parses a string composed by substrings separated by a character
+ * separator.
  * \note all blanks are erased before parsing.
- * @param compoundString The source string.
+ * @param srcCompoundString The source string.
  * @param separator The character separator.
  * @return The substrings vector.
  */
@@ -272,7 +292,7 @@ pvector<string> parseCompoundString(
  * \brief Into a given string, replaces any occurrence of a character with
  * another character.
  * @param source The source string.
- * @param character To be replaced character.
+ * @param character Character to be replaced .
  * @param replacement Replaced character.
  * @return The result string.
  */
@@ -287,128 +307,94 @@ string replaceCharacter(const string& source, int character,
  */
 string eraseCharacter(const string& source, int character);
 
-///NavMesh settings.
-struct EXPORT_CLASS RNNavMeshSettings
+///Vehicle settings.
+struct EXPORT_CLASS OSVehicleSettings
 {
 PUBLISHED:
-	RNNavMeshSettings();
+	OSVehicleSettings();
 #ifndef CPPPARSER
-	RNNavMeshSettings(const rnsup::NavMeshSettings& navMeshSettings) :
-			_navMeshSettings(navMeshSettings)
+	OSVehicleSettings(const ossup::VehicleSettings& settings) :
+		_vehicleSettings(settings)
 	{
 	}
-	operator rnsup::NavMeshSettings() const
+	operator ossup::VehicleSettings() const
 	{
-		return _navMeshSettings;
+		return _vehicleSettings;
 	}
 #endif
-	INLINE float get_cellSize() const;
-	INLINE void set_cellSize(float value);
-	INLINE float get_cellHeight() const;
-	INLINE void set_cellHeight(float value);
-	INLINE float get_agentHeight() const;
-	INLINE void set_agentHeight(float value);
-	INLINE float get_agentRadius() const;
-	INLINE void set_agentRadius(float value);
-	INLINE float get_agentMaxClimb() const;
-	INLINE void set_agentMaxClimb(float value);
-	INLINE float get_agentMaxSlope() const;
-	INLINE void set_agentMaxSlope(float value);
-	INLINE float get_regionMinSize() const;
-	INLINE void set_regionMinSize(float value);
-	INLINE float get_regionMergeSize() const;
-	INLINE void set_regionMergeSize(float value);
-	INLINE float get_edgeMaxLen() const;
-	INLINE void set_edgeMaxLen(float value);
-	INLINE float get_edgeMaxError() const;
-	INLINE void set_edgeMaxError(float value);
-	INLINE float get_vertsPerPoly() const;
-	INLINE void set_vertsPerPoly(float value);
-	INLINE float get_detailSampleDist() const;
-	INLINE void set_detailSampleDist(float value);
-	INLINE float get_detailSampleMaxError() const;
-	INLINE void set_detailSampleMaxError(float value);
-	INLINE int get_partitionType() const;
-	INLINE void set_partitionType(int value);
-private:
-	rnsup::NavMeshSettings _navMeshSettings;
-
-public:
-	void write_datagram(Datagram &dg) const;
-	void read_datagram(DatagramIterator &scan);
-};
-
-///NavMesh tile settings.
-struct EXPORT_CLASS RNNavMeshTileSettings
-{
-PUBLISHED:
-	RNNavMeshTileSettings();
-#ifndef CPPPARSER
-	RNNavMeshTileSettings(const rnsup::NavMeshTileSettings& navMeshTileSettings) :
-			_navMeshTileSettings(navMeshTileSettings)
-	{
-	}
-	operator rnsup::NavMeshTileSettings() const
-	{
-		return _navMeshTileSettings;
-	}
-#endif //CPPPARSER
-	INLINE bool get_buildAllTiles() const;
-	INLINE void set_buildAllTiles(bool value);
-	INLINE int get_maxTiles() const;
-	INLINE void set_maxTiles(int value);
-	INLINE int get_maxPolysPerTile() const;
-	INLINE void set_maxPolysPerTile(int value);
-	INLINE float get_tileSize() const;
-	INLINE void set_tileSize(float value);
-private:
-	rnsup::NavMeshTileSettings _navMeshTileSettings;
-
-public:
-	void write_datagram(Datagram &dg) const;
-	void read_datagram(DatagramIterator &scan);
-};
-
-///CrowdAgentParams
-struct EXPORT_CLASS RNCrowdAgentParams
-{
-PUBLISHED:
-	RNCrowdAgentParams();
-#ifndef CPPPARSER
-	RNCrowdAgentParams(const dtCrowdAgentParams& crowdAgentParams) :
-			_dtCrowdAgentParams(crowdAgentParams)
-	{
-	}
-	operator dtCrowdAgentParams() const
-	{
-		return _dtCrowdAgentParams;
-	}
-#endif //CPPPARSER
+	INLINE float get_mass() const;
+	INLINE void set_mass(float value);
 	INLINE float get_radius() const;
 	INLINE void set_radius(float value);
-	INLINE float get_height() const;
-	INLINE void set_height(float value);
-	INLINE float get_maxAcceleration() const;
-	INLINE void set_maxAcceleration(float value);
+	INLINE float get_speed() const;
+	INLINE void set_speed(float value);
+	INLINE float get_maxForce() const;
+	INLINE void set_maxForce(float value);
 	INLINE float get_maxSpeed() const;
 	INLINE void set_maxSpeed(float value);
-	INLINE float get_collisionQueryRange() const;
-	INLINE void set_collisionQueryRange(float value);
-	INLINE float get_pathOptimizationRange() const;
-	INLINE void set_pathOptimizationRange(float value);
-	INLINE float get_separationWeight() const;
-	INLINE void set_separationWeight(float value);
-	INLINE unsigned char get_updateFlags() const;
-	INLINE void set_updateFlags(unsigned char value);
-	INLINE unsigned char get_obstacleAvoidanceType() const;
-	INLINE void set_obstacleAvoidanceType(unsigned char value);
-	INLINE unsigned char get_queryFilterType() const;
-	INLINE void set_queryFilterType(unsigned char value);
-	INLINE void* get_userData() const;
-	INLINE void set_userData(void* value);
-
+	INLINE LVector3f get_forward() const;
+	INLINE void set_forward(const LVector3f& value);
+	INLINE LVector3f get_side() const;
+	INLINE void set_side(const LVector3f& value);
+	INLINE LVector3f get_up() const;
+	INLINE void set_up(const LVector3f& value);
+	INLINE LPoint3f get_position() const;
+	INLINE void set_position(const LPoint3f& value);
 private:
-	dtCrowdAgentParams _dtCrowdAgentParams;
+	ossup::VehicleSettings _vehicleSettings;
+
+public:
+	void write_datagram(Datagram &dg) const;
+	void read_datagram(DatagramIterator &scan);
+};
+
+///OSObstacleSettings.
+struct EXPORT_CLASS OSObstacleSettings
+{
+PUBLISHED:
+	OSObstacleSettings();
+
+	INLINE bool operator==(
+			const OSObstacleSettings &other) const;
+	INLINE string get_type() const;
+	INLINE void set_type(const string& value);
+	INLINE string get_seenFromState() const;
+	INLINE void set_seenFromState(const string& value);
+	INLINE LPoint3f get_position() const;
+	INLINE void set_position(const LPoint3f& value);
+	INLINE LVector3f get_forward() const;
+	INLINE void set_forward(const LVector3f& value);
+	INLINE LVector3f get_up() const;
+	INLINE void set_up(const LVector3f& value);
+	INLINE LVector3f get_side() const;
+	INLINE void set_side(const LVector3f& value);
+	INLINE float get_width() const;
+	INLINE void set_width(float value);
+	INLINE float get_height() const;
+	INLINE void set_height(float value);
+	INLINE float get_depth() const;
+	INLINE void set_depth(float value);
+	INLINE float get_radius() const;
+	INLINE void set_radius(float value);
+	INLINE int get_ref() const;
+	INLINE void set_ref(int value);
+public:
+	inline OpenSteer::AbstractObstacle* get_obstacle() const;
+	inline void set_obstacle(OpenSteer::AbstractObstacle* value);
+private:
+	string _type;
+	string _seenFromState;
+	LPoint3f _position;
+	LVector3f _forward;
+	LVector3f _up;
+	LVector3f _side;
+	float _width;
+	float _height;
+	float _depth;
+	float _radius;
+	int _ref;
+	//not serialized
+	OpenSteer::AbstractObstacle* _obstacle;
 
 public:
 	void write_datagram(Datagram &dg) const;
@@ -422,11 +408,10 @@ class ValueList
 PUBLISHED:
 	ValueList(unsigned int size=0);
 	ValueList(const ValueList &copy);
-	ValueList(ValueList&& copy);
 	INLINE ~ValueList();
 
 	INLINE void operator =(const ValueList &copy);
-	INLINE void operator =(ValueList&& copy);
+	INLINE bool operator== (const ValueList &other) const;
 	INLINE void add_value(const Type& value);
 	bool remove_value(const Type& value);
 	bool has_value(const Type& value) const;
@@ -452,9 +437,8 @@ private:
 };
 
 ///Result values
-#define RN_SUCCESS 0
-#define RN_ERROR -1
-#define RN_NAVMESH_NULL -2
+#define OS_SUCCESS 0
+#define OS_ERROR -1
 
 ///inline
 #include "osTools.I"
@@ -464,9 +448,5 @@ extern template class ValueList<string>;
 extern template class ValueList<LPoint3f>;
 extern template struct Pair<bool,float>;
 #endif //CPPPARSER
-
-typedef ValueList<string> ValueListString;
-typedef ValueList<LPoint3f> ValueListLPoint3f;
-typedef Pair<bool,float> PairBoolFloat;
 
 #endif /* OSTOOLS_H_ */

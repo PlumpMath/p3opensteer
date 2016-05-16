@@ -61,11 +61,11 @@
 /**
  * \file /Ely/src/Support/OpenSteerLocal/SimpleVehicle.cpp
  *
- * \date 2014-04-27 
- * \author consultit
+ * \date 2016-05-13
+ * \author Craig Reynolds (modified by consultit)
  */
 
-#include "Support/OpenSteerLocal/SimpleVehicle.h"
+#include "SimpleVehicle.h"
 #include <algorithm>
 
 namespace ossup

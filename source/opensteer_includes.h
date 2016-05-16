@@ -11,25 +11,18 @@
 #ifdef CPPPARSER
 //Panda3d interrogate fake declarations
 
-namespace rnsup
+namespace OpenSteer
 {
-	struct InputGeom;
-	struct NavMeshType;
-	struct NavMeshSettings;
-	struct NavMeshTileSettings;
-	struct BuildContext;
-	struct NavMeshPolyAreaFlags;
-	struct NavMeshPolyAreaCost;
-	struct DebugDrawPanda3d;
-	struct DebugDrawMeshDrawer;
+	struct AbstractObstacle;
+	struct AbstractPlugIn;
+	struct ObstacleGroup;
+	struct AbstractVehicle;
 }
-
-struct dtNavMesh;
-struct dtNavMeshQuery;
-struct dtCrowd;
-struct dtTileCache;
-struct dtCrowdAgentParams;
-typedef unsigned int dtObstacleRef;
+namespace ossup
+{
+	struct VehicleSettings;
+	template<typename T1, typename T2> struct VehicleAddOnMixin;
+}
 
 #endif //CPPPARSER
 

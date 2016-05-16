@@ -37,8 +37,8 @@
 /**
  * \file /Ely/include/Support/OpenSteerLocal/PlugIn_Boids.h
  *
- * \date 2014-01-23 
- * \author consultit
+ * \date 2016-05-13
+ * \author Craig Reynolds (modified by consultit)
  */
 
 #ifndef PLUGIN_BOIDS_H_
@@ -618,7 +618,7 @@ public:
 
 	virtual bool addVehicle(AbstractVehicle* vehicle)
 	{
-		if (not PlugInAddOnMixin<OpenSteer::PlugIn>::addVehicle(vehicle))
+		if (! PlugInAddOnMixin<OpenSteer::PlugIn>::addVehicle(vehicle))
 		{
 			return false;
 		}
@@ -631,7 +631,7 @@ public:
 			boid->worldCenter = worldCenter;
 			boid->worldRadius = worldRadius;
 			//if not ExternalBoid then randomize
-			if (not dynamic_cast<ExternalBoid<Entity>*>(boid))
+			if (! dynamic_cast<ExternalBoid<Entity>*>(boid))
 			{
 				// randomize initial orientation
 				boid->regenerateOrthonormalBasisUF(RandomUnitVector());

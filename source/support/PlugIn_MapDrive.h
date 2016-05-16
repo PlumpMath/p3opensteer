@@ -51,8 +51,8 @@
 /**
  * \file /Ely/include/Support/OpenSteerLocal/PlugIn_MapDrive.h
  *
- * \date 2014-05-17 
- * \author consultit
+ * \date 2016-05-13
+ * \author Craig Reynolds (modified by consultit)
  */
 
 #ifndef PLUGIN_MAPDRIVE_H_
@@ -630,7 +630,7 @@ public:
 		const float x = localXZ.x;
 		const float z = localXZ.z;
 
-		return (x < +hxs) and (x > -hxs) and (z < +hzs) and (z > -hzs);
+		return (x < +hxs) && (x > -hxs) && (z < +hzs) && (z > -hzs);
 	}
 
 	void getCoords(const Vec3& point, int& i, int& j)
@@ -1083,7 +1083,7 @@ public:
 	void resetToPath()
 	{
 		reset();
-		if(path and path->isValid())
+		if(path && path->isValid())
 		{
 			Vec3 forward;
 			Vec3 pos;
@@ -1107,7 +1107,7 @@ public:
 
 	void resetToMap()
 	{
-		if(path and path->isValid())
+		if(path && path->isValid())
 		{
 			resetToPath();
 		}
@@ -2445,7 +2445,7 @@ public:
 
 	/*bool*/ void handleExitFromMap(void)
 	{
-		if(not map->isInside(this->position()))
+		if(! map->isInside(this->position()))
 		{
 			if (demoSelect == 2)
 			{
@@ -3278,13 +3278,13 @@ public:
 
 	virtual bool addVehicle(AbstractVehicle* vehicle)
 	{
-		if (not PlugInAddOnMixin<OpenSteer::PlugIn>::addVehicle(vehicle))
+		if (! PlugInAddOnMixin<OpenSteer::PlugIn>::addVehicle(vehicle))
 		{
 			return false;
 		}
 		// try to allocate a token for this pedestrian in the proximity database
 		MapDriver<Entity>* mapDriver = dynamic_cast<MapDriver<Entity>*>(vehicle);
-		if (mapDriver and map)
+		if (mapDriver && map)
 		{
 			//set map
 			mapDriver->map = map;
@@ -3537,7 +3537,7 @@ public:
 			{
 				SphereObstacle* sphere = dynamic_cast<SphereObstacle*>(*iter);
 				//cull away if sphere (projection) is outside map
-				if (not rectangleCircleIntersect(mapV, sphere->center,
+				if (! rectangleCircleIntersect(mapV, sphere->center,
 						sphere->radius))
 				{
 					continue;
@@ -3632,7 +3632,7 @@ public:
 						continue;
 					}
 					//cull away if triangle (projection) is outside map
-					if (not polyIntersect(mapV, 4, triV, 3))
+					if (! polyIntersect(mapV, 4, triV, 3))
 					{
 						continue;
 					}
@@ -3690,7 +3690,7 @@ public:
 		//get rectangle half dimensions
 		float halfDim1 = (rectV[1] - rectV[0]).length() / 2.0;
 		float halfDim2 = (rectV[3] - rectV[0]).length() / 2.0;
-		assert((halfDim1 > 0) and (halfDim2 > 0));
+		assert((halfDim1 > 0) && (halfDim2 > 0));
 		//get rectangle frame unit vectors (origin=rectangle center)
 		Vec3 rectU1 = (rectV[1] - rectV[0]).normalize();
 		Vec3 rectU2 = (rectV[2] - rectV[1]).normalize();
@@ -3700,7 +3700,7 @@ public:
 		Vec3 circleCR = Vec3(rectU1.dot(circleC - rectC), 0,
 				rectU2.dot(circleC - rectC));
 		//check if circle center is inside rectangle
-		if ((abs(circleCR.x) <= halfDim1) and (abs(circleCR.z) <= halfDim2))
+		if ((abs(circleCR.x) <= halfDim1) && (abs(circleCR.z) <= halfDim2))
 		{
 			//intersection
 			foundIntersection = true;
@@ -3718,7 +3718,7 @@ public:
 			//according to which quadrant there is the circle center
 			int edge1Idx[2], edge2Idx[2];
 			//1st quadrant: check 2-1 and 3-2 edges
-			if ((circleCR.x > 0) and (circleCR.z > 0))
+			if ((circleCR.x > 0) && (circleCR.z > 0))
 			{
 				edge1Idx[0] = 1;
 				edge1Idx[1] = 2;
@@ -3726,7 +3726,7 @@ public:
 				edge2Idx[1] = 3;
 			}
 			//2nd quadrant: check 3-2 and 0-3 edges
-			else if ((circleCR.x < 0) and (circleCR.z > 0))
+			else if ((circleCR.x < 0) && (circleCR.z > 0))
 			{
 				edge1Idx[0] = 2;
 				edge1Idx[1] = 3;
@@ -3734,7 +3734,7 @@ public:
 				edge2Idx[1] = 0;
 			}
 			//3rd quadrant: check 0-3 and 1-0 edges
-			else if ((circleCR.x < 0) and (circleCR.z < 0))
+			else if ((circleCR.x < 0) && (circleCR.z < 0))
 			{
 				edge1Idx[0] = 3;
 				edge1Idx[1] = 0;
@@ -3742,7 +3742,7 @@ public:
 				edge2Idx[1] = 1;
 			}
 			//4th quadrant: check 1-0 and 2-1 edges
-			else if ((circleCR.x > 0) and (circleCR.z < 0))
+			else if ((circleCR.x > 0) && (circleCR.z < 0))
 			{
 				edge1Idx[0] = 0;
 				edge1Idx[1] = 1;
@@ -3751,7 +3751,7 @@ public:
 			}
 			foundIntersection = edgeCircleIntersect(rectVR[edge1Idx[0]],
 					rectVR[edge1Idx[1]], circleCR, circleRadius);
-			if (not foundIntersection)
+			if (! foundIntersection)
 			{
 				foundIntersection = edgeCircleIntersect(rectVR[edge2Idx[0]],
 						rectVR[edge2Idx[1]], circleCR, circleRadius);
@@ -3783,8 +3783,8 @@ public:
 			//	entirossup in circle)
 			float t1 = (-q1 + sqrt(discriminant)) / (2 * q2);
 			float t2 = (-q1 - sqrt(discriminant)) / (2 * q2);
-			if ((0 <= t1 and t1 <= 1.0) or (0 <= t2 and t2 <= 1.0)
-					or (t1 * t2 < 0.0))
+			if ((0 <= t1 && t1 <= 1.0) || (0 <= t2 && t2 <= 1.0)
+					|| (t1 * t2 < 0.0))
 			{
 				foundIntersection = true;
 			}
@@ -3813,9 +3813,9 @@ public:
 		}
 		//
 		bool foundIntersection = false;
-		if (not seekSeparatingAxis(poly1V, vertN1, poly2V, vertN2))
+		if (! seekSeparatingAxis(poly1V, vertN1, poly2V, vertN2))
 		{
-			foundIntersection = not seekSeparatingAxis(poly2V, vertN2, poly1V,
+			foundIntersection = ! seekSeparatingAxis(poly2V, vertN2, poly1V,
 					vertN1);
 		}
 		//free resources
@@ -3922,8 +3922,8 @@ public:
 	void checkBoundary(int x, int z, int* minX, int* maxX, int* minZ, int* maxZ)
 	{
 		//check limits only if (x,z) inside map
-		if (((z >= 0) and (z < map->resolution))
-				and ((x >= 0) and (x < map->resolution)))
+		if (((z >= 0) && (z < map->resolution))
+				&& ((x >= 0) && (x < map->resolution)))
 		{
 			//set minX and maxX
 			minX[z] > x ? minX[z] = x : 0;
@@ -3980,8 +3980,8 @@ public:
 		for (int i = 0; i < dx; i++)
 		{
 			//check limits only if (x,z) inside map
-			if (((z >= 0) and (z < map->resolution))
-					and ((x >= 0) and (x < map->resolution)))
+			if (((z >= 0) && (z < map->resolution))
+					&& ((x >= 0) && (x < map->resolution)))
 			{
 				//set minX and maxX
 				minX[z] > x ? minX[z] = x : 0;

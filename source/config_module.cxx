@@ -23,11 +23,11 @@ init_libopensteer() {
 
   // Init your dynamic types here, e.g.:
   // MyDynamicClass::init_type();
-  RNNavMesh::init_type();
-  RNCrowdAgent::init_type();
-  RNNavMeshManager::init_type();
-  RNNavMesh::register_with_read_factory();
-  RNCrowdAgent::register_with_read_factory();
+  OSSteerPlugIn::init_type();
+  OSSteerVehicle::init_type();
+  OSSteerManager::init_type();
+  OSSteerPlugIn::register_with_read_factory();
+  OSSteerVehicle::register_with_read_factory();
 
   return;
 }

@@ -53,8 +53,8 @@
 /**
  * \file /Ely/include/Support/OpenSteerLocal/PlugIn_CaptureTheFlag.h
  *
- * \date 2014-04-08 
- * \author consultit
+ * \date 2016-05-13
+ * \author Craig Reynolds (modified by consultit)
  */
 
 #ifndef PLUGIN_CAPTURETHEFLAG_H_
@@ -547,7 +547,7 @@ public:
 	// per frame simulation update
 	void update(const float currentTime, const float elapsedTime)
 	{
-		if (not gSeeker)
+		if (! gSeeker)
 		{
 			return;
 		}
@@ -987,7 +987,7 @@ public:
 
 	virtual bool addVehicle(AbstractVehicle* vehicle)
 	{
-		if (not PlugInAddOnMixin<OpenSteer::PlugIn>::addVehicle(vehicle))
+		if (! PlugInAddOnMixin<OpenSteer::PlugIn>::addVehicle(vehicle))
 		{
 			return false;
 		}
@@ -997,7 +997,7 @@ public:
 		if (ctfSeekerTmp)
 		{
 			//if not ExternalCtfSeeker then randomize
-			if (not dynamic_cast<ExternalCtfSeeker<Entity>*>(ctfSeekerTmp))
+			if (! dynamic_cast<ExternalCtfSeeker<Entity>*>(ctfSeekerTmp))
 			{
 				// randomize 2D heading
 				ctfSeekerTmp->randomizeStartingPositionAndHeading();
@@ -1020,7 +1020,7 @@ public:
 		if (ctfEnemyTmp)
 		{
 			//if not ExternalCtfEnemy then randomize
-			if (not dynamic_cast<ExternalCtfEnemy<Entity>*>(ctfEnemyTmp))
+			if (! dynamic_cast<ExternalCtfEnemy<Entity>*>(ctfEnemyTmp))
 			{
 				// randomize only 2D heading
 				ctfEnemyTmp->randomizeStartingPositionAndHeading();
@@ -1043,7 +1043,7 @@ public:
 
 	virtual bool removeVehicle(OpenSteer::AbstractVehicle* vehicle)
 	{
-		if (not PlugInAddOnMixin<OpenSteer::PlugIn>::removeVehicle(vehicle))
+		if (! PlugInAddOnMixin<OpenSteer::PlugIn>::removeVehicle(vehicle))
 		{
 			return false;
 		}

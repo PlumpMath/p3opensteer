@@ -1,23 +1,7 @@
-/*
- *   This file is part of Ely.
- *
- *   Ely is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
- *
- *   Ely is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
- *
- *   You should have received a copy of the GNU General Public License
- *   along with Ely.  If not, see <http://www.gnu.org/licenses/>.
- */
 /**
- * \file /Ely/include/Support/OpenSteerLocal/DrawMeshDrawer.h
+ * \file DrawMeshDrawer.h
  *
- * \date 2013-11-30 
+ * \date 2016-05-13
  * \author consultit
  */
 #ifndef DRAWMESHDRAWER_H_
@@ -54,10 +38,12 @@ protected:
 	bool m_texture;
 	///Inner MeshDrawers.
 	std::vector<MeshDrawer*> m_generators;
-	///Current MeshDrawer index.
-	int m_meshDrawerIdx;
-	///Current MeshDrawers number.
-	int m_meshDrawersSize;
+	///Index of the currently used generator.
+	int m_generatorIdx;
+	///Number of currently allocated generators.
+	int m_generatorsSize;
+	///Number of used generators during last frame.
+	int m_generatorsSizeLast;
 	///Budget.
 	int m_budget;
 	///Single mesh flag.
@@ -100,7 +86,8 @@ public:
 			float textScale = 0.75, bool singleMesh = false);
 	virtual ~DrawMeshDrawer();
 
-	void reset();
+	void initialize();
+	void finalize();
 	void clear();
 
 	void begin(DrawPrimitive prim);
@@ -134,6 +121,58 @@ public:
 		m_textScale = textScale;
 	}
 };
+
+/// Panda3d debug draw implementation.
+class DebugDrawPanda3d
+{
+protected:
+	///The render node path.
+	NodePath m_render;
+	///Depth Mask.
+	bool m_depthMask;
+	///Texture.
+	bool m_texture;
+	///The current GeomVertexData.
+	PT(GeomVertexData) m_vertexData;
+	///The current vertex index.
+	int m_vertexIdx;
+	///The current GeomVertexWriters.
+	GeomVertexWriter m_vertex, m_color, m_texcoord;
+	///The current GeomPrimitive and draw type.
+	PT(GeomPrimitive) m_geomPrim;
+	DrawMeshDrawer::DrawPrimitive m_prim;
+	///Size (for points)
+	float m_size;
+	///The current Geom.
+	PT(Geom) m_geom;
+	///The current GeomNode node path.
+	NodePath m_geomNodeNP;
+	///The GeomNodes' node paths.
+	std::vector<NodePath> m_geomNodeNPCollection;
+	///QUADS stuff.
+	int m_quadCurrIdx;
+	LVector3f m_quadFirstVertex, m_quadThirdVertex;
+	LVector4f m_quadFirstColor, m_quadThirdColor;
+	LVector2f m_quadFirstUV, m_quadThirdUV;
+
+public:
+	DebugDrawPanda3d(NodePath render);
+	virtual ~DebugDrawPanda3d();
+
+	void reset();
+
+	virtual void depthMask(bool state);
+	virtual void texture(bool state);
+	virtual void begin(DrawMeshDrawer::DrawPrimitive prim, float size = 1.0f);
+	void vertex(const LVector3f& vertex, const LVector4f& color,
+			const LVector2f& uv = LVecBase2f::zero());
+	virtual void end();
+
+	NodePath getGeomNode(int i);
+	int getGeomNodesNum();
+
+};
+
 } //namespace ossup
 
 #endif /* DRAWMESHDRAWER_H_ */

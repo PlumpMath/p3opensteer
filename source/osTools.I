@@ -27,16 +27,6 @@ INLINE ValueList<Type>::ValueList(const ValueList &copy) :
 {
 }
 
-
-/**
- *
- */
-template<typename Type>
-INLINE ValueList<Type>::ValueList(ValueList&& copy)
-{
-	_values = copy._values;
-}
-
 /**
  *
  */
@@ -67,9 +57,9 @@ INLINE void ValueList<Type>::operator =(const ValueList &copy)
  *
  */
 template<typename Type>
-INLINE void ValueList<Type>::operator =(ValueList&& copy)
+INLINE bool ValueList<Type>::operator== (const ValueList &other) const
 {
-	_values = copy._values;
+	return _values == other._values;
 }
 
 /**
@@ -96,7 +86,7 @@ INLINE int ValueList<Type>::get_num_values() const
 template<typename Type>
 INLINE Type ValueList<Type>::get_value(int index) const
 {
-	nassertr_always((index >= 0) and (index < (int ) _values.size()), Type())
+	nassertr_always((index >= 0) && (index < (int ) _values.size()), Type())
 
 	return _values[index];
 }
@@ -108,7 +98,7 @@ INLINE Type ValueList<Type>::get_value(int index) const
 template<typename Type>
 INLINE Type ValueList<Type>::operator [](int index) const
 {
-	nassertr_always((index >= 0) and (index < (int ) _values.size()), Type())
+	nassertr_always((index >= 0) && (index < (int ) _values.size()), Type())
 
 	return _values[index];
 }
@@ -151,9 +141,9 @@ INLINE ValueList<Type> ValueList<Type>::operator +(const ValueList &other) const
 template<typename Type>
 bool ValueList<Type>::remove_value(const Type& value)
 {
-	typename pvector<Type>::iterator iter = find(_values.begin(),
+	typename pvector<Type>::const_iterator iter = find(_values.begin(),
 			_values.end(), value);
-	nassertr_always(iter != _values.end(), false)
+	CONTINUE_IF_ELSE_R(iter != _values.end(), false)
 
 	_values.erase(iter);
 	return true;
@@ -225,242 +215,188 @@ inline ValueList<Type>::operator pvector<Type>() const
 }
 #endif //CPPPARSER
 
-///NavMeshSettings
-INLINE float RNNavMeshSettings::get_cellSize() const
+///Vehicle settings.
+INLINE float OSVehicleSettings::get_mass() const
 {
-	return _navMeshSettings.m_cellSize;
+	return _vehicleSettings.m_mass;
 }
-INLINE void RNNavMeshSettings::set_cellSize(float value)
+INLINE void OSVehicleSettings::set_mass(float value)
 {
-	_navMeshSettings.m_cellSize = value;
+	_vehicleSettings.m_mass = value;
 }
-INLINE float RNNavMeshSettings::get_cellHeight() const
+INLINE float OSVehicleSettings::get_radius() const
 {
-	return _navMeshSettings.m_cellHeight;
+	return _vehicleSettings.m_radius;
 }
-INLINE void RNNavMeshSettings::set_cellHeight(float value)
+INLINE void OSVehicleSettings::set_radius(float value)
 {
-	_navMeshSettings.m_cellHeight = value;
+	_vehicleSettings.m_radius = value;
 }
-INLINE float RNNavMeshSettings::get_agentHeight() const
+INLINE float OSVehicleSettings::get_speed() const
 {
-	return _navMeshSettings.m_agentHeight;
+	return _vehicleSettings.m_speed;
 }
-INLINE void RNNavMeshSettings::set_agentHeight(float value)
+INLINE void OSVehicleSettings::set_speed(float value)
 {
-	_navMeshSettings.m_agentHeight = value;
+	_vehicleSettings.m_speed = value;
 }
-INLINE float RNNavMeshSettings::get_agentRadius() const
+INLINE float OSVehicleSettings::get_maxForce() const
 {
-	return _navMeshSettings.m_agentRadius;
+	return _vehicleSettings.m_maxForce;
 }
-INLINE void RNNavMeshSettings::set_agentRadius(float value)
+INLINE void OSVehicleSettings::set_maxForce(float value)
 {
-	_navMeshSettings.m_agentRadius = value;
+	_vehicleSettings.m_maxForce = value;
 }
-INLINE float RNNavMeshSettings::get_agentMaxClimb() const
+INLINE float OSVehicleSettings::get_maxSpeed() const
 {
-	return _navMeshSettings.m_agentMaxClimb;
+	return _vehicleSettings.m_maxSpeed;
 }
-INLINE void RNNavMeshSettings::set_agentMaxClimb(float value)
+INLINE void OSVehicleSettings::set_maxSpeed(float value)
 {
-	_navMeshSettings.m_agentMaxClimb = value;
+	_vehicleSettings.m_maxSpeed = value;
 }
-INLINE float RNNavMeshSettings::get_agentMaxSlope() const
+INLINE LVector3f OSVehicleSettings::get_forward() const
 {
-	return _navMeshSettings.m_agentMaxSlope;
+	return ossup::OpenSteerVec3ToLVecBase3f(_vehicleSettings.m_forward);
 }
-INLINE void RNNavMeshSettings::set_agentMaxSlope(float value)
+INLINE void OSVehicleSettings::set_forward(const LVector3f& value)
 {
-	_navMeshSettings.m_agentMaxSlope = value;
+	_vehicleSettings.m_forward =
+			ossup::LVecBase3fToOpenSteerVec3(value).normalize();
 }
-INLINE float RNNavMeshSettings::get_regionMinSize() const
+INLINE LVector3f OSVehicleSettings::get_side() const
 {
-	return _navMeshSettings.m_regionMinSize;
+	return ossup::OpenSteerVec3ToLVecBase3f(_vehicleSettings.m_side);
 }
-INLINE void RNNavMeshSettings::set_regionMinSize(float value)
+INLINE void OSVehicleSettings::set_side(const LVector3f& value)
 {
-	_navMeshSettings.m_regionMinSize = value;
+	_vehicleSettings.m_side =
+			ossup::LVecBase3fToOpenSteerVec3(value).normalize();
 }
-INLINE float RNNavMeshSettings::get_regionMergeSize() const
+INLINE LVector3f OSVehicleSettings::get_up() const
 {
-	return _navMeshSettings.m_regionMergeSize;
+	return ossup::OpenSteerVec3ToLVecBase3f(_vehicleSettings.m_up);
 }
-INLINE void RNNavMeshSettings::set_regionMergeSize(float value)
+INLINE void OSVehicleSettings::set_up(const LVector3f& value)
 {
-	_navMeshSettings.m_regionMergeSize = value;
+	_vehicleSettings.m_up = ossup::LVecBase3fToOpenSteerVec3(value).normalize();
 }
-INLINE float RNNavMeshSettings::get_edgeMaxLen() const
+INLINE LPoint3f OSVehicleSettings::get_position() const
 {
-	return _navMeshSettings.m_edgeMaxLen;
+	return ossup::OpenSteerVec3ToLVecBase3f(_vehicleSettings.m_position);
 }
-INLINE void RNNavMeshSettings::set_edgeMaxLen(float value)
+INLINE void OSVehicleSettings::set_position(const LPoint3f& value)
 {
-	_navMeshSettings.m_edgeMaxLen = value;
-}
-INLINE float RNNavMeshSettings::get_edgeMaxError() const
-{
-	return _navMeshSettings.m_edgeMaxError;
-}
-INLINE void RNNavMeshSettings::set_edgeMaxError(float value)
-{
-	_navMeshSettings.m_edgeMaxError = value;
-}
-INLINE float RNNavMeshSettings::get_vertsPerPoly() const
-{
-	return _navMeshSettings.m_vertsPerPoly;
-}
-INLINE void RNNavMeshSettings::set_vertsPerPoly(float value)
-{
-	_navMeshSettings.m_vertsPerPoly = value;
-}
-INLINE float RNNavMeshSettings::get_detailSampleDist() const
-{
-	return _navMeshSettings.m_detailSampleDist;
-}
-INLINE void RNNavMeshSettings::set_detailSampleDist(float value)
-{
-	_navMeshSettings.m_detailSampleDist = value;
-}
-INLINE float RNNavMeshSettings::get_detailSampleMaxError() const
-{
-	return _navMeshSettings.m_detailSampleMaxError;
-}
-INLINE void RNNavMeshSettings::set_detailSampleMaxError(float value)
-{
-	_navMeshSettings.m_detailSampleMaxError = value;
-}
-INLINE int RNNavMeshSettings::get_partitionType() const
-{
-	return _navMeshSettings.m_partitionType;
-}
-INLINE void RNNavMeshSettings::set_partitionType(int value)
-{
-	_navMeshSettings.m_partitionType = value;
+	_vehicleSettings.m_position = ossup::LVecBase3fToOpenSteerVec3(value);
 }
 
-///NavMeshTileSettings
-INLINE bool RNNavMeshTileSettings::get_buildAllTiles() const
+///OSObstacleSettings.
+INLINE bool OSObstacleSettings::operator==(
+		const OSObstacleSettings &other) const
 {
-	return _navMeshTileSettings.m_buildAllTiles;
+	return (_type == other._type) && (_seenFromState == other._seenFromState)
+			&& (_position == other._position) && (_forward == other._forward)
+			&& (_up == other._up) && (_side == other._side)
+			&& (_width == other._width) && (_height == other._height)
+			&& (_depth == other._depth) && (_radius == other._radius)
+			&& (_ref == other._ref) && (_obstacle == other._obstacle);
 }
-INLINE void RNNavMeshTileSettings::set_buildAllTiles(bool value)
+INLINE string OSObstacleSettings::get_type() const
 {
-	_navMeshTileSettings.m_buildAllTiles = value;
+	return _type;
 }
-INLINE int RNNavMeshTileSettings::get_maxTiles() const
+INLINE void OSObstacleSettings::set_type(const string& value)
 {
-	return _navMeshTileSettings.m_maxTiles;
+	_type = value;
 }
-INLINE void RNNavMeshTileSettings::set_maxTiles(int value)
+INLINE string OSObstacleSettings::get_seenFromState() const
 {
-	_navMeshTileSettings.m_maxTiles = value;
+	return _seenFromState;
 }
-INLINE int RNNavMeshTileSettings::get_maxPolysPerTile() const
+INLINE void OSObstacleSettings::set_seenFromState(const string& value)
 {
-	return _navMeshTileSettings.m_maxPolysPerTile;
+	_seenFromState = value;
 }
-INLINE void RNNavMeshTileSettings::set_maxPolysPerTile(int value)
+INLINE LPoint3f OSObstacleSettings::get_position() const
 {
-	_navMeshTileSettings.m_maxPolysPerTile = value;
+	return _position;
 }
-INLINE float RNNavMeshTileSettings::get_tileSize() const
+INLINE void OSObstacleSettings::set_position(const LPoint3f& value)
 {
-	return _navMeshTileSettings.m_tileSize;
+	_position = value;
 }
-INLINE void RNNavMeshTileSettings::set_tileSize(float value)
+INLINE LVector3f OSObstacleSettings::get_forward() const
 {
-	_navMeshTileSettings.m_tileSize = value;
+	return _forward;
 }
-
-///CrowdAgentParams
-INLINE float RNCrowdAgentParams::get_radius() const
+INLINE void OSObstacleSettings::set_forward(const LVector3f& value)
 {
-	return _dtCrowdAgentParams.radius;
+	_forward = value;
 }
-INLINE void RNCrowdAgentParams::set_radius(float value)
+INLINE LVector3f OSObstacleSettings::get_up() const
 {
-	_dtCrowdAgentParams.radius = value;
+	return _up;
 }
-INLINE float RNCrowdAgentParams::get_height() const
+INLINE void OSObstacleSettings::set_up(const LVector3f& value)
 {
-	return _dtCrowdAgentParams.height;
+	_up = value;
 }
-INLINE void RNCrowdAgentParams::set_height(float value)
+INLINE LVector3f OSObstacleSettings::get_side() const
 {
-	_dtCrowdAgentParams.height = value;
+	return _side;
 }
-INLINE float RNCrowdAgentParams::get_maxAcceleration() const
+INLINE void OSObstacleSettings::set_side(const LVector3f& value)
 {
-	return _dtCrowdAgentParams.maxAcceleration;
+	_side = value;
 }
-INLINE void RNCrowdAgentParams::set_maxAcceleration(float value)
+INLINE float OSObstacleSettings::get_width() const
 {
-	_dtCrowdAgentParams.maxAcceleration = value;
+	return _width;
 }
-INLINE float RNCrowdAgentParams::get_maxSpeed() const
+INLINE void OSObstacleSettings::set_width(float value)
 {
-	return _dtCrowdAgentParams.maxSpeed;
+	_width = value;
 }
-INLINE void RNCrowdAgentParams::set_maxSpeed(float value)
+INLINE float OSObstacleSettings::get_height() const
 {
-	_dtCrowdAgentParams.maxSpeed = value;
+	return _height;
 }
-INLINE float RNCrowdAgentParams::get_collisionQueryRange() const
+INLINE void OSObstacleSettings::set_height(float value)
 {
-	return _dtCrowdAgentParams.collisionQueryRange;
+	_height = value;
 }
-INLINE void RNCrowdAgentParams::set_collisionQueryRange(float value)
+INLINE float OSObstacleSettings::get_depth() const
 {
-	_dtCrowdAgentParams.collisionQueryRange = value;
+	return _depth;
 }
-INLINE float RNCrowdAgentParams::get_pathOptimizationRange() const
+INLINE void OSObstacleSettings::set_depth(float value)
 {
-	return _dtCrowdAgentParams.pathOptimizationRange;
+	_depth = value;
 }
-INLINE void RNCrowdAgentParams::set_pathOptimizationRange(float value)
+INLINE float OSObstacleSettings::get_radius() const
 {
-	_dtCrowdAgentParams.pathOptimizationRange = value;
+	return _radius;
 }
-INLINE float RNCrowdAgentParams::get_separationWeight() const
+INLINE void OSObstacleSettings::set_radius(float value)
 {
-	return _dtCrowdAgentParams.separationWeight;
+	_radius = value;
 }
-INLINE void RNCrowdAgentParams::set_separationWeight(float value)
+INLINE int OSObstacleSettings::get_ref() const
 {
-	_dtCrowdAgentParams.separationWeight = value;
+	return _ref;
 }
-INLINE unsigned char RNCrowdAgentParams::get_updateFlags() const
+INLINE void OSObstacleSettings::set_ref(int value)
 {
-	return _dtCrowdAgentParams.updateFlags;
+	_ref = value;
 }
-INLINE void RNCrowdAgentParams::set_updateFlags(unsigned char value)
+inline OpenSteer::AbstractObstacle* OSObstacleSettings::get_obstacle() const
 {
-	_dtCrowdAgentParams.updateFlags = value;
+	return _obstacle;
 }
-INLINE unsigned char RNCrowdAgentParams::get_obstacleAvoidanceType() const
+inline void OSObstacleSettings::set_obstacle(OpenSteer::AbstractObstacle* value)
 {
-	return _dtCrowdAgentParams.obstacleAvoidanceType;
-}
-INLINE void RNCrowdAgentParams::set_obstacleAvoidanceType(unsigned char value)
-{
-	_dtCrowdAgentParams.obstacleAvoidanceType = value;
-}
-INLINE unsigned char RNCrowdAgentParams::get_queryFilterType() const
-{
-	return _dtCrowdAgentParams.queryFilterType;
-}
-INLINE void RNCrowdAgentParams::set_queryFilterType(unsigned char value)
-{
-	_dtCrowdAgentParams.queryFilterType = value;
-}
-INLINE void* RNCrowdAgentParams::get_userData() const
-{
-	return _dtCrowdAgentParams.userData;
-}
-INLINE void RNCrowdAgentParams::set_userData(void* value)
-{
-	_dtCrowdAgentParams.userData = value;
+	_obstacle = value;
 }
 
 #endif /* OSTOOLS_I_ */

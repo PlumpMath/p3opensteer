@@ -1,0 +1,260 @@
+USAGE NOTES
+***********
+p3opensteer is an attempt to make available the OpenSteer library facilities to 
+the Panda3d engine. 
+
+OpenSteer is a library that allows the construction of "steering behaviors", by 
+providing "basic" behaviors (and other elements), in such a way that they can 
+be combined in many different ways, so as to synthesize any steering behavior 
+imaginable. At the same time, OpenSteer also provides a methodology to build 
+steering behaviors based on a "plug-ins" framework. 
+
+What p3opensteer does is to make available for Panda3d programs, the plug-ins 
+which are released together with the library itself. Of course, nothing prevents 
+you to write new plug-ins and integrate them with p3opensteer.
+
+In addition to reading this document, please also refer to the API 
+documentation (c++ only) that can be generated with doxygen:
+
+  doxygen Doxyfile 
+
+Moreover, it would help to refer to the original documentation and forums of 
+OpenSteer (http://opensteer.sourceforge.net/):
+- Documentation: http://opensteer.sourceforge.net/doc.html
+- Open Discussion forum: http://sourceforge.net/forum/forum.php?forum_id=264792
+- "Steering Behaviors For Autonomous Characters" paper on which OpenSteer 
+  library is based (http://www.red3d.com/cwr/papers/1999/gdc99steer.html) 
+
+Finally, and very importantly, it is highly recommended to play with the 
+comprehensive OpenSteerDemo application for experimenting and becoming familiar 
+with the concepts of OpenSteer.
+
+Framework
+---------
+p3opensteer distinguishes various objects and elements to work with:
+
+- OSSteerManager: this is a unique object (singleton) whose main task is to 
+create/destroy OSSteerPlugIn(s) and OSSteerVehicle(s)
+
+- OSSteerPlugIn: it is a PandaNode representing a plug-in that defines a 
+particular steering behavior for the corresponding OSSteerVehicle(s).
+OSSteerPlugIn(s) have common shared features and can define specific ones 
+depending on the type of plug-in.
+
+- OSSteerVehicle: is a PandNode representing a (steering) vehicle that must be
+added to its corresponding OSSteerPlugIn to perform its steering behavior; 
+NodePaths of 3d models are usually attached to a OSSteerVehicle. 
+OSSteerVehicle(s) have common shared features and can define specific ones 
+depending on the type of vehicle
+
+- Obstacles: some plug-ins handle the presence of (static) obstacles that may be 
+associated with 3d models (visible obstacles) or only be defined at the 
+OpenSteer level (invisible obstacles)
+
+- Pathway: some plug-ins handle the presence of a path-way
+
+Placement of objects in the scene
+---------------------------------
+To make possible the simultaneous use of the various features of the module 
+(and also for the integration with other Panda3d features), it was chosen this 
+model of placement of the various elements in the scene:
+
+- Reference NodePath: this node is the root under which objects are attached 
+  and with respect to which points, distances and movements  are computed; the 
+  OSSteerManager provides a default reference node;
+  
+- placement of OSSteerPlugIn, OSSteerVehicle: at the time of creation, they are 
+  automatically attached to the default reference NodePath (and to which they 
+  have an internal reference); 3d models can be subsequently attached to the 
+  OSSteerVehicle(s);
+
+Once objects are attached to the reference NodePath, just reparent it to the 
+scene (usually under the "render" node).
+
+NOTE: no transform should be applied to the other objects (except the identity 
+one of course).
+
+Other positioning schemes may work but they have not been tested. 
+NOTE: if you change the reference NodePath don't forget to set OSSteerPlugIn(s)' 
+and OSSteerVehicle(s)' internal references to it and to reparent them to it. 
+
+OSSteerManager
+--------------
+The manager is a singleton that can be retrieved through get_global_ptr() method
+(static in c++). 
+It manages the creation and destruction of any OSSteerPlugIn and OSSteerVehicle, 
+maintaining lists of all these created objects, so they can be retrieved at any 
+time.
+
+The manager also has the task to set the many parameters to default values 
+during these objects' creation. 
+In this regard, a method has been made available for specifying these parameters
+in textual mode, the syntax of which is specified in the doxygen documentation 
+of OSSteerPlugIn and OSSteerVehicle classes. This was done to ease the creation 
+of objects in a "data driven" way, that is, for example, by reading parameters 
+from an xml configuration file. 
+For this purpose various methods are provided, that is, those with names like 
+"set_parameter*()" or "get_parameter*()".
+
+In addition, the manager is provided with some other utilities: 
+- to find the dimensions of the used models (get_bounding_dimensions()) 
+- to manage the collisions with the models (get_collision_traverser(), 
+  get_collision_ray() etc...); these are used internally, for example for 
+  kinematic OSSteerVehicle(s), but can be used for general purposes too (see 
+  samples).
+- to perform a default update (start/stop_default_update()), that is a task 
+  which calls all of the OSSteerPlugIn(s)' update methods, with no possibility of 
+  interaction (usually it is used for test purposes).
+- to write/read to/from "bam" files the objects of (part of) a scene having its 
+  root as the default reference NodePath (write_to/read_from_bam_file()).
+  
+OSSteerPlugIn
+-------------
+This object embodies the capabilities of the underlying OpenSteer plug-in.
+
+p3opensteer defines different types of OSSteerPlugIn, currently corresponding to 
+the plug-ins which are distributed with OpenSteer library.  
+OSSteerPlugIn's types are:
+
+- "one turning"
+- "pedestrian"
+- "boid"
+- "multiple pursuit"
+- "soccer"
+- "capture the flag"
+- "low speed turn"
+- "map drive"
+
+The main task of a OSSteerPlugIn is to allow any OSSteerVehicle added to it, to 
+express its steering behavior: to accomplish this, you must create a task that 
+at every tick of the game loop (frame), calls the update() method of the 
+OSSteerPlugIn.
+
+Each type of OSSteerPlugIn match one or more types of OSSteerVehicle(s) that can 
+be added to it: adding a wrong type is not in itself a mistake, simply does not 
+work.
+
+OSSteerPlugIn's type can be changed both before creation (see OSSteerManager) 
+and dynamically, as long as there are no OSSteerVehicle(s) added to it.
+
+All OSSteerPlugIn types share common methods, while some of them define a few 
+specific for their type. For a complete overview of the methods (ie member 
+functions) that can be used with a OSSteerPlugIn, see the API documentation 
+generated from doxygen, where these have been grouped by similar functionality.
+
+OSSteerVehicle
+--------------
+This object embodies the capabilities of the underlying OpenSteer vehicle.
+
+An OSSteerVehicle can live alone doing nothing, or be "added" to an 
+OSSteerPlugIn in order to accomplish its steering behavior.
+
+p3opensteer defines different types of OSSteerVehicle, currently corresponding 
+to the vehicles that are distributed with OpenSteer library. the OSSteerVehicle 
+than one type should only be added to the corresponding type OSSteerPlugIn.
+OSSteerVehicle's types are:
+
+- "one turning" -> "one turning" plug-in
+- "pedestrian" -> "pedestrian" plug-in
+- "boid" -> "boid" plug-in
+- "mp wanderer" -> "multiple pursuit" plug-in
+- "mp pursuer" -> "multiple pursuit" plug-in
+- "player" -> "soccer" plug-in
+- "ball" -> "soccer" plug-in
+- "ctf seeker" -> "capture the flag" plug-in
+- "ctf enemy" -> "capture the flag" plug-in
+- "low speed turn" -> "low speed turn" plug-in
+- "map driver" -> "map drive" plug-in
+
+An OSSteerVehicle can have one of two types of movement:
+- "opensteer": its movement follows strictly the path as updated by OpenSteer 
+  library
+- "kinematic": its movement is adjusted (within a certain extent) in such a way 
+  that it is always on the surface of a 3d model.
+
+Certain types of OSSteerVehicle are suitable for both movement types other for 
+only one.
+
+OSSteerVehicle(s), if properly enabled, can throw events, for which it can be 
+established a firing frequency. 
+Currently, there are defined these events: 
+- "move": when the OSSteerVehicle moves, it is continuously issued
+- "steady": thrown as soon as the OSSteerVehicle stops.
+- "path following": thrown when steering is required to follow a path
+- "avoid obstacle": thrown when steering is required to avoid an obstacle
+- "avoid close neighbor": thrown when steering is required to avoid a close 
+  neighbor (i.e. when there is a collision)
+- "avoid neighbor": thrown when steering is required to avoid a neighbor (i.e. 
+  when there is a potential collision)
+
+NOTE: some of these events only make sense for certain types combination of 
+OSSteerPlugIn/OSSteerVehicle(s)
+
+A OSSteerVehicle can be driven "externally" to a OSSteerPlugIn, that is, its 
+motion is governed not by the OSSteerPlugIn but by another "engine", and at the 
+same time it is "recognized" by other OSSteerVehicle(s) with respect to 
+collisions, neighbor avoidance etc. A typical example is given by the player 
+model whose movement is determined by a HID, and so it can drive an 
+OSSteerVehicle so it can be recognized by the other OSSteerVehicle(s) (NPC 
+agents). In this case, for correct operation, the 3d model should be reparented 
+to the reference node and the OSSteerVehicle reattached to it (the 
+OSSteerVehicle's reference node remains unchanged and therefore it need not be 
+reset).
+
+For each OSSteerVehicle you can set/get the configuration and motion parameters 
+and retrieve its current movement state.
+
+All OSSteerVehicle types share common methods, while some of them define a few 
+specific for their type. For a complete overview of the methods (ie member 
+functions) that can be used with a OSSteerPlugIn, see the API documentation 
+generated from doxygen, where these have been grouped by similar functionality.
+
+Obstacles and pathway
+---------------------
+Some OpenSteer's plug-ins, handle obstacles and pathways, so p2opensteer allows 
+a OSSteerPlugIn to add obstacles of various shapes and to define a (unique) 
+pathway per OSSteerPlugIn. 
+
+Obstacles may correspond to 3d models (specified as NodePaths), or only be 
+defined at OpenSteer level and in this case, they correspond to hidden objects 
+for Panda3d. Moreover, obstacles added by any plugins are visible to all other 
+active plugins even if they can be removed only by the plugin that added them. 
+
+On the contrary, the pathway defined by a plugin is handled, and visible, only 
+by that plugin.
+
+Both obstacles' and pathway's points are computed wrt reference node, so a 3d 
+model's NodePath associated with an obstacle, is automatically reparented to the
+reference node when added by a OSSteerPlugIn.
+
+Debug Drawing
+-------------
+The debug drawing is available by enabling its support when p3opensteer module 
+is built, that is by setting the value of "optimize" equal to 1 or 2 (debug 
+build) in the file "config.ini".
+
+The OSSteerManager provides 2 "reference NodePaths for debug", which can be 
+retrieved with a call to get_reference_node_path_debug()/_2d(). To enable debug 
+drawing in the code, you need to make them sibling of the reference NodePath 
+(that is attached to the same parent), and then utilize the debugging methods of 
+OSSteerPlugIn (see API documentation).
+
+NOTE: OSSteerManager also provides methods to draw low-level primitives: 
+points, lines, triangles and quads, and this can be useful during development 
+and testing.
+
+Samples
+-------
+To become familiar with p3opensteer programming, see also the code of the 
+samples (both in python and c++) in the 'samples' folder:
+
+- "basic" it is a minimum example of p3opensteer usage ("one turning" plug-in).
+- "low_speed_turn" shows example usage for "low_speed_turn" plug-in. 
+- "pedestrian" shows example usage for "pedestrian" plug-in. 
+- "pedestrian_external" shows example usage for "pedestrian" plug-in with an 
+  OSSteerVehicle externally updated. 
+- "boid" shows example usage for "boid" plug-in. 
+- "multiple_pursuit" shows example usage for "multiple pursuit" plug-in. 
+- "soccer" shows example usage for "soccer" plug-in. 
+- "capture_the_flag" shows example usage for "capture the flag" plug-in. 
+- "map_drive" shows example usage for "map drive" plug-in. 

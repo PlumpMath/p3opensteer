@@ -4,172 +4,236 @@
  * \date 2016-05-13
  * \author consultit
  */
+
 #ifndef OSSTEERVEHICLE_H_
 #define OSSTEERVEHICLE_H_
 
-#include "ObjectModel/PandaNode.h"
-#include "ObjectModel/Object.h"
-#include "Support/OpenSteerLocal/common.h"
-#include <bulletWorld.h>
-#include <bulletClosestHitRayResult.h>
-#include <throw_event.h>
+#include "osSteerPlugIn.h"
+#include "osSteerManager.h"
+#include "osTools.h"
+#include "opensteer_includes.h"
+#include "nodePath.h"
 
-class SteerVehicleTemplate;
-class SteerPlugIn;
-
-///OSSteerVehicle movement type.
-enum SteerVehicleMovType
-{
-	OPENSTEER,
-	OPENSTEER_KINEMATIC,
-	VehicleMovType_NONE
-};
+#ifndef CPPPARSER
+#include "support/common.h"
+#endif //CPPPARSER
 
 /**
- * \brief Component implementing OpenSteer Vehicles.
+ * This class represents a "vehicle" of the OpenSteer library.
  *
  * \see http://opensteer.sourceforge.net
  *
- * This component should be associated to a "Scene" component.\n
- * If specified in "thrown_events", this component can throw
- * these events (shown with default names):
- * - on moving (<ObjectType>_SteerVehiclet_Move)
- * - on being steady (<ObjectType>_SteerVehicle_Steady)
- * - when steering is required to follow a path
- * (<ObjectType>_SteerVehicle_PathFollowing)
- * - when steering is required to avoid an obstacle
- * (<ObjectType>_SteerVehicle_AvoidObstacle)
- * - when steering is required to avoid a close neighbor (i.e. when
- * there is a collision) (<ObjectType>_SteerVehicle_AvoidCloseNeighbor)
- * - when steering is required to avoid a neighbor (i.e. when there
- * is a potential collision) (<ObjectType>_SteerVehicle_AvoidNeighbor)
+ * This PandaNode will create a "steer vehicle"and should be added to an
+ * OSSteerPlugIn, to perform its "steering behavior".\n
+ * A model could be reparented to this OSSteerVehicle.\n
+ * An OSSteerVehicle could be of type:
+ * - **opensteer** (the default): its movement follows strictly the path as
+ *   updated by OpenSteer library
+ * - **kinematic**: its movement is corrected to stand on floor.\n
+ * If enabled, this object can throw these events:
+ * - on moving (default event name: NODENAME_SteerVehiclet_Move)
+ * - on being steady (default event name: NODENAME_SteerVehicle_Steady)
+ * - when steering is required to follow a path (default event name:
+ *   NODENAME_SteerVehicle_PathFollowing)
+ * - when steering is required to avoid an obstacle (default event name:
+ *   NODENAME_SteerVehicle_AvoidObstacle)
+ * - when steering is required to avoid a close neighbor (i.e. when there is a
+ *   collision) (default event name: NODENAME_SteerVehicle_AvoidCloseNeighbor)
+ * - when steering is required to avoid a neighbor (i.e. when there is a
+ *   potential collision) (default event name:
+ *   NODENAME_SteerVehicle_AvoidNeighbor)
  * Events are thrown continuously at a frequency which is the minimum between
- * the fps and the frequency specified (which defaults to 30 times per seconds).\n
+ * the fps and the frequency specified (which defaults to 30 times per seconds).
+ * \n
  * The argument of each event is a reference to this component.\n
  * \see annotate* SteerLibraryMixin member functions in SteerLibrary.h
  * for more information.
  *
- * \note debug drawing works correctly only if the owner object's
- * parent is "render".\n
+ * \note A OSSteerVehicle will be reparented to the default reference node on
+ * creation (see OSSteerManager).
  *
- * > **XML Param(s)**:
+ * > **OSSteerVehicle text parameters**:
  * param | type | default | note
  * ------|------|---------|-----
  * | *thrown_events*			|single| - | specified as "event1@[event_name1]@[frequency1][:...[:eventN@[event_nameN]@[frequencyN]]]" with eventX = move,steady,path_following,avoid_obstacle,avoid_close_neighbor,avoid_neighbor
- * | *type*						|single| *one_turning* | values: one_turning,pedestrian,boid,mp_wanderer,mp_pursuer,player,ball,ctf_seeker,ctf_enemy,low_speed_turn,map_driver
- * | *external_update*			|single| *false* | -
- * | *add_to_plugin*			|single| - | -
+ * | *vehicle_type*				|single| *one_turning* | values: one_turning,pedestrian,boid,mp_wanderer,mp_pursuer,player,ball,ctf_seeker,ctf_enemy,low_speed_turn,map_driver
  * | *mov_type*					|single| *opensteer* | values: opensteer,kinematic
- * | *up_axis_fixed*			|single| *false* | -
+ * | *add_to_plugin*			|single| - | -
  * | *mass*						|single| 1.0 | -
- * | *radius*					|single| - | -
  * | *speed*					|single| 0.0 | -
  * | *max_force*				|single| 0.1 | -
  * | *max_speed*				|single| 1.0 | -
- * | *ray_mask*					|single| *all_on* | -
+ * | *up_axis_fixed*			|single| *false* | -
+ * | *external_update*			|single| *false* | -
  *
  * \note parts inside [] are optional.\n
  */
-class OSSteerVehicle: public PandaNode
+class EXPORT_CLASS OSSteerVehicle: public PandaNode
 {
-protected:
-	friend class SteerVehicleTemplate;
-	friend class SteerPlugIn;
-
-	OSSteerVehicle(SMARTPTR(SteerVehicleTemplate)tmpl);
-	virtual void reset();
-	virtual bool initialize();
-	virtual void onAddToObjectSetup();
-	virtual void onRemoveFromObjectCleanup();
-	virtual void onAddToSceneSetup();
-	virtual void onRemoveFromSceneCleanup();
-
-public:
-	virtual ~OSSteerVehicle();
-
+PUBLISHED:
 	/**
-	 * \name Getters/setters of OSSteerVehicle default settings.
+	 * Steer Vehicle type.
 	 */
-	///@{
-	void setSettings(const VehicleSettings& settings);
-	VehicleSettings getSettings();
-	///@}
-
-	/**
-	 * \name AbstractVehicle reference getter & conversion function.
-	 */
-	///@{
-	OpenSteer::AbstractVehicle& getAbstractVehicle();
-	operator OpenSteer::AbstractVehicle&();
-	///@}
-
-	/**
-	 * \name Get the SteerPlugIn owner object.
-	 *
-	 * \return The SteerPlugIn object.
-	 */
-	SMARTPTR(SteerPlugIn) getSteerPlugIn() const;
-
-	///OSSteerVehicle thrown events.
-	enum EventThrown
+	enum OSSteerVehicleType
 	{
-		MOVEEVENT,
-		STEADYEVENT,
-		PATHFOLLOWINGEVENT,
-		AVOIDOBSTACLEEVENT,
-		AVOIDCLOSENEIGHBOREVENT,
-		AVOIDNEIGHBOREVENT
+		ONE_TURNING = 0,
+		PEDESTRIAN,
+		BOID,
+		MP_WANDERER,
+		MP_PURSUER,
+		PLAYER,
+		BALL,
+		CTF_SEEKER,
+		CTF_ENEMY,
+		LOW_SPEED_TURN,
+		MAP_DRIVER,
+		NONE_VEHICLE
 	};
 
 	/**
-	 * \brief Enables/disables the OSSteerVehicle event to be thrown.
-	 * @param event The OSSteerVehicle event.
-	 * @param eventData The OSSteerVehicle event data. ThrowEventData::mEnable
-	 * will enable/disable the event.
+	 * OSSteerVehicle movement type.
 	 */
-	void enableSteerVehicleEvent(EventThrown event, ThrowEventData eventData);
+	enum OSSteerVehicleMovType
+	{
+		OPENSTEER,
+		OPENSTEER_KINEMATIC,
+		VehicleMovType_NONE
+	};
 
-private:
-	///Current underlying Vehicle.
-	OpenSteer::AbstractVehicle* mVehicle;
-	///The SteerPlugIn owner object.
-	SMARTPTR(SteerPlugIn) mSteerPlugIn;
-	ObjectId mSteerPlugInObjectId;
-	///Input radius.
-	float mInputRadius;
-	///The movement type.
-	SteerVehicleMovType mMovType;
-	///Flag for up axis fixed (z).
-	bool mUpAxisFixed;
 	/**
-	 * \brief Physics data.
+	 * OSSteerVehicle thrown events.
+	 */
+	enum OSEventThrown
+	{
+		MOVEEVENT,              //!< MOVEEVENT
+		STEADYEVENT,            //!< STEADYEVENT
+		PATHFOLLOWINGEVENT,     //!< PATHFOLLOWINGEVENT
+		AVOIDOBSTACLEEVENT,     //!< AVOIDOBSTACLEEVENT
+		AVOIDCLOSENEIGHBOREVENT,//!< AVOIDCLOSENEIGHBOREVENT
+		AVOIDNEIGHBOREVENT      //!< AVOIDNEIGHBOREVENT
+	};
+
+	virtual ~OSSteerVehicle();
+
+	/**
+	 * \name VEHICLE
 	 */
 	///@{
-	SMARTPTR(BulletWorld) mBulletWorld;
-	float mMaxError;
-	LVector3f mDeltaRayDown, mDeltaRayOrig;
-	BulletClosestHitRayResult mHitResult;
-	BitMask32 mRayMask;
-	float mCorrectHeightRigidBody;
+	void set_vehicle_type(OSSteerVehicleType type);
+	INLINE OSSteerVehicleType get_vehicle_type();
+	INLINE void set_mov_type(OSSteerVehicleMovType movType);
+	INLINE OSSteerVehicleMovType get_mov_type();
 	///@}
 
-	///Called by the underlying OpenSteer component update.
+	/**
+	 * \name CONFIGURATION SETTINGS
+	 */
 	///@{
-	void doUpdateSteerVehicle(const float currentTime, const float elapsedTime);
-	//Called when component is updated outside of OpenSteer.
-	void doExternalUpdateSteerVehicle(const float currentTime, const float elapsedTime);
+	INLINE void set_settings(const OSVehicleSettings& settings);
+	INLINE OSVehicleSettings get_settings();
+	INLINE void set_mass(float mass);
+	INLINE float get_mass();
+	INLINE void set_radius(float radius);
+	INLINE float get_radius();
+	INLINE void set_speed(float speed);
+	INLINE float get_speed();
+	INLINE void set_max_force(float max_force);
+	INLINE float get_max_force();
+	INLINE void set_max_speed(float max_speed);
+	INLINE float get_max_speed();
+	INLINE LVector3f get_forward() const;
+	INLINE void set_forward(const LVector3f& forward);
+	INLINE LVector3f get_side() const;
+	INLINE void set_side(const LVector3f& side);
+	INLINE LVector3f get_up() const;
+	INLINE void set_up(const LVector3f& up);
+	INLINE LPoint3f get_position() const;
+	INLINE void set_position(const LPoint3f& position);
+	bool enable_external_update(bool enable);
+	INLINE bool enable_up_axis_fixed(bool enable);
+	INLINE PT(OSSteerPlugIn) get_steer_plug_in() const;
+	///@}
+
+	/**
+	 * \name LOW SPEED TURN SPECIFIC SETTINGS.
+	 */
+	///@{
+	void set_steering_speed(float steeringSpeed = 1.0);
+	float get_steering_speed();
+	///@}
+
+	/**
+	 * \name EVENTS' CONFIGURATION
+	 */
+	///@{
+	INLINE void enable_steer_vehicle_event(OSEventThrown event, ThrowEventData eventData);
+	///@}
+
+	/**
+	 * \name OUTPUT
+	 */
+	///@{
+	void output(ostream &out) const;
+	///@}
+
+public:
+	/**
+	 * \name C++ ONLY
+	 * Library & support low level related methods.
+	 */
+	///@{
+	inline OpenSteer::AbstractVehicle& get_abstract_vehicle();
+	inline operator OpenSteer::AbstractVehicle&();
+	///@}
+
+protected:
+	friend class OSSteerManager;
+	friend class OSSteerPlugIn;
+
+	OSSteerVehicle(const string& name);
+
+private:
+	///Current underlying OpenSteer Vehicle.
+	OpenSteer::AbstractVehicle* mVehicle;
+	///The type of this OSSteerPlugIn.
+	OSSteerVehicleType mVehicleType;
+	///The movement type of this OSSteerPlugIn.
+	OSSteerVehicleMovType mMovType;
+	///The OSSteerPlugIn this OSSteerVehicle is added to.
+	PT(OSSteerPlugIn) mSteerPlugIn;
+	///The reference node path.
+	NodePath mReferenceNP;
+	///OSSteerVehicle settings.
+	OSVehicleSettings mVehicleSettings;
+	///Height correction for kinematic OSSteerVehicle(s).
+	LVector3f mHeigthCorrection;
+	///Flag for up axis fixed (z).
+	bool mUpAxisFixed;
+
+	inline void do_reset();
+	void do_initialize();
+	void do_finalize();
+
+	/**
+	 * \name Helpers variables/functions.
+	 */
+	///@{
+	void do_create_vehicle(OSSteerVehicleType type);
+	void do_update_steer_vehicle(const float currentTime, const float elapsedTime);
+	void do_external_update_steer_vehicle(const float currentTime, const float elapsedTime);
+	///External update.
 	bool mExternalUpdate;
 	///@}
 
 	/**
-	 * \brief SteerLibrary callbacks.
+	 * \name SteerLibrary callbacks.
 	 */
 	///@{
-	void doPathFollowing(const OpenSteer::Vec3& future, const OpenSteer::Vec3& onPath,
+	void do_path_following(const OpenSteer::Vec3& future, const OpenSteer::Vec3& onPath,
 			const OpenSteer::Vec3& target, const float outside);
-	void doAvoidObstacle(const float minDistanceToCollision);
-	void doAvoidCloseNeighbor(const OpenSteer::AbstractVehicle& other, const float additionalDistance);
-	void doAvoidNeighbor(const OpenSteer::AbstractVehicle& threat, const float steer,
+	void do_avoid_obstacle(const float minDistanceToCollision);
+	void do_avoid_close_neighbor(const OpenSteer::AbstractVehicle& other, const float additionalDistance);
+	void do_avoid_neighbor(const OpenSteer::AbstractVehicle& threat, const float steer,
 			const OpenSteer::Vec3& ourFuture, const OpenSteer::Vec3& threatFuture);
 	///@}
 
@@ -181,14 +245,35 @@ private:
 	ThrowEventData mMove, mSteady, mPathFollowing, mAvoidObstacle,
 	mAvoidCloseNeighbor, mAvoidNeighbor;
 	///Helper.
-	void doEnableSteerVehicleEvent(EventThrown event, ThrowEventData eventData);
-	void doThrowEvent(ThrowEventData& eventData);
-	void doHandleSteerLibraryEvent(ThrowEventData& eventData, bool callbackCalled);
-	std::string mThrownEventsParam;
+	void do_enable_steer_vehicle_event(OSEventThrown event, ThrowEventData eventData);
+	void do_throw_event(ThrowEventData& eventData);
+	void do_handle_steer_library_event(ThrowEventData& eventData, bool callbackCalled);
 	///@}
 
-	///TypedObject semantics: hardcoded
+	// Explicitly disabled copy constructor and copy assignment operator.
+	OSSteerVehicle(const OSSteerVehicle&);
+	OSSteerVehicle& operator=(const OSSteerVehicle&);
+
 public:
+	/**
+	 * \name TypedWritable API
+	 */
+	///@{
+	static void register_with_read_factory();
+	virtual void write_datagram(BamWriter *manager, Datagram &dg) override;
+	virtual int complete_pointers(TypedWritable **plist, BamReader *manager) override;
+	virtual void finalize(BamReader *manager);
+	///@}
+
+protected:
+	static TypedWritable *make_from_bam(const FactoryParams &params);
+	virtual void fillin(DatagramIterator &scan, BamReader *manager) override;
+
+public:
+	/**
+	 * \name TypedObject API
+	 */
+	///@{
 	static TypeHandle get_class_type()
 	{
 		return _type_handle;
@@ -207,189 +292,19 @@ public:
 		init_type();
 		return get_class_type();
 	}
+	///@}
 
 private:
 	static TypeHandle _type_handle;
 
 };
 
-///inline definitions
+INLINE ostream &operator << (ostream &out, const OSSteerVehicle & steerVehicle);
 
-inline void OSSteerVehicle::reset()
-{
-	//
-	mVehicle = NULL;
-	mSteerPlugInObjectId = ObjectId();
-	mInputRadius = 0.0;
-	mMovType = OPENSTEER;
-	mUpAxisFixed = false;
-	mBulletWorld.clear();
-	mMaxError = 0.0;
-	mDeltaRayDown = mDeltaRayOrig = LVector3f::zero();
-	mRayMask = BitMask32::all_off();
-	mCorrectHeightRigidBody = 0.0;
-	mExternalUpdate = false;
-	mPFCallbackCalled = mAOCallbackCalled = mACNCallbackCalled =
-			mANCallbackCalled = false;
-	mMove = mSteady = mPathFollowing = mAvoidObstacle = mAvoidCloseNeighbor =
-			mAvoidNeighbor = ThrowEventData();
-	mThrownEventsParam.clear();
-}
+//VehicleAddOn typedef.
+typedef ossup::VehicleAddOnMixin<ossup::SimpleVehicle, OSSteerVehicle> VehicleAddOn;
 
-inline OpenSteer::AbstractVehicle& OSSteerVehicle::getAbstractVehicle()
-{
-	return *mVehicle;
-}
-
-inline OSSteerVehicle::operator OpenSteer::AbstractVehicle&()
-{
-	return *mVehicle;
-}
-
-inline void OSSteerVehicle::enableSteerVehicleEvent(EventThrown event,
-		ThrowEventData eventData)
-{
-	//lock (guard) the mutex
-	HOLD_REMUTEX(mMutex)
-
-	doEnableSteerVehicleEvent(event, eventData);
-}
-
-inline void OSSteerVehicle::doPathFollowing(const OpenSteer::Vec3& future,
-		const OpenSteer::Vec3& onPath, const OpenSteer::Vec3& target,
-		const float outside)
-{
-	//handle Path Following event
-	if (mPathFollowing.mEnable)
-	{
-		doThrowEvent(mPathFollowing);
-		//set the flag
-		mPFCallbackCalled = true;
-	}
-}
-
-inline void OSSteerVehicle::doAvoidObstacle(const float minDistanceToCollision)
-{
-	//handle Avoid Obstacle event
-	if (mAvoidObstacle.mEnable)
-	{
-		doThrowEvent(mAvoidObstacle);
-		//set the flag
-		mAOCallbackCalled = true;
-	}
-}
-
-inline void OSSteerVehicle::doAvoidCloseNeighbor(const OpenSteer::AbstractVehicle& other,
-		const float additionalDistance)
-{
-	//handle Avoid Close Neighbor event
-	if (mAvoidCloseNeighbor.mEnable)
-	{
-		doThrowEvent(mAvoidCloseNeighbor);
-		//set the flag
-		mACNCallbackCalled = true;
-	}
-}
-
-inline void OSSteerVehicle::doAvoidNeighbor(const OpenSteer::AbstractVehicle& threat,
-		const float steer, const OpenSteer::Vec3& ourFuture,
-		const OpenSteer::Vec3& threatFuture)
-{
-	//handle Avoid Neighbor event
-	if (mAvoidNeighbor.mEnable)
-	{
-		doThrowEvent(mAvoidNeighbor);
-		//set the flag
-		mANCallbackCalled = true;
-	}
-}
-
-inline void OSSteerVehicle::doThrowEvent(ThrowEventData& eventData)
-{
-	if (eventData.mThrown)
-	{
-		eventData.mTimeElapsed += ClockObject::get_global_clock()->get_dt();
-		if (eventData.mTimeElapsed >= eventData.mPeriod)
-		{
-			//enough time is passed: throw the event
-			throw_event(eventData.mEventName, EventParameter(this));
-			//update elapsed time
-			eventData.mTimeElapsed -= eventData.mPeriod;
-		}
-	}
-	else
-	{
-		//throw the event
-		throw_event(eventData.mEventName, EventParameter(this));
-		eventData.mThrown = true;
-	}
-}
-
-inline void OSSteerVehicle::doHandleSteerLibraryEvent(ThrowEventData& eventData, bool callbackCalled)
-{
-	if (eventData.mEnable)
-	{
-		if (callbackCalled)
-		{
-			//event was handled this (or last) frame
-			callbackCalled = false;
-		}
-		else
-		{
-			//reset event
-			if (eventData.mThrown)
-			{
-				eventData.mThrown = false;
-				eventData.mTimeElapsed = 0.0;
-			}
-		}
-	}
-}
-
-///Template
-
-class SteerVehicleTemplate: public ComponentTemplate
-{
-protected:
-
-	virtual SMARTPTR(PandaNode)makeComponent(const ComponentId& compId);
-
-public:
-	SteerVehicleTemplate(PandaFramework* pandaFramework,
-			WindowFramework* windowFramework);
-	virtual ~SteerVehicleTemplate();
-
-	virtual ComponentType componentType() const;
-	virtual ComponentFamilyType componentFamilyType() const;
-
-	virtual void setParametersDefaults();
-
-private:
-
-	///TypedObject semantics: hardcoded
-public:
-	static TypeHandle get_class_type()
-	{
-		return _type_handle;
-	}
-	static void init_type()
-	{
-		ComponentTemplate::init_type();
-		register_type(_type_handle, "SteerVehicleTemplate",
-				ComponentTemplate::get_class_type());
-	}
-	virtual TypeHandle get_type() const
-	{
-		return get_class_type();
-	}
-	virtual TypeHandle force_init_type()
-	{
-		init_type();
-		return get_class_type();
-	}
-
-private:
-	static TypeHandle _type_handle;
-};
+///inline
+#include "osSteerVehicle.I"
 
 #endif /* OSSTEERVEHICLE_H_ */

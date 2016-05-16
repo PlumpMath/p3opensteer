@@ -41,8 +41,8 @@
 /**
  * \file /Ely/include/Support/OpenSteerLocal/PlugIn_LowSpeedTurn.h
  *
- * \date 2014-04-21 
- * \author consultit
+ * \date 2016-05-13
+ * \author Craig Reynolds (modified by consultit)
  */
 
 #ifndef PLUGIN_LOWSPEEDTURN_H_
@@ -251,7 +251,7 @@ public:
 
 	virtual bool addVehicle(AbstractVehicle* vehicle)
 	{
-		if (not PlugInAddOnMixin<OpenSteer::PlugIn>::addVehicle(vehicle))
+		if (! PlugInAddOnMixin<OpenSteer::PlugIn>::addVehicle(vehicle))
 		{
 			return false;
 		}

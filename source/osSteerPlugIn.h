@@ -4,191 +4,200 @@
  * \date 2016-05-13
  * \author consultit
  */
+
 #ifndef OSSTEERPLUGIN_H_
 #define OSSTEERPLUGIN_H_
 
-#include <OpenSteer/PlugIn.h>
-#include "osSteerVehicle.h"
+#include "osTools.h"
+#include "osSteerManager.h"
+#include "opensteer_includes.h"
+#include "nodePath.h"
 
-class OSSteerPlugInTemplate;
+#ifndef CPPPARSER
+#include "library/OpenSteer/PlugIn.h"
+#include "library/OpenSteer/Obstacle.h"
+#endif //CPPPARSER
+
+class OSSteerVehicle;
 
 /**
- * \brief Component implementing OpenSteer PlugIns.
+ * This class represents a "plug-in" of the OpenSteer library.
  *
  * \see http://opensteer.sourceforge.net
  *
- * This component could be used alone or in association with
- * other components.\n
- * Each OSSteerPlugIn component could handle a single pathway and several
+ * This PandaNode will create a "steer plug-in".\n
+ * Each OSSteerPlugIn object could handle a single pathway and several
  * obstacles.\n
- * The parent node path of this component's object, will be the reference
- * which any SteerVehicle will be reparented to (if necessary) and which any
- * scene computation will be performed wrt.\n
+ * An "update" task should call this OSSteerPlugIn's update() method to allow
+ * the OSSteerVehicle(s) (simple vehicles), which are added to it, to perform
+ * their own steering behaviors.\n
+ * \note A OSSteerPlugIn will be reparented to the default reference node on
+ * creation (see OSSteerManager).
  *
- * > **XML Param(s)**:
+ * > **OSSteerPlugIn text parameters**:
  * param | type | default | note
  * ------|------|---------|-----
- * | *type*				|single| *one_turning* | values: one_turning,pedestrian,boid,multiple_pursuit,soccer,capture_the_flag,low_speed_turn,map_drive
+ * | *plugin_type*		|single| *one_turning* | values: one_turning,pedestrian,boid,multiple_pursuit,soccer,capture_the_flag,low_speed_turn,map_drive
  * | *pathway*			|single|"0.0,0.0,0.0:1.0,1.0,1.0$1.0$false" (specified as "p1,py1,pz1:px2,py2,pz2[:...:pxN,pyN,pzN]$r1[:r2:...:rM]$closedCycle" with M,closedCycle=N-1,false,N,true)
  * | *obstacles*  		|multiple| - | each one specified as "objectId1@shape1@seenFromState1[:objectId2@shape2@seenFromState2:...:objectIdN@shapeN@seenFromStateN]"] with shapeX=sphere,box,plane,rectangle and seenFromStateX=outside,inside,both
  *
  * \note parts inside [] are optional.\n
  */
-class OSSteerPlugIn: public PandaNode
+class EXPORT_CLASS OSSteerPlugIn: public PandaNode
 {
-protected:
-	friend class OSSteerPlugInTemplate;
-
-	OSSteerPlugIn(SMARTPTR(OSSteerPlugInTemplate)tmpl);
-	virtual void reset();
-	virtual bool initialize();
-	virtual void onAddToObjectSetup();
-	virtual void onRemoveFromObjectCleanup();
-	virtual void onAddToSceneSetup();
-	virtual void onRemoveFromSceneCleanup();
-
 public:
-	virtual ~OSSteerPlugIn();
+//	typedef Pair<pvector<LPoint3f>, > ObstacleAttributes;
+//	typedef Pair<OpenSteer::ObstacleGroup, pvector<ObstacleAttributes> > GlobalObstacles;
 
-	struct Result: public PandaNode::Result
+PUBLISHED:
+	/**
+	 * Steer Plug-In type.
+	 */
+	enum OSSteerPlugInType
 	{
-		Result(int value):PandaNode::Result(value)
-		{
-		}
-		enum
-		{
-		};
+		ONE_TURNING = 0,
+		PEDESTRIAN,
+		BOID,
+		MULTIPLE_PURSUIT,
+		SOCCER,
+		CAPTURE_THE_FLAG,
+		LOW_SPEED_TURN,
+		MAP_DRIVE,
+		NONE_PLUGIN
 	};
 
-	/**
-	 * \brief Adds a SteerVehicle component to the OpenSteer handling
-	 * mechanism.
-	 *
-	 * If SteerVehicle belongs to any OSSteerPlugIn it is not added.\n
-	 * @param steerVehicle The SteerVehicle to add.
-	 * @return Result::OK on successful addition, various error conditions otherwise.
-	 */
-	Result addSteerVehicle(SMARTPTR(SteerVehicle)steerVehicle);
+	virtual ~OSSteerPlugIn();
 
 	/**
-	 * \brief Removes a SteerVehicle component from the OpenSteer handling
-	 * mechanism.
-	 *
-	 * If SteerVehicle doesn't belong to any OSSteerPlugIn it is not removed.\n
-	 * @param steerVehicle The SteerVehicle to remove.
-	 * @return Result::OK on successful removal, various error conditions otherwise.
-	 */
-	Result removeSteerVehicle(SMARTPTR(SteerVehicle)steerVehicle);
-
-	/**
-	 * \brief Sets the pathway of this SteerPlugin.
-	 * @param numOfPoints Number of points.
-	 * @param points Points' vector.
-	 * @param singleRadius Single radius flag.
-	 * @param radii Radii' vector.
-	 * @param closedCycle Closed cycle flag.
-	 */
-	void setPathway(int numOfPoints, LPoint3f const points[], bool singleRadius,
-			float const radii[], bool closedCycle);
-
-	/**
-	 * \brief Adds an OpenSteer obstacle, seen by all SteerPlugins.
-	 *
-	 * If the object parameter is not NULL,
-	 * @param object The Object used as obstacle.
-	 * @param type The obstacle type: box, plane, rectangle, sphere.
-	 * @param width Obstacle's width (box, rectangle).
-	 * @param height Obstacle's height (box, rectangle).
-	 * @param depth Obstacle's depth (box).
-	 * @param radius Obstacle's radius (sphere).
-	 * @param side Obstacle's right side direction.
-	 * @param up Obstacle's up direction.
-	 * @param forward Obstacle's forward direction.
-	 * @param position Obstacle's position.
-	 * @param seenFromState Possible values: outside, inside, both.
-	 * @return
-	 */
-	OpenSteer::AbstractObstacle* addObstacle(SMARTPTR(Object) object,
-			const std::string& type, const std::string& seenFromState,
-			float width = 0.0, float height = 0.0, float depth = 0.0,
-			float radius = 0.0, const LVector3f& side = LVector3f::zero(),
-			const LVector3f& up = LVector3f::zero(), const LVector3f& = LVector3f::zero(),
-			const LPoint3f& position = LPoint3f::zero());
-
-	/**
-	 * \brief Removes an OpenSteer obstacle, seen by all plugins.
-	 * @param obstacle The obstacle to remove.
-	 */
-	void removeObstacle(OpenSteer::AbstractObstacle* obstacle);
-
-	/**
-	 * \brief Gets the obstacles, seen by all plugins.
-	 * @return The obstacles.
-	 */
-	OpenSteer::ObstacleGroup getObstacles();
-
-	/**
-	 * \brief Updates OpenSteer underlying component.
-	 *
-	 * Will be called automatically by an ai manager update.
-	 * @param data The custom data.
-	 */
-	virtual void update(void* data);
-
-	/**
-	 * \name AbstractPlugIn reference getter & conversion function.
+	 * \name PLUGIN
 	 */
 	///@{
-	OpenSteer::AbstractPlugIn& getAbstractPlugIn();
-	operator OpenSteer::AbstractPlugIn&();
+	void set_plug_in_type(OSSteerPlugInType type);
+	INLINE OSSteerPlugInType get_plug_in_type();
+	void update(float dt);
 	///@}
 
-#ifdef OS_DEBUG
 	/**
-	 * \brief Gets a reference to the OpenSteer Drawer3d Debug node path.
-	 * @return The OpenSteer Debug node.
+	 * \name STEERVEHICLES
 	 */
-	NodePath getDrawer3dDebugNodePath() const;
+	///@{
+	int add_steer_vehicle(NodePath steerVehicleNP);
+	int remove_steer_vehicle(NodePath steerVehicleNP);
+	INLINE PT(OSSteerVehicle) get_steer_vehicle(int index) const;
+	INLINE int get_num_steer_vehicles() const;
+	MAKE_SEQ(get_steer_vehicles, get_num_steer_vehicles, get_steer_vehicle);
+	INLINE PT(OSSteerVehicle) operator [](int index) const;
+	INLINE int size() const;
+	///@}
+
 	/**
-	 * \brief Gets a reference to the OpenSteer Drawer2d Debug node path.
-	 * @return The OpenSteer Debug node.
+	 * \name PATHWAY
 	 */
-	NodePath getDrawer2dDebugNodePath() const;
+	///@{
+	void set_pathway(const ValueList<LPoint3f>& pointList,
+			const ValueList<float>& radiusList, bool singleRadius, bool closedCycle);
+	INLINE ValueList<LPoint3f> get_pathway_points();
+	INLINE ValueList<float> get_pathway_radii();
+	INLINE bool get_pathway_single_radius();
+	INLINE bool get_pathway_closed_cycle();
+	///@}
+
 	/**
-	 * \brief Enables/disables debugging.
-	 * @param enable True to enable, false to disable.
+	 * \name OBSTACLES
 	 */
-	Result debug(bool enable);
-#endif
+	///@{
+	int add_obstacle(NodePath& object, const string& type = string("box"),
+			const string& seenFromState = string("both"));
+	INLINE int add_obstacle(const string& type = string("box"),
+			const string& seenFromState = string("both"),
+			float width = 1.0, float height = 1.0, float depth = 1.0, float radius = 1.0,
+			const LVector3f& side = LVector3f::unit_x(),
+			const LVector3f& up = LVector3f::unit_z(),
+			const LVector3f& forward = LVector3f::unit_y(),
+			const LPoint3f& position = LPoint3f::zero());
+	NodePath remove_obstacle(int ref);
+	INLINE int get_obstacle(int index) const;
+	INLINE int get_num_obstacles() const;
+	MAKE_SEQ(get_obstacles, get_num_obstacles, get_obstacle);
+	///@}
+
+	/**
+	 * \name LOW SPEED TURN SPECIFIC SETTINGS.
+	 */
+	///@{
+	void set_steering_speed(float steeringSpeed = 1.0);
+	float get_steering_speed();
+	///@}
+
+	/**
+	 * \name OUTPUT
+	 */
+	///@{
+	void output(ostream &out) const;
+	///@}
+
+	/**
+	 * \name DEBUG DRAWING
+	 */
+	///@{
+	void enable_debug_drawing(NodePath debugCamera);
+	void disable_debug_drawing();
+	int toggle_debug_drawing(bool enable);
+	///@}
+
+public:
+	/**
+	 * \name C++ ONLY
+	 * Library & support low level related methods.
+	 */
+	///@{
+	inline OpenSteer::AbstractPlugIn& get_abstract_plug_in();
+	inline operator OpenSteer::AbstractPlugIn&();
+	///@}
+
+protected:
+	friend class OSSteerManager;
+
+	OSSteerPlugIn(const string& name = "SteerPlugIn");
 
 private:
 	///Current underlying AbstractPlugIn.
 	OpenSteer::AbstractPlugIn* mPlugIn;
-	///The PlugIn type.
-	std::string mPlugInTypeParam;
-
-	///The reference node path (read only after creation).
+	///The type of this OSSteerPlugIn.
+	OSSteerPlugInType mPlugInType;
+	///The reference node path.
 	NodePath mReferenceNP;
-
+	///The reference node path for debug drawing.
+	NodePath mReferenceDebugNP, mReferenceDebug2DNP;
 	///Current time.
 	float mCurrentTime;
+	///Steer vehicles.
+	pvector<PT(OSSteerVehicle)> mSteerVehicles;
+	///The "local" obstacles handled by this OSSteerPlugIn.
+	OSSteerManager::GlobalObstacles mLocalObstacles;
+	///Pathway stuff.
+	///@{
+	ValueList<LPoint3f> mPathwayPoints;
+	ValueList<float> mPathwayRadii;
+	bool mPathwaySingleRadius, mPathwayClosedCycle;
+	///@}
 
-	///The SteerVehicle components handled by this OSSteerPlugIn.
-	std::set<SMARTPTR(SteerVehicle)> mSteerVehicles;
-
-	///The global obstacles handled by all OSSteerPlugIns.
-	static OpenSteer::ObstacleGroup mObstacles;
-	///The local obstacles handled by this OSSteerPlugIn.
-	OpenSteer::ObstacleGroup mLocalObstacles;
+	inline void do_reset();
+	void do_initialize();
+	void do_finalize();
 
 	/**
 	 * \name Helpers variables/functions.
 	 */
 	///@{
-	std::string mPathwayParam;
-	void doBuildPathway();
-	std::list<std::string> mObstacleListParam;
-	void doAddObstacles();
+	void do_create_plug_in(OSSteerPlugInType type);
+	void do_build_pathway(const string& pathwayParam);
+	void do_add_obstacles(const plist<string>& obstacleListParam);
+	int do_add_obstacle(NodePath objectNP,
+			const string& type, const string& seenFromState,
+			float width, float height,	float depth, float radius,
+			const LVector3f& side, const LVector3f& up,
+			const LVector3f& forward, const LPoint3f& position);
 	///@}
 
 #ifdef OS_DEBUG
@@ -197,13 +206,36 @@ private:
 	///OpenSteer debug camera.
 	NodePath mDebugCamera;
 	///OpenSteer DebugDrawers.
-	DrawMeshDrawer *mDrawer3d, *mDrawer2d;
+	ossup::DrawMeshDrawer *mDrawer3d, *mDrawer2d;
 	///Enable Debug Draw update.
 	bool mEnableDebugDrawUpdate;
 #endif
 
-	///TypedObject semantics: hardcoded
+	// Explicitly disabled copy constructor and copy assignment operator.
+	OSSteerPlugIn(const OSSteerPlugIn&);
+	OSSteerPlugIn& operator=(const OSSteerPlugIn&);
+
 public:
+	/**
+	 * \name TypedWritable API
+	 */
+	///@{
+	static void register_with_read_factory();
+	virtual void write_datagram (BamWriter *manager, Datagram &dg) override;
+	virtual int complete_pointers(TypedWritable **p_list, BamReader *manager) override;
+	virtual void finalize(BamReader *manager);
+	bool require_fully_complete() const;
+	///@}
+
+protected:
+	static TypedWritable *make_from_bam(const FactoryParams &params);
+	virtual void fillin(DatagramIterator &scan, BamReader *manager) override;
+
+public:
+	/**
+	 * \name TypedObject API
+	 */
+	///@{
 	static TypeHandle get_class_type()
 	{
 		return _type_handle;
@@ -222,114 +254,16 @@ public:
 		init_type();
 		return get_class_type();
 	}
+	///@}
 
 private:
 	static TypeHandle _type_handle;
 
 };
 
-///inline definitions
+INLINE ostream &operator << (ostream &out, const OSSteerPlugIn & plugIn);
 
-inline void OSSteerPlugIn::reset()
-{
-	//
-	mPlugIn = NULL;
-	mPlugInTypeParam.clear();
-	mReferenceNP = NodePath();
-	mCurrentTime = 0.0;
-	mSteerVehicles.clear();
-	mPathwayParam.clear();
-	mObstacleListParam.clear();
-#ifdef OS_DEBUG
-	mDrawer3dNP = NodePath();
-	mDrawer2dNP = NodePath();
-	mDebugCamera = NodePath();
-	mDrawer3d = mDrawer2d = NULL;
-	mEnableDebugDrawUpdate = false;
-#endif
-}
-
-inline OpenSteer::ObstacleGroup OSSteerPlugIn::getObstacles()
-{
-	//lock (guard) the obstacles' mutex
-	HOLD_MUTEX(mObstaclesMutex)
-
-	return mObstacles;
-}
-
-inline OpenSteer::AbstractPlugIn& OSSteerPlugIn::getAbstractPlugIn()
-{
-	return *mPlugIn;
-}
-
-inline OSSteerPlugIn::operator OpenSteer::AbstractPlugIn&()
-{
-	return *mPlugIn;
-}
-
-#ifdef OS_DEBUG
-inline NodePath OSSteerPlugIn::getDrawer3dDebugNodePath() const
-{
-	//lock (guard) the mutex
-	HOLD_REMUTEX(mMutex)
-
-	return mDrawer3dNP;
-}
-
-inline NodePath OSSteerPlugIn::getDrawer2dDebugNodePath() const
-{
-	//lock (guard) the mutex
-	HOLD_REMUTEX(mMutex)
-
-	return mDrawer2dNP;
-}
-#endif
-
-///Template
-
-class SteerPlugInTemplate: public ComponentTemplate
-{
-protected:
-
-	virtual SMARTPTR(PandaNode)makeComponent(const ComponentId& compId);
-
-public:
-	SteerPlugInTemplate(PandaFramework* pandaFramework,
-			WindowFramework* windowFramework);
-	virtual ~SteerPlugInTemplate();
-
-	virtual ComponentType componentType() const;
-	virtual ComponentFamilyType componentFamilyType() const;
-
-	virtual void setParametersDefaults();
-
-private:
-
-	///TypedObject semantics: hardcoded
-public:
-	static TypeHandle get_class_type()
-	{
-		return _type_handle;
-	}
-	static void init_type()
-	{
-		ComponentTemplate::init_type();
-		register_type(_type_handle, "SteerPlugInTemplate",
-				ComponentTemplate::get_class_type());
-	}
-	virtual TypeHandle get_type() const
-	{
-		return get_class_type();
-	}
-	virtual TypeHandle force_init_type()
-	{
-		init_type();
-		return get_class_type();
-	}
-
-private:
-	static TypeHandle _type_handle;
-
-};
+///inline
+#include "osSteerPlugIn.I"
 
 #endif /* OSSTEERPLUGIN_H_ */

@@ -3,11 +3,10 @@ ACLOCAL_AMFLAGS = -I m4
 
 AM_CPPFLAGS = \
 	-I$(srcdir)/../../source \
-	-I$(srcdir)/../../source/module \
 	-I$(srcdir)/../../source/library \
 	-I$(srcdir)/../../source/support \
 	-I/usr/include/panda3d -I/usr/include/eigen3 \
-	-DRN_DEBUG=
+	-DOS_DEBUG=
 
 AM_CXXFLAGS = -O0 -g3 -Wall -Wno-reorder -fmessage-length=0 -std=c++11
 AM_LDFLAGS = -L/usr/lib/x86_64-linux-gnu/panda3d
@@ -15,65 +14,60 @@ AM_LDFLAGS = -L/usr/lib/x86_64-linux-gnu/panda3d
 LDADD = -lp3framework -lpanda -lpandaexpress -lp3dtool -lp3dtoolconfig \
 		-lp3pystub -lXxf86dga -lpython2.7 -lpandaphysics -lpthread
 
-noinst_PROGRAMS = sample
+noinst_HEADERS = common.h
 
-BUILT_SOURCES = main.h
+noinst_PROGRAMS = basic low_speed_turn
+
+BUILT_SOURCES = data.h
 
 substDataDir = sed -e 's|@sampledatadir[@]|$(srcdir)/../data|g'
 
-main.h: $(srcdir)/main.h.in Makefile
+data.h: $(srcdir)/data.h.in Makefile
 	$(substDataDir) $(srcdir)/$@.in > $@
 	
-EXTRA_DIST = main.h.in
+EXTRA_DIST = data.h.in
 
-sample_SOURCES = \
-	main.cpp
-	
-nodist_sample_SOURCES = \
-	$(srcdir)/../../source/rnCrowdAgent.cxx \
-	$(srcdir)/../../source/rnNavMesh.cxx \
-	$(srcdir)/../../source/rnNavMeshManager.cxx \
-	$(srcdir)/../../source/rnTools.cxx \
-	$(srcdir)/../../source/library/DebugDraw.cpp \
-	$(srcdir)/../../source/library/DetourAlloc.cpp \
-	$(srcdir)/../../source/library/DetourCommon.cpp \
-	$(srcdir)/../../source/library/DetourCrowd.cpp \
-	$(srcdir)/../../source/library/DetourDebugDraw.cpp \
-	$(srcdir)/../../source/library/DetourLocalBoundary.cpp \
-	$(srcdir)/../../source/library/DetourNavMeshBuilder.cpp \
-	$(srcdir)/../../source/library/DetourNavMesh.cpp \
-	$(srcdir)/../../source/library/DetourNavMeshQuery.cpp \
-	$(srcdir)/../../source/library/DetourNode.cpp \
-	$(srcdir)/../../source/library/DetourObstacleAvoidance.cpp \
-	$(srcdir)/../../source/library/DetourPathCorridor.cpp \
-	$(srcdir)/../../source/library/DetourPathQueue.cpp \
-	$(srcdir)/../../source/library/DetourProximityGrid.cpp \
-	$(srcdir)/../../source/library/DetourTileCacheBuilder.cpp \
-	$(srcdir)/../../source/library/DetourTileCache.cpp \
-	$(srcdir)/../../source/library/RecastAlloc.cpp \
-	$(srcdir)/../../source/library/RecastArea.cpp \
-	$(srcdir)/../../source/library/RecastContour.cpp \
-	$(srcdir)/../../source/library/Recast.cpp \
-	$(srcdir)/../../source/library/RecastDebugDraw.cpp \
-	$(srcdir)/../../source/library/RecastDump.cpp \
-	$(srcdir)/../../source/library/RecastFilter.cpp \
-	$(srcdir)/../../source/library/RecastLayers.cpp \
-	$(srcdir)/../../source/library/RecastMesh.cpp \
-	$(srcdir)/../../source/library/RecastMeshDetail.cpp \
-	$(srcdir)/../../source/library/RecastRasterization.cpp \
-	$(srcdir)/../../source/library/RecastRegion.cpp \
-	$(srcdir)/../../source/support/ChunkyTriMesh.cpp \
-	$(srcdir)/../../source/support/ConvexVolumeTool.cpp \
-	$(srcdir)/../../source/support/CrowdTool.cpp \
-	$(srcdir)/../../source/support/DebugInterfaces.cpp \
-	$(srcdir)/../../source/support/fastlz.c \
-	$(srcdir)/../../source/support/InputGeom.cpp \
-	$(srcdir)/../../source/support/MeshLoaderObj.cpp \
-	$(srcdir)/../../source/support/NavMeshType.cpp \
-	$(srcdir)/../../source/support/NavMeshType_Obstacle.cpp \
-	$(srcdir)/../../source/support/NavMeshType_Solo.cpp \
-	$(srcdir)/../../source/support/NavMeshType_Tile.cpp \
-	$(srcdir)/../../source/support/OffMeshConnectionTool.cpp \
-	$(srcdir)/../../source/support/PerfTimer.cpp
+common_sources = \
+	common.cpp \
+	$(srcdir)/../../source/osSteerManager.cxx \
+	$(srcdir)/../../source/osSteerPlugIn.cxx \
+	$(srcdir)/../../source/osSteerVehicle.cxx \
+	$(srcdir)/../../source/osTools.cxx \
+	$(srcdir)/../../source/library/OpenSteer/Camera.cpp \
+	$(srcdir)/../../source/library/OpenSteer/Clock.cpp \
+	$(srcdir)/../../source/library/OpenSteer/Color.cpp \
+	$(srcdir)/../../source/library/OpenSteer/lq.c \
+	$(srcdir)/../../source/library/OpenSteer/Obstacle.cpp \
+	$(srcdir)/../../source/library/OpenSteer/OldPathway.cpp \
+	$(srcdir)/../../source/library/OpenSteer/Path.cpp \
+	$(srcdir)/../../source/library/OpenSteer/Pathway.cpp \
+	$(srcdir)/../../source/library/OpenSteer/PlugIn.cpp \
+	$(srcdir)/../../source/library/OpenSteer/PolylineSegmentedPath.cpp \
+	$(srcdir)/../../source/library/OpenSteer/PolylineSegmentedPathwaySegmentRadii.cpp \
+	$(srcdir)/../../source/library/OpenSteer/PolylineSegmentedPathwaySingleRadius.cpp \
+	$(srcdir)/../../source/library/OpenSteer/SegmentedPath.cpp \
+	$(srcdir)/../../source/library/OpenSteer/SegmentedPathway.cpp \
+	$(srcdir)/../../source/library/OpenSteer/TerrainRayTest.cpp \
+	$(srcdir)/../../source/library/OpenSteer/Vec3.cpp \
+	$(srcdir)/../../source/library/OpenSteer/Vec3Utilities.cpp \
+	$(srcdir)/../../source/support/Draw.cpp \
+	$(srcdir)/../../source/support/DrawMeshDrawer.cpp \
+	$(srcdir)/../../source/support/SimpleVehicle.cpp
+#	$(srcdir)/../../source/library/OpenSteer/main.cpp
+#	$(srcdir)/../../source/library/OpenSteer/OpenSteerDemo.cpp
+#	$(srcdir)/../../source/library/OpenSteer/Draw.cpp
+#	$(srcdir)/../../source/library/OpenSteer/SimpleVehicle.cpp
 
-CLEANFILES = main.h
+#basic
+basic_SOURCES = \
+	basic.cpp
+
+nodist_basic_SOURCES = $(common_sources)
+
+#low_speed_turn
+low_speed_turn_SOURCES = \
+	low_speed_turn.cpp
+
+nodist_low_speed_turn_SOURCES = $(common_sources)
+
+CLEANFILES = data.h

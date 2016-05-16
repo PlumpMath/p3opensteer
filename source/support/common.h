@@ -1,23 +1,7 @@
-/*
- *   This file is part of Ely.
- *
- *   Ely is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
- *
- *   Ely is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
- *
- *   You should have received a copy of the GNU General Public License
- *   along with Ely.  If not, see <http://www.gnu.org/licenses/>.
- */
 /**
- * \file /Ely/include/Support/OpenSteerLocal/common.h
+ * \file common.h
  *
- * \date 2013-11-30 
+ * \date 2016-05-13
  * \author consultit
  */
 
@@ -33,6 +17,28 @@
 #include <OpenSteer/PolylineSegmentedPathwaySingleRadius.h>
 #include "SimpleVehicle.h"
 #include "DrawMeshDrawer.h"
+
+///Macros
+#ifdef OS_DEBUG
+#	define PRINT_DEBUG(msg) std::cout << msg << std::endl
+#	define PRINT_ERR_DEBUG(msg) std::cerr << msg << std::endl
+#	define ASSERT_TRUE(cond) \
+		if (!(cond)) { \
+		  std::cerr << "assertion error : (" << #cond << ") at " \
+		  << __LINE__ << ", " \
+		  << __FILE__ << std::endl; \
+		}
+#else
+#	define PRINT_DEBUG(msg)
+#	define PRINT_ERR_DEBUG(msg)
+#	define ASSERT_TRUE(cond)
+#endif
+
+#define RETURN_ON_COND(_flag_,_return_)\
+	if (_flag_)\
+	{\
+		return _return_;\
+	}
 
 extern ossup::DrawMeshDrawer *gDrawer3d, *gDrawer2d;
 extern ReMutex gOpenSteerDebugMutex;
@@ -95,6 +101,7 @@ public:
 			NULL), m_entityAvoidNeighborMethod(NULL)
 	{
 	}
+	virtual ~VehicleAddOnMixin(){}
 
 	typedef Entity* ENTITY;
 	typedef void (Entity::*ENTITYUPDATEMETHOD)(const float, const float);
@@ -190,13 +197,23 @@ public:
 
     VehicleSettings& getSettings()
 	{
+		m_settings.m_mass = Super::mass();
+		m_settings.m_radius = Super::radius();
+		m_settings.m_speed = Super::speed(); // speed along Forward direction.
+		m_settings.m_maxForce = Super::maxForce(); // steering force is clipped to this magnitude
+		m_settings.m_maxSpeed = Super::maxSpeed(); // velocity is clipped to this magnitude
+		m_settings.m_forward = Super::forward();
+		m_settings.m_side = Super::side();
+		m_settings.m_up = Super::up();
+		m_settings.m_position = Super::position();
+		m_start = Super::position();
 		return m_settings;
 	}
 
 	void setSettings(const VehicleSettings& settings)
 	{
 		m_settings = settings;
-		//set vehicle settings effectivossup
+		//set vehicle settings effectively
 		reset();
 	}
 

@@ -37,8 +37,8 @@
 /**
  * \file /Ely/include/Support/OpenSteerLocal/PlugIn_OneTurning.h
  *
- * \date 2013-12-01 
- * \author consultit
+ * \date 2016-05-13
+ * \author Craig Reynolds (modified by consultit)
  */
 
 #ifndef PLUGIN_ONETURNING_H_

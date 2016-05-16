@@ -11,19 +11,76 @@
 ///OSSteerManager inline definitions
 
 /**
- * Returns the number of RNNavMeshes.
+ * Returns the reference NodePath.
  */
-INLINE int OSSteerManager::get_num_steer_plug_ins() const
+INLINE NodePath OSSteerManager::get_reference_node_path() const
 {
-	return (int)mNavMeshes.size();
+	return mReferenceNP;
 }
 
 /**
- * Returns the number of RNCrowdAgents.
+ * Sets the reference NodePath.
+ * This is usually called after restoring from a bam file.
+ */
+INLINE void OSSteerManager::set_reference_node_path(const NodePath& reference)
+{
+	mReferenceNP = reference;
+}
+
+/**
+ * Returns the reference NodePath for debug drawing.
+ * This node should be made sibling of the reference NodePath in the scene.
+ */
+INLINE NodePath OSSteerManager::get_reference_node_path_debug() const
+{
+	return mReferenceDebugNP;
+}
+
+/**
+ * Returns the reference NodePath 2D for debug drawing.
+ * This node should be a descendant of a 2D top NodePath of the scene graph (ie
+ * aspect2d, render2d, pixel2d).
+ */
+INLINE NodePath OSSteerManager::get_reference_node_path_debug_2d() const
+{
+	return mReferenceDebug2DNP;
+}
+
+/**
+ * Returns the number of OSSteerPlugIns.
+ */
+INLINE int OSSteerManager::get_num_steer_plug_ins() const
+{
+	return (int) mSteerPlugIns.size();
+}
+
+/**
+ * Returns the number of OSSteerVehicles.
  */
 INLINE int OSSteerManager::get_num_steer_vehicles() const
 {
-	return (int)mCrowdAgents.size();
+	return (int) mSteerVehicles.size();
+}
+
+/**
+ * Returns the obstacle's unique reference (>0) given its index into the list of
+ * all defined obstacles, or a negative number on error.
+ */
+INLINE int OSSteerManager::get_obstacle(int index) const
+{
+	pvector<ObstacleAttributes> obstacleAttrs = mObstacles.get_second();
+	CONTINUE_IF_ELSE_R((index >= 0) && (index < (int ) obstacleAttrs.size()),
+			OS_ERROR)
+
+	return obstacleAttrs[index].get_first().get_ref();
+}
+
+/**
+ * Returns the number of all defined obstacles.
+ */
+INLINE int OSSteerManager::get_num_obstacles() const
+{
+	 return (int) mObstacles.get_second().size();
 }
 
 /**
@@ -37,7 +94,7 @@ INLINE OSSteerManager* OSSteerManager::get_global_ptr()
 /**
  * Get the collide mask.
  */
-INLINE CollideMask OSSteerManager::get_collide_mask()
+INLINE CollideMask OSSteerManager::get_collide_mask() const
 {
 	return mMask;
 }
@@ -45,7 +102,7 @@ INLINE CollideMask OSSteerManager::get_collide_mask()
 /**
  * Get the collision root.
  */
-INLINE NodePath OSSteerManager::get_collision_root()
+INLINE NodePath OSSteerManager::get_collision_root() const
 {
 	return mRoot;
 }
@@ -53,7 +110,7 @@ INLINE NodePath OSSteerManager::get_collision_root()
 /**
  * Get the collision traverser.
  */
-INLINE CollisionTraverser* OSSteerManager::get_collision_traverser()
+INLINE CollisionTraverser* OSSteerManager::get_collision_traverser() const
 {
 	return mCTrav;
 }
@@ -61,7 +118,7 @@ INLINE CollisionTraverser* OSSteerManager::get_collision_traverser()
 /**
  * Get the collision handler.
  */
-INLINE CollisionHandlerQueue* OSSteerManager::get_collision_handler()
+INLINE CollisionHandlerQueue* OSSteerManager::get_collision_handler() const
 {
 	return mCollisionHandler;
 }
@@ -69,9 +126,25 @@ INLINE CollisionHandlerQueue* OSSteerManager::get_collision_handler()
 /**
  * Get the collision ray.
  */
-INLINE CollisionRay* OSSteerManager::get_collision_ray()
+INLINE CollisionRay* OSSteerManager::get_collision_ray() const
 {
 	return mPickerRay;
+}
+
+/**
+ * Returns a reference to the storage of all obstacles.
+ */
+inline OSSteerManager::GlobalObstacles& OSSteerManager::get_global_obstacles()
+{
+	return mObstacles;
+}
+
+/**
+ *
+ */
+inline int OSSteerManager::unique_ref()
+{
+	return ++mRef;
 }
 
 #endif /* OSSTEERMANGER_I_ */

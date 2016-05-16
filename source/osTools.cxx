@@ -24,7 +24,7 @@ pvector<string> parseCompoundString(
 	char* pch;
 	char* start = dest;
 	bool stop = false;
-	while (not stop)
+	while (! stop)
 	{
 		string substring("");
 		pch = strchr(start, separator);
@@ -120,124 +120,91 @@ void ThrowEventData::read_datagram(DatagramIterator &scan)
 	mPeriod = scan.get_stdfloat();
 }
 
-///NavMeshSettings
+///Vehicle settings.
 /**
  *
  */
-RNNavMeshSettings::RNNavMeshSettings()
+OSVehicleSettings::OSVehicleSettings(): _vehicleSettings()
 {
 }
 /**
- * Writes the NavMeshSettings into a datagram.
+ * Writes the Vehicle settings into a datagram.
  */
-void RNNavMeshSettings::write_datagram(Datagram &dg) const
+void OSVehicleSettings::write_datagram(Datagram &dg) const
 {
-	dg.add_stdfloat(get_cellSize());
-	dg.add_stdfloat(get_cellHeight());
-	dg.add_stdfloat(get_agentHeight());
-	dg.add_stdfloat(get_agentRadius());
-	dg.add_stdfloat(get_agentMaxClimb());
-	dg.add_stdfloat(get_agentMaxSlope());
-	dg.add_stdfloat(get_regionMinSize());
-	dg.add_stdfloat(get_regionMergeSize());
-	dg.add_stdfloat(get_edgeMaxLen());
-	dg.add_stdfloat(get_edgeMaxError());
-	dg.add_stdfloat(get_vertsPerPoly());
-	dg.add_stdfloat(get_detailSampleDist());
-	dg.add_stdfloat(get_detailSampleMaxError());
-	dg.add_int32(get_partitionType());
-}
-
-/**
- * Restores the NavMeshSettings from the datagram.
- */
-void RNNavMeshSettings::read_datagram(DatagramIterator &scan)
-{
-	set_cellSize(scan.get_stdfloat());
-	set_cellHeight(scan.get_stdfloat());
-	set_agentHeight(scan.get_stdfloat());
-	set_agentRadius(scan.get_stdfloat());
-	set_agentMaxClimb(scan.get_stdfloat());
-	set_agentMaxSlope(scan.get_stdfloat());
-	set_regionMinSize(scan.get_stdfloat());
-	set_regionMergeSize(scan.get_stdfloat());
-	set_edgeMaxLen(scan.get_stdfloat());
-	set_edgeMaxError(scan.get_stdfloat());
-	set_vertsPerPoly(scan.get_stdfloat());
-	set_detailSampleDist(scan.get_stdfloat());
-	set_detailSampleMaxError(scan.get_stdfloat());
-	set_partitionType(scan.get_int32());
-}
-
-///NavMeshTileSettings
-/**
- *
- */
-RNNavMeshTileSettings::RNNavMeshTileSettings()
-{
-}
-/**
- * Writes the NavMeshTileSettings into a datagram.
- */
-void RNNavMeshTileSettings::write_datagram(Datagram &dg) const
-{
-	dg.add_stdfloat(get_buildAllTiles());
-	dg.add_int32(get_maxTiles());
-	dg.add_int32(get_maxPolysPerTile());
-	dg.add_stdfloat(get_tileSize());
-}
-/**
- * Restores the NavMeshTileSettings from the datagram.
- */
-void RNNavMeshTileSettings::read_datagram(DatagramIterator &scan)
-{
-	set_buildAllTiles(scan.get_stdfloat());
-	set_maxTiles(scan.get_int32());
-	set_maxPolysPerTile(scan.get_int32());
-	set_tileSize(scan.get_stdfloat());
-}
-
-///CrowdAgentParams
-/**
- *
- */
-RNCrowdAgentParams::RNCrowdAgentParams()
-{
-}
-
-/**
- * Writes the CrowdAgentParams into a datagram.
- */
-void RNCrowdAgentParams::write_datagram(Datagram &dg) const
-{
+	dg.add_stdfloat(get_mass());
 	dg.add_stdfloat(get_radius());
-	dg.add_stdfloat(get_height());
-	dg.add_stdfloat(get_maxAcceleration());
+	dg.add_stdfloat(get_speed());
+	dg.add_stdfloat(get_maxForce());
 	dg.add_stdfloat(get_maxSpeed());
-	dg.add_stdfloat(get_collisionQueryRange());
-	dg.add_stdfloat(get_pathOptimizationRange());
-	dg.add_stdfloat(get_separationWeight());
-	dg.add_uint8(get_updateFlags());
-	dg.add_uint8(get_obstacleAvoidanceType());
-	dg.add_uint8(get_queryFilterType());
-	//Note: void *dtCrowdAgentParams::userData is not used
+	get_forward().write_datagram(dg);
+	get_side().write_datagram(dg);
+	get_up().write_datagram(dg);
+	get_position().write_datagram(dg);
+}
+
+/**
+ * Restores the Vehicle settings from the datagram.
+ */
+void OSVehicleSettings::read_datagram(DatagramIterator &scan)
+{
+	set_mass(scan.get_stdfloat());
+	set_radius(scan.get_stdfloat());
+	set_speed(scan.get_stdfloat());
+	set_maxForce(scan.get_stdfloat());
+	set_maxSpeed(scan.get_stdfloat());
+	LVector3f value;
+	value.read_datagram(scan);
+	set_forward(value);
+	value.read_datagram(scan);
+	set_side(value);
+	value.read_datagram(scan);
+	set_up(value);
+	value.read_datagram(scan);
+	set_position(value);
+}
+
+///OSObstacleSettings.
+/**
+ *
+ */
+OSObstacleSettings::OSObstacleSettings() :
+		_width(0), _height(0), _depth(0), _radius(0), _ref(0), _obstacle(0)
+{
 }
 /**
- * Restores the CrowdAgentParams from the datagram.
+ * Writes the OSObstacleSettings into a datagram.
  */
-void RNCrowdAgentParams::read_datagram(DatagramIterator &scan)
+void OSObstacleSettings::write_datagram(Datagram &dg) const
 {
-	set_radius(scan.get_stdfloat());
+	dg.add_string(_type);
+	dg.add_string(_seenFromState);
+	_position.write_datagram(dg);
+	_forward.write_datagram(dg);
+	_up.write_datagram(dg);
+	_side.write_datagram(dg);
+	dg.add_stdfloat(get_width());
+	dg.add_stdfloat(get_height());
+	dg.add_stdfloat(get_depth());
+	dg.add_stdfloat(get_radius());
+	dg.add_int32(get_ref());
+}
+/**
+ * Restores the OSObstacleSettings from the datagram.
+ */
+void OSObstacleSettings::read_datagram(DatagramIterator &scan)
+{
+	set_type(scan.get_string());
+	set_seenFromState(scan.get_string());
+	_position.read_datagram(scan);
+	_forward.read_datagram(scan);
+	_up.read_datagram(scan);
+	_side.read_datagram(scan);
+	set_width(scan.get_stdfloat());
 	set_height(scan.get_stdfloat());
-	set_maxAcceleration(scan.get_stdfloat());
-	set_maxSpeed(scan.get_stdfloat());
-	set_collisionQueryRange(scan.get_stdfloat());
-	set_pathOptimizationRange(scan.get_stdfloat());
-	set_separationWeight(scan.get_stdfloat());
-	set_updateFlags(scan.get_uint8());
-	set_obstacleAvoidanceType(scan.get_uint8());
-	set_queryFilterType(scan.get_uint8());
-	//Note: void *dtCrowdAgentParams::userData is not used
+	set_depth(scan.get_stdfloat());
+	set_radius(scan.get_stdfloat());
+	set_ref(scan.get_int32());
 }
 
 ///ValueList template

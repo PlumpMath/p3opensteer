@@ -47,9 +47,9 @@
 //
 // ----------------------------------------------------------------------------
 /**
- * \file /Ely/src/Support/OpenSteerLocal/Draw.cpp
+ * \file Draw.cpp
  *
- * \date 2013-11-30 
+ * \date 2016-05-13
  * \author consultit
  */
 
@@ -60,10 +60,9 @@
 // To include OpenSteer::round.
 #include <OpenSteer/Utilities.h>
 
-#include "Support/OpenSteerLocal/common.h"
+#include "common.h"
 
-#include "Support/OpenSteerLocal/DrawMeshDrawer.h"
-#include <reMutex.h>
+#include "DrawMeshDrawer.h"
 ossup::DrawMeshDrawer *gDrawer3d, *gDrawer2d;
 ReMutex gOpenSteerDebugMutex;
 

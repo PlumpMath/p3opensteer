@@ -37,8 +37,8 @@
 /**
  * \file /Ely/include/Support/OpenSteerLocal/PlugIn_MultiplePursuit.h
  *
- * \date 2014-02-03 
- * \author consultit
+ * \date 2016-05-13
+ * \author Craig Reynolds (modified by consultit)
  */
 
 #ifndef PLUGIN_MULTIPLEPURSUIT_H_
@@ -179,7 +179,7 @@ public:
 	// one simulation step
 	void update(const float currentTime, const float elapsedTime)
 	{
-		if (not wanderer)
+		if (! wanderer)
 		{
 			return;
 		}
@@ -319,7 +319,7 @@ public:
 
 	virtual bool addVehicle(AbstractVehicle* vehicle)
 	{
-		if (not PlugInAddOnMixin<OpenSteer::PlugIn>::addVehicle(vehicle))
+		if (! PlugInAddOnMixin<OpenSteer::PlugIn>::addVehicle(vehicle))
 		{
 			return false;
 		}
@@ -341,7 +341,7 @@ public:
 		if (pursuerTmp)
 		{
 			//if not ExternalMpPursuer then randomize
-			if (not dynamic_cast<ExternalMpPursuer<Entity>*>(pursuerTmp))
+			if (! dynamic_cast<ExternalMpPursuer<Entity>*>(pursuerTmp))
 			{
 				// randomize only 2D heading
 				pursuerTmp->randomizeStartingPositionAndHeading();
@@ -359,7 +359,7 @@ public:
 
 	virtual bool removeVehicle(OpenSteer::AbstractVehicle* vehicle)
 	{
-		if (not PlugInAddOnMixin<OpenSteer::PlugIn>::removeVehicle(vehicle))
+		if (! PlugInAddOnMixin<OpenSteer::PlugIn>::removeVehicle(vehicle))
 		{
 			return false;
 		}
