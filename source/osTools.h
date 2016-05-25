@@ -19,6 +19,21 @@
 #include "genericAsyncTask.h"
 #include "lpoint3.h"
 
+
+///as if nassert*_always with NDEBUG defined
+#define NASSERTR_ALWAYS(condition, return_value) \
+  { \
+    if (!(condition)) { \
+      return return_value; \
+    } \
+  }
+#define NASSERTV_ALWAYS(condition) \
+  { \
+    if (!(condition)) { \
+      return; \
+    } \
+  }
+
 /**
  * \brief An automatic Singleton Utility.
  *
