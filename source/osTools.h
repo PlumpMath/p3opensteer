@@ -21,13 +21,13 @@
 
 
 ///as if nassert*_always with NDEBUG defined
-#define NASSERTR_ALWAYS(condition, return_value) \
+#define CONTINUE_IF_ELSE_R(condition, return_value) \
   { \
     if (!(condition)) { \
       return return_value; \
     } \
   }
-#define NASSERTV_ALWAYS(condition) \
+#define CONTINUE_IF_ELSE_V(condition) \
   { \
     if (!(condition)) { \
       return; \
