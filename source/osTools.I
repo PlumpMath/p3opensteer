@@ -27,16 +27,6 @@ INLINE ValueList<Type>::ValueList(const ValueList &copy) :
 {
 }
 
-
-/**
- *
- */
-template<typename Type>
-INLINE ValueList<Type>::ValueList(ValueList&& copy)
-{
-	_values = copy._values;
-}
-
 /**
  *
  */
@@ -67,9 +57,9 @@ INLINE void ValueList<Type>::operator =(const ValueList &copy)
  *
  */
 template<typename Type>
-INLINE void ValueList<Type>::operator =(ValueList&& copy)
+INLINE bool ValueList<Type>::operator== (const ValueList &other) const
 {
-	_values = copy._values;
+	return _values == other._values;
 }
 
 /**
@@ -96,7 +86,7 @@ INLINE int ValueList<Type>::get_num_values() const
 template<typename Type>
 INLINE Type ValueList<Type>::get_value(int index) const
 {
-	nassertr_always((index >= 0) and (index < (int ) _values.size()), Type())
+	nassertr_always((index >= 0) && (index < (int ) _values.size()), Type())
 
 	return _values[index];
 }
@@ -108,7 +98,7 @@ INLINE Type ValueList<Type>::get_value(int index) const
 template<typename Type>
 INLINE Type ValueList<Type>::operator [](int index) const
 {
-	nassertr_always((index >= 0) and (index < (int ) _values.size()), Type())
+	nassertr_always((index >= 0) && (index < (int ) _values.size()), Type())
 
 	return _values[index];
 }
@@ -151,9 +141,9 @@ INLINE ValueList<Type> ValueList<Type>::operator +(const ValueList &other) const
 template<typename Type>
 bool ValueList<Type>::remove_value(const Type& value)
 {
-	typename pvector<Type>::iterator iter = find(_values.begin(),
+	typename pvector<Type>::const_iterator iter = find(_values.begin(),
 			_values.end(), value);
-	nassertr_always(iter != _values.end(), false)
+	CONTINUE_IF_ELSE_R(iter != _values.end(), false)
 
 	_values.erase(iter);
 	return true;

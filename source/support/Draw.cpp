@@ -47,9 +47,9 @@
 //
 // ----------------------------------------------------------------------------
 /**
- * \file /Ely/src/Support/OpenSteerLocal/Draw.cpp
+ * \file Draw.cpp
  *
- * \date 2013-11-30 
+ * \date 2016-05-13
  * \author consultit
  */
 

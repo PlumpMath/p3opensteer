@@ -62,8 +62,8 @@
 /**
  * \file /Ely/include/Support/OpenSteerLocal/SimpleVehicle.h
  *
- * \date 2014-04-27 
- * \author consultit
+ * \date 2016-05-13
+ * \author Craig Reynolds (modified by consultit)
  */
 
 #ifndef OPENSTEER_SIMPLEVEHICLE_H

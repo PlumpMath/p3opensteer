@@ -37,8 +37,8 @@
 /**
  * \file /Ely/include/Support/OpenSteerLocal/PlugIn_MultiplePursuit.h
  *
- * \date 2014-02-03 
- * \author consultit
+ * \date 2016-05-13
+ * \author Craig Reynolds (modified by consultit)
  */
 
 #ifndef PLUGIN_MULTIPLEPURSUIT_H_

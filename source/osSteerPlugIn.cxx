@@ -5,112 +5,88 @@
  * \author consultit
  */
 
-#include "AIComponents/OSSteerPlugIn.h"
-#include "Support/OpenSteerLocal/PlugIn_OneTurning.h"
-#include "Support/OpenSteerLocal/PlugIn_Pedestrian.h"
-#include "Support/OpenSteerLocal/PlugIn_Boids.h"
-#include "Support/OpenSteerLocal/PlugIn_MultiplePursuit.h"
-#include "Support/OpenSteerLocal/PlugIn_Soccer.h"
-#include "Support/OpenSteerLocal/PlugIn_CaptureTheFlag.h"
-#include "Support/OpenSteerLocal/PlugIn_LowSpeedTurn.h"
-#include "Support/OpenSteerLocal/PlugIn_MapDrive.h"
-#include "ObjectModel/ObjectTemplateManager.h"
-#include "Game/GameAIManager.h"
-#include "Game/GamePhysicsManager.h"
-#include "SceneComponents/Model.h"
-#include "SceneComponents/InstanceOf.h"
+#include "osSteerPlugIn.h"
 
-OSSteerPlugIn::OSSteerPlugIn(SMARTPTR(OSSteerPlugInTemplate)tmpl)
+#include "osSteerManager.h"
+
+#ifndef CPPPARSER
+#include "support/PlugIn_OneTurning.h"
+#include "support/PlugIn_Pedestrian.h"
+#include "support/PlugIn_Boids.h"
+#include "support/PlugIn_MultiplePursuit.h"
+#include "support/PlugIn_Soccer.h"
+#include "support/PlugIn_CaptureTheFlag.h"
+#include "support/PlugIn_LowSpeedTurn.h"
+#include "support/PlugIn_MapDrive.h"
+#endif //CPPPARSER
+
+OSSteerPlugIn::OSSteerPlugIn(const string& name) :
+		PandaNode(name)
 {
-	CHECK_EXISTENCE_DEBUG(GameAIManager::GetSingletonPtr(),
-	"OpenOSSteerPlugIn::OpenOSSteerPlugIn: invalid GameAIManager")
-
-	mTmpl = tmpl;
-	reset();
+	do_reset();
 }
 
 OSSteerPlugIn::~OSSteerPlugIn()
 {
 }
 
-bool OSSteerPlugIn::initialize()
+void OSSteerPlugIn::do_initialize()
 {
-	bool result = true;
-	//type
-	mPlugInTypeParam = mTmpl->parameter(std::string("type"));
-	//pathway
-	mPathwayParam = mTmpl->parameter(std::string("pathway"));
-	//obstacles
-	mObstacleListParam = mTmpl->parameterList(std::string("obstacles"));
+	WPT(OSSteerManager)mTmpl = OSSteerManager::get_global_ptr();
 	//
-	return result;
-}
-
-void OSSteerPlugIn::onAddToObjectSetup()
-{
+	//set OSSteerPlugIn parameters (store internally for future use)
+	//type
+	string mPlugInTypeParam =
+			mTmpl->get_parameter_value(OSSteerManager::STEERPLUGIN, string("type"));
+	//pathway
+	string mPathwayParam =
+			mTmpl->get_parameter_value(OSSteerManager::STEERPLUGIN, string("pathway"));
+	//obstacles
+	plist<string> mObstacleListParam =
+			mTmpl->get_parameter_values(OSSteerManager::STEERPLUGIN, string("obstacles"));
+	//
 	//create the plug in
-	if (mPlugInTypeParam == std::string("pedestrian"))
+	if (mPlugInTypeParam == string("pedestrian"))
 	{
-		mPlugIn = new PedestrianPlugIn<SteerVehicle>;
+		mPlugIn = new ossup::PedestrianPlugIn<OSSteerVehicle>;
 	}
-	else if (mPlugInTypeParam == std::string("boid"))
+	else if (mPlugInTypeParam == string("boid"))
 	{
-		mPlugIn = new BoidsPlugIn<SteerVehicle>;
+		mPlugIn = new ossup::BoidsPlugIn<OSSteerVehicle>;
 	}
-	else if (mPlugInTypeParam == std::string("multiple_pursuit"))
+	else if (mPlugInTypeParam == string("multiple_pursuit"))
 	{
-		mPlugIn = new MpPlugIn<SteerVehicle>;
+		mPlugIn = new ossup::MpPlugIn<OSSteerVehicle>;
 	}
-	else if (mPlugInTypeParam == std::string("soccer"))
+	else if (mPlugInTypeParam == string("soccer"))
 	{
-		mPlugIn = new MicTestPlugIn<SteerVehicle>;
+		mPlugIn = new ossup::MicTestPlugIn<OSSteerVehicle>;
 	}
-	else if (mPlugInTypeParam == std::string("capture_the_flag"))
+	else if (mPlugInTypeParam == string("capture_the_flag"))
 	{
-		mPlugIn = new CtfPlugIn<SteerVehicle>;
+		mPlugIn = new ossup::CtfPlugIn<OSSteerVehicle>;
 	}
-	else if (mPlugInTypeParam == std::string("low_speed_turn"))
+	else if (mPlugInTypeParam == string("low_speed_turn"))
 	{
-		mPlugIn = new LowSpeedTurnPlugIn<SteerVehicle>;
+		mPlugIn = new ossup::LowSpeedTurnPlugIn<OSSteerVehicle>;
 	}
-	else if (mPlugInTypeParam == std::string("map_drive"))
+	else if (mPlugInTypeParam == string("map_drive"))
 	{
-		mPlugIn = new MapDrivePlugIn<SteerVehicle>;
+		mPlugIn = new ossup::MapDrivePlugIn<OSSteerVehicle>;
 	}
 	else
 	{
 		//default: "one_turning"
-		mPlugIn = new OneTurningPlugIn<SteerVehicle>;
+		mPlugIn = new ossup::OneTurningPlugIn<OSSteerVehicle>;
 	}
 	//open the plug in
 	mPlugIn->open();
 }
 
-void OSSteerPlugIn::onRemoveFromObjectCleanup()
-{
-
-	//remove all handled SteerVehicles (if any) from update
-	std::set<SMARTPTR(SteerVehicle)>::const_iterator iter;
-	for (iter = mSteerVehicles.begin(); iter != mSteerVehicles.end();
-			++iter)
-	{
-		//set steerVehicle reference to null
-		(*iter)->mOSSteerPlugIn.clear();
-		//do remove from real update list
-		dynamic_cast<PlugIn*>(mPlugIn)->removeVehicle(&(*iter)->getAbstractVehicle());
-	}
-
-	//close the plug in
-	mPlugIn->close();
-	//delete the plug in
-	delete mPlugIn;
-	reset();
-}
-
 inline void OSSteerPlugIn::doBuildPathway()
 {
 	//
-	std::vector<std::string> paramValues1Str, paramValues2Str, paramValues3Str;
+	vector<string> paramValues1Str, paramValues2Str, paramValues3Str;
 	unsigned int idx, valueNum;
 	//build pathway
 	paramValues1Str = parseCompoundString(mPathwayParam, '$');
@@ -119,7 +95,7 @@ inline void OSSteerPlugIn::doBuildPathway()
 	{
 		//there aren't all mandatory parameters: set hardcoded defaults
 		paramValues1Str = parseCompoundString(
-				std::string("0.0,0.0,0.0:1.0,1.0,1.0$1.0$false"), '$');
+				string("0.0,0.0,0.0:1.0,1.0,1.0$1.0$false"), '$');
 	}
 	//pathway::points (forced to at least 2)
 	paramValues2Str = parseCompoundString(paramValues1Str[0], ':');
@@ -127,11 +103,11 @@ inline void OSSteerPlugIn::doBuildPathway()
 	if (valueNum == 0)
 	{
 		paramValues2Str = parseCompoundString(
-				std::string("0.0,0.0,0.0:1.0,1.0,1.0"), ':');
+				string("0.0,0.0,0.0:1.0,1.0,1.0"), ':');
 	}
 	else if (valueNum == 1)
 	{
-		paramValues2Str.push_back(std::string("1.0,1.0,1.0"));
+		paramValues2Str.push_back(string("1.0,1.0,1.0"));
 	}
 	unsigned int numPoints = paramValues2Str.size();
 	OpenSteer::Vec3* points = new OpenSteer::Vec3[numPoints];
@@ -147,17 +123,17 @@ inline void OSSteerPlugIn::doBuildPathway()
 		{
 			values[i] = strtof(paramValues3Str[i].c_str(), NULL);
 		}
-		points[idx] = LVecBase3fToOpenSteerVec3(values);
+		points[idx] = ossup::LVecBase3fToOpenSteerVec3(values);
 	}
 	//get pathway::closedCycle
 	bool closedCycle =
-			(paramValues1Str[2] == std::string("true") ? true : false);
+			(paramValues1Str[2] == string("true") ? true : false);
 	//get pathway::radii (forced to at least 1) and set pathway
 	paramValues2Str = parseCompoundString(paramValues1Str[1], ':');
 	valueNum = paramValues2Str.size();
 	if (valueNum == 0)
 	{
-		paramValues2Str.push_back(std::string("1.0"));
+		paramValues2Str.push_back(string("1.0"));
 	}
 	unsigned int numRadii = paramValues2Str.size();	//radii specified
 	if (numRadii == 1)
@@ -173,7 +149,7 @@ inline void OSSteerPlugIn::doBuildPathway()
 			radius = 1.0;
 		}
 		//set pathway: single radius
-		dynamic_cast<PlugIn*>(mPlugIn)->setPathway(numPoints, points, true,
+		dynamic_cast<ossup::PlugIn*>(mPlugIn)->setPathway(numPoints, points, true,
 				&radius, closedCycle);
 	}
 	else
@@ -205,7 +181,7 @@ inline void OSSteerPlugIn::doBuildPathway()
 			radii[idx] = value;
 		}
 		//set pathway: several radius
-		dynamic_cast<PlugIn*>(mPlugIn)->setPathway(numPoints, points, false,
+		dynamic_cast<ossup::PlugIn*>(mPlugIn)->setPathway(numPoints, points, false,
 				radii, closedCycle);
 		delete[] radii;
 	}
@@ -221,9 +197,9 @@ void OSSteerPlugIn::onAddToSceneSetup()
 	doBuildPathway();
 
 	//set the plugin local obstacles reference
-	dynamic_cast<PlugIn*>(mPlugIn)->localObstacles = &mLocalObstacles;
+	dynamic_cast<ossup::PlugIn*>(mPlugIn)->localObstacles = &mLocalObstacles;
 	//set the plugin global obstacles reference
-	dynamic_cast<PlugIn*>(mPlugIn)->obstacles = &mObstacles;
+	dynamic_cast<ossup::PlugIn*>(mPlugIn)->obstacles = &mObstacles;
 	//add its own obstacles
 	if (not mReferenceNP.is_empty())
 	{
@@ -242,8 +218,9 @@ void OSSteerPlugIn::onAddToSceneSetup()
 			"Drawer2dNP_" + COMPONENT_STANDARD_NAME);
 
 	//get the camera object
-	SMARTPTR(Object)cameraDebug = ObjectTemplateManager::GetSingletonPtr()->
-	getCreatedObject(ObjectId("camera"));
+	SMARTPTR (Object)
+	cameraDebug = ObjectTemplateManager::GetSingletonPtr()->getCreatedObject(
+			ObjectId("camera"));
 	if (cameraDebug)
 	{
 		//set debug node paths
@@ -264,6 +241,27 @@ void OSSteerPlugIn::onAddToSceneSetup()
 	mPlugInTypeParam.clear();
 	mPathwayParam.clear();
 	mObstacleListParam.clear();
+}
+
+void OSSteerPlugIn::onRemoveFromObjectCleanup()
+{
+
+	//remove all handled SteerVehicles (if any) from update
+	set<PT(OSSteerVehicle)>::const_iterator iter;
+	for (iter = mSteerVehicles.begin(); iter != mSteerVehicles.end(); ++iter)
+	{
+		//set steerVehicle reference to null
+		(*iter)->mOSSteerPlugIn.clear();
+		//do remove from real update list
+		dynamic_cast<ossup::PlugIn*>(mPlugIn)->removeVehicle(
+				&(*iter)->getAbstractVehicle());
+	}
+
+	//close the plug in
+	mPlugIn->close();
+	//delete the plug in
+	delete mPlugIn;
+	do_reset();
 }
 
 void OSSteerPlugIn::onRemoveFromSceneCleanup()
@@ -291,7 +289,7 @@ void OSSteerPlugIn::onRemoveFromSceneCleanup()
 			iterLocal != mLocalObstacles.end(); ++iterLocal)
 	{
 		//find in global obstacles and remove it
-		OpenSteer::ObstacleGroup::iterator iter = std::find(mObstacles.begin(),
+		OpenSteer::ObstacleGroup::iterator iter = find(mObstacles.begin(),
 				mObstacles.end(), *iterLocal);
 		if (iter != mObstacles.end())
 		{
@@ -305,96 +303,65 @@ void OSSteerPlugIn::onRemoveFromSceneCleanup()
 	mLocalObstacles.clear();
 }
 
-typedef VehicleAddOnMixin<SimpleVehicle, SteerVehicle> VehicleAddOn;
+typedef ossup::VehicleAddOnMixin<ossup::SimpleVehicle, OSSteerVehicle> VehicleAddOn;
 
-OSSteerPlugIn::Result OSSteerPlugIn::addSteerVehicle(SMARTPTR(SteerVehicle)steerVehicle)
+int OSSteerPlugIn::addSteerVehicle(PT(OSSteerVehicle)steerVehicle)
 {
 	RETURN_ON_COND((not steerVehicle) or mReferenceNP.is_empty(), Result::ERROR)
 
 	bool result;
-	//lock (guard) the SteerVehicle OSSteerPlugIn mutex
-	HOLD_REMUTEX(steerVehicle->mOSSteerPlugInMutex)
+	//return if steerVehicle is destroying or already belongs to any plug in
+	RETURN_ON_ASYNC_COND(steerVehicle->mDestroying, Result::Result::ERROR)
+	RETURN_ON_COND(steerVehicle->mOSSteerPlugIn, Result::ERROR)
+
+	//check if SteerVehicle object needs reparenting
+	NodePath steerVehicleObjectNP = steerVehicle->getOwnerObject()->getNodePath();
+	if(mReferenceNP != steerVehicleObjectNP.get_parent())
 	{
-		//lock (guard) the mutex
-		HOLD_REMUTEX(mMutex)
-
-		//return if destroying
-		RETURN_ON_ASYNC_COND(mDestroying, Result::DESTROYING)
-
-		{
-			//lock (guard) the steerVehicle mutex
-			HOLD_REMUTEX(steerVehicle->mMutex)
-
-			//return if steerVehicle is destroying or already belongs to any plug in
-			RETURN_ON_ASYNC_COND(steerVehicle->mDestroying, Result::Result::ERROR)
-			RETURN_ON_COND(steerVehicle->mOSSteerPlugIn, Result::ERROR)
-
-			//check if SteerVehicle object needs reparenting
-			NodePath steerVehicleObjectNP = steerVehicle->getOwnerObject()->getNodePath();
-			if(mReferenceNP != steerVehicleObjectNP.get_parent())
-			{
-				//reparenting is needed
-				LPoint3f newPos = steerVehicleObjectNP.get_pos(mReferenceNP);
-				LVector3f newForward = mReferenceNP.get_relative_vector(
-				steerVehicleObjectNP, LVector3f::forward());
-				LVector3f newUp = mReferenceNP.get_relative_vector(
-				steerVehicleObjectNP, LVector3f::up());
-				//the SteerVehicle owner object is reparented to the OSSteerPlugIn
-				//object reference node path, updating pos/dir
-				steerVehicleObjectNP.reparent_to(mReferenceNP);
-				steerVehicleObjectNP.set_pos(newPos);
-				steerVehicleObjectNP.heads_up(newPos + newForward, newUp);
-				//OSSteerPlugIn object updates SteerVehicle's pos/dir
-				//wrt its reference node path
-				VehicleSettings settings =
-				dynamic_cast<VehicleAddOn*>(steerVehicle->mVehicle)->getSettings();
-				settings.m_forward = LVecBase3fToOpenSteerVec3(newForward).normalize();
-				settings.m_up = LVecBase3fToOpenSteerVec3(newUp).normalize();
-				settings.m_position = LVecBase3fToOpenSteerVec3(newPos);
-				dynamic_cast<VehicleAddOn*>(steerVehicle->mVehicle)->setSettings(settings);
-			}
-
-			//add to the set of SteerVehicles
-			mSteerVehicles.insert(steerVehicle);
-			//do add to real update list
-			dynamic_cast<PlugIn*>(mPlugIn)->addVehicle(&steerVehicle->getAbstractVehicle());
-			//set steerVehicle reference to this plugin
-			steerVehicle->mOSSteerPlugIn = this;
-		}
+		//reparenting is needed
+		LPoint3f newPos = steerVehicleObjectNP.get_pos(mReferenceNP);
+		LVector3f newForward = mReferenceNP.get_relative_vector(
+		steerVehicleObjectNP, LVector3f::forward());
+		LVector3f newUp = mReferenceNP.get_relative_vector(
+		steerVehicleObjectNP, LVector3f::up());
+		//the SteerVehicle owner object is reparented to the OSSteerPlugIn
+		//object reference node path, updating pos/dir
+		steerVehicleObjectNP.reparent_to(mReferenceNP);
+		steerVehicleObjectNP.set_pos(newPos);
+		steerVehicleObjectNP.heads_up(newPos + newForward, newUp);
+		//OSSteerPlugIn object updates SteerVehicle's pos/dir
+		//wrt its reference node path
+		VehicleSettings settings =
+		dynamic_cast<VehicleAddOn*>(steerVehicle->mVehicle)->getSettings();
+		settings.m_forward = LVecBase3fToOpenSteerVec3(newForward).normalize();
+		settings.m_up = LVecBase3fToOpenSteerVec3(newUp).normalize();
+		settings.m_position = LVecBase3fToOpenSteerVec3(newPos);
+		dynamic_cast<VehicleAddOn*>(steerVehicle->mVehicle)->setSettings(settings);
 	}
+
+	//add to the set of SteerVehicles
+	mSteerVehicles.insert(steerVehicle);
+	//do add to real update list
+	dynamic_cast<PlugIn*>(mPlugIn)->addVehicle(&steerVehicle->getAbstractVehicle());
+	//set steerVehicle reference to this plugin
+	steerVehicle->mOSSteerPlugIn = this;
 	//
 	return (result = true ? Result::OK:Result::ERROR);
 }
 
-OSSteerPlugIn::Result OSSteerPlugIn::removeSteerVehicle(SMARTPTR(SteerVehicle)steerVehicle)
+int OSSteerPlugIn::removeSteerVehicle(PT(OSSteerVehicle)steerVehicle)
 {
 	RETURN_ON_COND((not steerVehicle) or mReferenceNP.is_empty(), Result::ERROR)
 
-	//lock (guard) the SteerVehicle OSSteerPlugIn mutex
-	HOLD_REMUTEX(steerVehicle->mOSSteerPlugInMutex)
-	{
-		//lock (guard) the mutex
-		HOLD_REMUTEX(mMutex)
+	//return if steerVehicle is destroying or doesn't belong to this plug in
+	RETURN_ON_COND(steerVehicle->mOSSteerPlugIn != this, Result::ERROR)
 
-		//return if destroying
-		RETURN_ON_ASYNC_COND(mDestroying, Result::DESTROYING)
-
-		{
-			//lock (guard) the steerVehicle mutex
-			HOLD_REMUTEX(steerVehicle->mMutex)
-
-			//return if steerVehicle is destroying or doesn't belong to this plug in
-			RETURN_ON_ASYNC_COND(steerVehicle->mDestroying, Result::Result::ERROR)
-			RETURN_ON_COND(steerVehicle->mOSSteerPlugIn != this, Result::ERROR)
-
-			//set steerVehicle reference to null
-			steerVehicle->mOSSteerPlugIn.clear();
-			//do remove from real update list
-			dynamic_cast<PlugIn*>(mPlugIn)->removeVehicle(&steerVehicle->getAbstractVehicle());
-			//remove from the set of SteerVehicles
-			mSteerVehicles.erase(steerVehicle);
-		}
-	}
+	//set steerVehicle reference to null
+	steerVehicle->mOSSteerPlugIn.clear();
+	//do remove from real update list
+	dynamic_cast<ossup::PlugIn*>(mPlugIn)->removeVehicle(&steerVehicle->getAbstractVehicle());
+	//remove from the set of SteerVehicles
+	mSteerVehicles.erase(steerVehicle);
 	//
 	return Result::OK;
 }
@@ -402,36 +369,32 @@ OSSteerPlugIn::Result OSSteerPlugIn::removeSteerVehicle(SMARTPTR(SteerVehicle)st
 void OSSteerPlugIn::setPathway(int numOfPoints, LPoint3f const points[],
 		bool singleRadius, float const radii[], bool closedCycle)
 {
-	//lock (guard) the mutex
-	HOLD_REMUTEX(mMutex)
-
 	//convert to OpenSteer points
 	OpenSteer::Vec3* osPoints = new OpenSteer::Vec3[numOfPoints];
 	for (int idx = 0; idx < numOfPoints; ++idx)
 	{
-		osPoints[idx] = LVecBase3fToOpenSteerVec3(points[idx]);
+		osPoints[idx] = ossup::LVecBase3fToOpenSteerVec3(points[idx]);
 	}
 	//set pathway actually
-	dynamic_cast<PlugIn*>(mPlugIn)->setPathway(numOfPoints, osPoints, singleRadius,
-			radii, closedCycle);
+	dynamic_cast<ossup::PlugIn*>(mPlugIn)->setPathway(numOfPoints, osPoints,
+			singleRadius, radii, closedCycle);
 	//
 	delete[] osPoints;
 }
 
-
 void OSSteerPlugIn::doAddObstacles()
 {
 	//
-	std::vector<std::string> paramValues1Str, paramValues2Str;
+	vector<string> paramValues1Str, paramValues2Str;
 	//add obstacles
-	std::list<std::string>::iterator iterList;
+	list<string>::iterator iterList;
 	for (iterList = mObstacleListParam.begin();
 			iterList != mObstacleListParam.end(); ++iterList)
 	{
 		//any "obstacles" string is a "compound" one, i.e. could have the form:
 		// "objectId1@shape1@seenFromState1:objectId2@shape2@seenFromState2:...:objectIdN@shapeN@seenFromStateN"
 		paramValues1Str = parseCompoundString(*iterList, ':');
-		std::vector<std::string>::const_iterator iter;
+		vector<string>::const_iterator iter;
 		for (iter = paramValues1Str.begin(); iter != paramValues1Str.end();
 				++iter)
 		{
@@ -443,9 +406,10 @@ void OSSteerPlugIn::doAddObstacles()
 				continue;
 			}
 			//get obstacle object
-			SMARTPTR(Object)obstacleObject =
-			ObjectTemplateManager::GetSingleton().getCreatedObject(
-					ObjectId(paramValues2Str[0]));
+			SMARTPTR (Object)
+			obstacleObject =
+					ObjectTemplateManager::GetSingleton().getCreatedObject(
+							ObjectId(paramValues2Str[0]));
 			if (not obstacleObject)
 			{
 				continue;
@@ -456,8 +420,8 @@ void OSSteerPlugIn::doAddObstacles()
 	}
 }
 
-OpenSteer::AbstractObstacle* OSSteerPlugIn::addObstacle(SMARTPTR(Object) object,
-		const std::string& type, const std::string& seenFromState,
+OpenSteer::AbstractObstacle* OSSteerPlugIn::addObstacle(const NodePath& object,
+		const string& type, const string& seenFromState,
 		float width, float height,	float depth,
 		float radius, const LVector3f& side, const LVector3f& up,
 		const LVector3f& forward, const LPoint3f& position)
@@ -469,31 +433,35 @@ OpenSteer::AbstractObstacle* OSSteerPlugIn::addObstacle(SMARTPTR(Object) object,
 	{
 		//get obstacle dimensions wrt the Model or InstanceOf component (if any)
 		NodePath obstacleNP;
-		SMARTPTR(Component) aiComp = object->getComponent(ComponentFamilyType("Scene"));
+		SMARTPTR (Component)
+		aiComp = object->getComponent(ComponentFamilyType("Scene"));
 		if (not aiComp)
 		{
 			//no Scene component
 			return NULL;
 		}
-		else if(aiComp->componentType() == ComponentType("Model"))
+		else if (aiComp->componentType() == ComponentType("Model"))
 		{
 			obstacleNP = NodePath(DCAST(Model, aiComp)->getNodePath().node());
 		}
 		else if (aiComp->componentType() == ComponentType("InstanceOf"))
 		{
-			obstacleNP = NodePath(DCAST(InstanceOf, aiComp)->getNodePath().node());
+			obstacleNP = NodePath(
+					DCAST(InstanceOf, aiComp)->getNodePath().node());
 		}
 		//get object dimensions
 		LVecBase3f modelDims;
 		LVector3f modelDeltaCenter;
 		float modelRadius;
-		GamePhysicsManager::GetSingletonPtr()->getBoundingDimensions(
-		obstacleNP, modelDims, modelDeltaCenter, modelRadius);
+		GamePhysicsManager::GetSingletonPtr()->getBoundingDimensions(obstacleNP,
+				modelDims, modelDeltaCenter, modelRadius);
 		//correct obstacle's parameters
 		newPos = obstacleNP.get_pos(mReferenceNP) - modelDeltaCenter;
-		newForw = mReferenceNP.get_relative_vector(obstacleNP, LVector3f::forward());
+		newForw = mReferenceNP.get_relative_vector(obstacleNP,
+				LVector3f::forward());
 		newUp = mReferenceNP.get_relative_vector(obstacleNP, LVector3f::up());
-		newSide = mReferenceNP.get_relative_vector(obstacleNP, LVector3f::right());
+		newSide = mReferenceNP.get_relative_vector(obstacleNP,
+				LVector3f::right());
 		width = modelDims.get_x();
 		height = modelDims.get_z();
 		depth = modelDims.get_y();
@@ -505,7 +473,7 @@ OpenSteer::AbstractObstacle* OSSteerPlugIn::addObstacle(SMARTPTR(Object) object,
 	{
 		seenFS = OpenSteer::AbstractObstacle::outside;
 	}
-	else if(seenFromState == "inside")
+	else if (seenFromState == "inside")
 	{
 		seenFS = OpenSteer::AbstractObstacle::inside;
 	}
@@ -516,35 +484,37 @@ OpenSteer::AbstractObstacle* OSSteerPlugIn::addObstacle(SMARTPTR(Object) object,
 	}
 	//create actually the obstacle
 	OpenSteer::AbstractObstacle* obstacle = NULL;
-	if (type == std::string("box"))
+	if (type == string("box"))
 	{
-		BoxObstacle* box = new BoxObstacle(width, height, depth);
+		ossup::BoxObstacle* box = new ossup::BoxObstacle(width, height, depth);
 		obstacle = box;
-		box->setSide(LVecBase3fToOpenSteerVec3(newSide).normalize());
-		box->setUp(LVecBase3fToOpenSteerVec3(newUp).normalize());
-		box->setForward(LVecBase3fToOpenSteerVec3(newForw).normalize());
-		box->setPosition(LVecBase3fToOpenSteerVec3(newPos));
+		box->setSide(ossup::LVecBase3fToOpenSteerVec3(newSide).normalize());
+		box->setUp(ossup::LVecBase3fToOpenSteerVec3(newUp).normalize());
+		box->setForward(ossup::LVecBase3fToOpenSteerVec3(newForw).normalize());
+		box->setPosition(ossup::LVecBase3fToOpenSteerVec3(newPos));
 		obstacle->setSeenFrom(seenFS);
 	}
-	if (type == std::string("plane"))
+	if (type == string("plane"))
 	{
-		obstacle = new PlaneObstacle(LVecBase3fToOpenSteerVec3(newSide).normalize(),
-		LVecBase3fToOpenSteerVec3(newUp).normalize(),
-		LVecBase3fToOpenSteerVec3(newForw).normalize(),
-		LVecBase3fToOpenSteerVec3(newPos));
+		obstacle = new ossup::PlaneObstacle(
+				ossup::LVecBase3fToOpenSteerVec3(newSide).normalize(),
+				ossup::LVecBase3fToOpenSteerVec3(newUp).normalize(),
+				ossup::LVecBase3fToOpenSteerVec3(newForw).normalize(),
+				ossup::LVecBase3fToOpenSteerVec3(newPos));
 		obstacle->setSeenFrom(seenFS);
 	}
-	if (type == std::string("rectangle"))
+	if (type == string("rectangle"))
 	{
-		obstacle = new RectangleObstacle(width, height,
-		LVecBase3fToOpenSteerVec3(newSide).normalize(),
-		LVecBase3fToOpenSteerVec3(newUp).normalize(),
-		LVecBase3fToOpenSteerVec3(newForw).normalize(),
-		LVecBase3fToOpenSteerVec3(newPos), seenFS);
+		obstacle = new ossup::RectangleObstacle(width, height,
+				ossup::LVecBase3fToOpenSteerVec3(newSide).normalize(),
+				ossup::LVecBase3fToOpenSteerVec3(newUp).normalize(),
+				ossup::LVecBase3fToOpenSteerVec3(newForw).normalize(),
+				ossup::LVecBase3fToOpenSteerVec3(newPos), seenFS);
 	}
-	if (type == std::string("sphere"))
+	if (type == string("sphere"))
 	{
-		obstacle = new SphereObstacle(radius, LVecBase3fToOpenSteerVec3(newPos));
+		obstacle = new ossup::SphereObstacle(radius,
+				ossup::LVecBase3fToOpenSteerVec3(newPos));
 		obstacle->setSeenFrom(seenFS);
 	}
 	//store obstacle
@@ -562,13 +532,13 @@ void OSSteerPlugIn::removeObstacle(OpenSteer::AbstractObstacle* obstacle)
 {
 
 	//remove only if obstacle is local
-	OpenSteer::ObstacleGroup::iterator iterLocal = std::find(
-			mLocalObstacles.begin(), mLocalObstacles.end(), obstacle);
+	OpenSteer::ObstacleGroup::iterator iterLocal = find(mLocalObstacles.begin(),
+			mLocalObstacles.end(), obstacle);
 	if (iterLocal != mLocalObstacles.end())
 	{
 		//find in global obstacles and remove it
-		OpenSteer::ObstacleGroup::iterator iter = std::find(
-				mObstacles.begin(), mObstacles.end(), *iterLocal);
+		OpenSteer::ObstacleGroup::iterator iter = find(mObstacles.begin(),
+				mObstacles.end(), *iterLocal);
 		if (iter != mObstacles.end())
 		{
 			//remove from global obstacles
@@ -581,13 +551,14 @@ void OSSteerPlugIn::removeObstacle(OpenSteer::AbstractObstacle* obstacle)
 	}
 }
 
-void OSSteerPlugIn::update(void* data)
+/**
+ * \brief Updates OpenSteer underlying component.
+ *
+ * Will be called automatically by an ai manager update.
+ * @param data The custom data.
+ */
+void OSSteerPlugIn::update(float dt)
 {
-	//lock (guard) the mutex
-	HOLD_REMUTEX(mMutex)
-
-	//elapsedTime
-	float dt = *(reinterpret_cast<float*>(data));
 	//currentTime
 	mCurrentTime += dt;
 
@@ -596,54 +567,54 @@ void OSSteerPlugIn::update(void* data)
 #endif
 
 #ifdef OS_DEBUG
+	{
+		if (mEnableDebugDrawUpdate)
 		{
-			//lock (guard) the Drawers' mutex
-			HOLD_REMUTEX(gOpenSteerDebugMutex)
+			//unset enableAnnotation
+			ossup::enableAnnotation = true;
 
-			if (mEnableDebugDrawUpdate)
-			{
-				//unset enableAnnotation
-				enableAnnotation = true;
+			//set drawers
+			mDrawer3d->reset();
+			mDrawer2d->reset();
+			gDrawer3d = mDrawer3d;
+			gDrawer2d = mDrawer2d;
 
-				//set drawers
-				mDrawer3d->reset();
-				mDrawer2d->reset();
-				gDrawer3d = mDrawer3d;
-				gDrawer2d = mDrawer2d;
+			// invoke PlugIn's Update method
+			mPlugIn->update(mCurrentTime, dt);
 
-				// invoke PlugIn's Update method
-				mPlugIn->update(mCurrentTime, dt);
-
-				// invoke selected PlugIn's Redraw method
-				mPlugIn->redraw(mCurrentTime, dt);
-				// draw any annotation queued up during selected PlugIn's Update method
-				OpenSteer::drawAllDeferredLines();
-				OpenSteer::drawAllDeferredCirclesOrDisks();
-			}
-			else
-			{
-				//unset enableAnnotation
-				enableAnnotation = false;
+			// invoke selected PlugIn's Redraw method
+			mPlugIn->redraw(mCurrentTime, dt);
+			// draw any annotation queued up during selected PlugIn's Update method
+			OpenSteer::drawAllDeferredLines();
+			OpenSteer::drawAllDeferredCirclesOrDisks();
+		}
+		else
+		{
+			//unset enableAnnotation
+			ossup::enableAnnotation = false;
 #endif
 
-				// invoke PlugIn's Update method
-				mPlugIn->update(mCurrentTime, dt);
+			// invoke PlugIn's Update method
+			mPlugIn->update(mCurrentTime, dt);
 
 #ifdef OS_DEBUG
-			}
 		}
+	}
 #endif
+}
+
+/**
+ * Writes a sensible description of the OSSteerPlugIn to the indicated output
+ * stream.
+ */
+void OSSteerPlugIn::output(ostream &out) const
+{
+	out << get_type() << " " << get_name();
 }
 
 #ifdef OS_DEBUG
 OSSteerPlugIn::Result OSSteerPlugIn::debug(bool enable)
 {
-	//lock (guard) the mutex
-	HOLD_REMUTEX(mMutex)
-
-	//return if destroying
-	RETURN_ON_ASYNC_COND(mDestroying, Result::DESTROYING)
-
 	//return if mDrawer3dNP or mDrawer2dNP is empty
 	RETURN_ON_COND(mDrawer3dNP.is_empty() or mDrawer2dNP.is_empty(),
 			Result::ERROR)
@@ -685,60 +656,3 @@ OpenSteer::ObstacleGroup OSSteerPlugIn::mObstacles;
 
 //TypedObject semantics: hardcoded
 TypeHandle OSSteerPlugIn::_type_handle;
-
-///Template
-
-OSSteerPlugInTemplate::OSSteerPlugInTemplate(PandaFramework* pandaFramework,
-		WindowFramework* windowFramework) :
-		ComponentTemplate(pandaFramework, windowFramework)
-{
-	CHECK_EXISTENCE_DEBUG(pandaFramework,
-			"OpenOSSteerPlugInTemplate::OpenOSSteerPlugInTemplate: invalid PandaFramework")
-	CHECK_EXISTENCE_DEBUG(windowFramework,
-			"OpenOSSteerPlugInTemplate::OpenOSSteerPlugInTemplate: invalid WindowFramework")
-	CHECK_EXISTENCE_DEBUG(GameAIManager::GetSingletonPtr(),
-			"OpenOSSteerPlugInTemplate::OpenOSSteerPlugInTemplate: invalid GameAIManager")
-	//
-	setParametersDefaults();
-}
-
-OSSteerPlugInTemplate::~OSSteerPlugInTemplate()
-{
-	
-}
-
-ComponentType OSSteerPlugInTemplate::componentType() const
-{
-	return ComponentType(OSSteerPlugIn::get_class_type().get_name());
-}
-
-ComponentFamilyType OSSteerPlugInTemplate::componentFamilyType() const
-{
-	return ComponentFamilyType("AI");
-}
-
-SMARTPTR(Component)OSSteerPlugInTemplate::makeComponent(const ComponentId& compId)
-{
-	SMARTPTR(OSSteerPlugIn) newOpenOSSteerPlugIn = new OSSteerPlugIn(this);
-	newOpenOSSteerPlugIn->setComponentId(compId);
-	if (not newOpenOSSteerPlugIn->initialize())
-	{
-		return NULL;
-	}
-	return newOpenOSSteerPlugIn.p();
-}
-
-void OSSteerPlugInTemplate::setParametersDefaults()
-{
-	//lock (guard) the mutex
-	HOLD_REMUTEX(mMutex)
-
-	//mParameterTable must be the first cleared
-	mParameterTable.clear();
-	//sets the (mandatory) parameters to their default values:
-	mParameterTable.insert(ParameterNameValue("type", "one_turning"));
-	mParameterTable.insert(ParameterNameValue("pathway", "0.0,0.0,0.0:1.0,1.0,1.0$1.0$false"));
-}
-
-//TypedObject semantics: hardcoded
-TypeHandle OSSteerPlugInTemplate::_type_handle;

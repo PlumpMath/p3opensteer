@@ -38,8 +38,8 @@
 /**
  * \file /Ely/include/Support/OpenSteerLocal/PlugIn_Pedestrian.h
  *
- * \date 2013-12-28 
- * \author consultit
+ * \date 2016-05-13
+ * \author Craig Reynolds (modified by consultit)
  */
 
 #ifndef PLUGIN_PEDESTRIAN_H_

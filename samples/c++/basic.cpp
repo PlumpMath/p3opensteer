@@ -11,7 +11,7 @@
 #include <osSteerPlugIn.h>
 #include <osSteerVehicle.h>
 
-#include "main.h"
+#include "data.h"
 
 ///functions' declarations
 

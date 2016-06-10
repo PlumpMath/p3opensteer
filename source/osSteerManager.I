@@ -11,11 +11,37 @@
 ///OSSteerManager inline definitions
 
 /**
+ * Returns the reference NodePath.
+ */
+INLINE NodePath OSSteerManager::get_reference_node_path() const
+{
+	return mReferenceNP;
+}
+
+/**
+ * Sets the reference NodePath.
+ * This is usually called after restoring from a bam file.
+ */
+INLINE void OSSteerManager::set_reference_node_path(const NodePath& reference)
+{
+	mReferenceNP = reference;
+}
+
+/**
+ * Returns the reference NodePath for debug drawing.
+ * This node should be made sibling of the reference NodePath in the scene.
+ */
+INLINE NodePath OSSteerManager::get_reference_node_path_debug() const
+{
+	return mReferenceDebugNP;
+}
+
+/**
  * Returns the number of RNNavMeshes.
  */
 INLINE int OSSteerManager::get_num_steer_plug_ins() const
 {
-	return (int)mNavMeshes.size();
+	return (int) mNavMeshes.size();
 }
 
 /**
@@ -23,7 +49,7 @@ INLINE int OSSteerManager::get_num_steer_plug_ins() const
  */
 INLINE int OSSteerManager::get_num_steer_vehicles() const
 {
-	return (int)mCrowdAgents.size();
+	return (int) mCrowdAgents.size();
 }
 
 /**
@@ -53,7 +79,7 @@ INLINE NodePath OSSteerManager::get_collision_root()
 /**
  * Get the collision traverser.
  */
-INLINE CollisionTraverser* OSSteerManager::get_collision_traverser()
+INLINE CollisionTraverser* OSSteerManager::get_collision_traverser() const
 {
 	return mCTrav;
 }
@@ -61,7 +87,7 @@ INLINE CollisionTraverser* OSSteerManager::get_collision_traverser()
 /**
  * Get the collision handler.
  */
-INLINE CollisionHandlerQueue* OSSteerManager::get_collision_handler()
+INLINE CollisionHandlerQueue* OSSteerManager::get_collision_handler() const
 {
 	return mCollisionHandler;
 }
@@ -69,7 +95,7 @@ INLINE CollisionHandlerQueue* OSSteerManager::get_collision_handler()
 /**
  * Get the collision ray.
  */
-INLINE CollisionRay* OSSteerManager::get_collision_ray()
+INLINE CollisionRay* OSSteerManager::get_collision_ray() const
 {
 	return mPickerRay;
 }

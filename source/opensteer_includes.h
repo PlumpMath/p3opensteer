@@ -11,25 +11,9 @@
 #ifdef CPPPARSER
 //Panda3d interrogate fake declarations
 
-namespace rnsup
+namespace ossup
 {
-	struct InputGeom;
-	struct NavMeshType;
-	struct NavMeshSettings;
-	struct NavMeshTileSettings;
-	struct BuildContext;
-	struct NavMeshPolyAreaFlags;
-	struct NavMeshPolyAreaCost;
-	struct DebugDrawPanda3d;
-	struct DebugDrawMeshDrawer;
 }
-
-struct dtNavMesh;
-struct dtNavMeshQuery;
-struct dtCrowd;
-struct dtTileCache;
-struct dtCrowdAgentParams;
-typedef unsigned int dtObstacleRef;
 
 #endif //CPPPARSER
 

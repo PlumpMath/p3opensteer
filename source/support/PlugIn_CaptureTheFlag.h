@@ -53,8 +53,8 @@
 /**
  * \file /Ely/include/Support/OpenSteerLocal/PlugIn_CaptureTheFlag.h
  *
- * \date 2014-04-08 
- * \author consultit
+ * \date 2016-05-13
+ * \author Craig Reynolds (modified by consultit)
  */
 
 #ifndef PLUGIN_CAPTURETHEFLAG_H_

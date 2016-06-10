@@ -16,9 +16,9 @@
  *
  */
 OSSteerManager::OSSteerManager(const NodePath& root,
-		const CollideMask& mask) :
+		const CollideMask& mask) : mReferenceNP(NodePath("ReferenceNode")),
 		mRoot(root), mMask(mask), mCollisionHandler(NULL), mPickerRay(NULL), mCTrav(
-		NULL)
+		NULL), mReferenceDebugNP(NodePath("ReferenceDebugNode"))
 {
 	PRINT_DEBUG(
 			"OSSteerManager::OSSteerManager: creating the singleton manager.");
@@ -29,7 +29,7 @@ OSSteerManager::OSSteerManager(const NodePath& root,
 	mUpdateData.clear();
 	mUpdateTask.clear();
 	//
-	if (not mRoot.is_empty())
+	if (! mRoot.is_empty())
 	{
 		mCTrav = new CollisionTraverser();
 		mCollisionHandler = new CollisionHandlerQueue();
@@ -41,6 +41,14 @@ OSSteerManager::OSSteerManager(const NodePath& root,
 		mCTrav->add_collider(mRoot.attach_new_node(pickerNode),
 				mCollisionHandler);
 	}
+#ifdef OS_DEBUG
+	mDD = NULL;
+	if (!mRoot.is_empty())
+	{
+		//create new DebugDrawer
+		mDD = new DebugDrawPrimitives(mRoot);
+	}
+#endif //OS_DEBUG
 }
 
 /**
@@ -77,9 +85,16 @@ OSSteerManager::~OSSteerManager()
 	//clear parameters' tables
 	mNavMeshesParameterTable.clear();
 	mCrowdAgentsParameterTable.clear();
-
 	//
 	delete mCTrav;
+
+#ifdef OS_DEBUG
+	if (mDD)
+	{
+		delete mDD;
+		mDD = NULL;
+	}
+#endif //OS_DEBUG
 }
 
 /**
@@ -90,13 +105,18 @@ NodePath OSSteerManager::create_nav_mesh()
 	PT(RNNavMesh) newNavMesh = new RNNavMesh();
 	nassertr_always(newNavMesh, NodePath())
 
-	//initialize the new NavMesh
+	// set reference nodes
+	newNavMesh->mReferenceNP = mReferenceNP;
+	newNavMesh->mReferenceDebugNP = mReferenceDebugNP;
+	// initialize the new NavMesh
 	newNavMesh->do_initialize();
 
-	//add the new NavMesh to the inner list (and to the update task)
+	// add the new NavMesh to the inner list (and to the update task)
 	mNavMeshes.push_back(newNavMesh);
+	// reparent to reference node
+	NodePath np = mReferenceNP.attach_new_node(newNavMesh);
 	//
-	return NodePath::any_path(newNavMesh);
+	return np;
 }
 
 /**
@@ -104,13 +124,13 @@ NodePath OSSteerManager::create_nav_mesh()
  */
 bool OSSteerManager::destroy_nav_mesh(NodePath navMeshNP)
 {
-	nassertr_always(navMeshNP.node()->is_of_type(RNNavMesh::get_class_type()),
+	CONTINUE_IF_ELSE_R(navMeshNP.node()->is_of_type(RNNavMesh::get_class_type()),
 			false)
 
 	PT(RNNavMesh) navMesh = DCAST(RNNavMesh, navMeshNP.node());
 	NavMeshList::iterator iter = find(mNavMeshes.begin(), mNavMeshes.end(),
 			navMesh);
-	nassertr_always(iter != mNavMeshes.end(), false)
+	CONTINUE_IF_ELSE_R(iter != mNavMeshes.end(), false)
 
 	//give a chance to NavMesh to cleanup itself before being destroyed.
 	navMesh->do_finalize();
@@ -126,7 +146,7 @@ bool OSSteerManager::destroy_nav_mesh(NodePath navMeshNP)
  */
 NodePath OSSteerManager::get_nav_mesh(int index) const
 {
-	nassertr_always((index >= 0) and (index < (int ) mNavMeshes.size()), NodePath());
+	nassertr_always((index >= 0) && (index < (int ) mNavMeshes.size()), NodePath());
 
 	return NodePath::any_path(mNavMeshes[index]);
 }
@@ -136,18 +156,22 @@ NodePath OSSteerManager::get_nav_mesh(int index) const
  */
 NodePath OSSteerManager::create_crowd_agent(const string& name)
 {
-	nassertr_always(not name.empty(), NodePath())
+	nassertr_always(! name.empty(), NodePath())
 
 	PT(RNCrowdAgent) newCrowdAgent = new RNCrowdAgent(name);
 	nassertr_always(newCrowdAgent, NodePath())
 
+	// set reference node
+	newCrowdAgent->mReferenceNP = mReferenceNP;
 	//initialize the new CrowdAgent
 	newCrowdAgent->do_initialize();
 
 	//add the new CrowdAgent to the inner list
 	mCrowdAgents.push_back(newCrowdAgent);
+	// reparent to reference node
+	NodePath np = mReferenceNP.attach_new_node(newCrowdAgent);
 	//
-	return NodePath::any_path(newCrowdAgent);
+	return np;
 }
 
 /**
@@ -155,14 +179,14 @@ NodePath OSSteerManager::create_crowd_agent(const string& name)
  */
 bool OSSteerManager::destroy_crowd_agent(NodePath crowdAgentNP)
 {
-	nassertr_always(
+	CONTINUE_IF_ELSE_R(
 			crowdAgentNP.node()->is_of_type(RNCrowdAgent::get_class_type()),
 			false)
 
 	PT(RNCrowdAgent)crowdAgent = DCAST(RNCrowdAgent, crowdAgentNP.node());
 	CrowdAgentList::iterator iter = find(mCrowdAgents.begin(),
 			mCrowdAgents.end(), crowdAgent);
-	nassertr_always(iter != mCrowdAgents.end(), false)
+	CONTINUE_IF_ELSE_R(iter != mCrowdAgents.end(), false)
 
 	//give a chance to CrowdAgent to cleanup itself before being destroyed.
 	crowdAgent->do_finalize();
@@ -177,18 +201,16 @@ bool OSSteerManager::destroy_crowd_agent(NodePath crowdAgentNP)
  */
 NodePath OSSteerManager::get_crowd_agent(int index) const
 {
-	nassertr_always((index >= 0) and (index < (int ) mCrowdAgents.size()), NodePath());
+	nassertr_always((index >= 0) && (index < (int ) mCrowdAgents.size()), NodePath());
 
 	return NodePath::any_path(mCrowdAgents[index]);
 }
 
 /**
- * Sets a OSSteerManager's parameter to custom values.
- * This function sets a parameter to custom values which
- * overwrite the existing ones.
+ * Sets a multi-valued parameter to a multi-value overwriting the existing one(s).
  */
 void OSSteerManager::set_parameter_values(RNType type, const string& paramName,
-		const ValueListString& paramValues)
+		const ValueList<string>& paramValues)
 {
 	pair<ParameterTableIter, ParameterTableIter> iterRange;
 	if (type == STEERPLUGIN)
@@ -220,13 +242,13 @@ void OSSteerManager::set_parameter_values(RNType type, const string& paramName,
 }
 
 /**
- * Gets the multiple values of a (actually set) parameter of the OSSteerManager.
+ * Gets the multiple values of a (actually set) parameter.
  */
-ValueListString OSSteerManager::get_parameter_values(RNType type, const string& paramName)
+ValueList<string> OSSteerManager::get_parameter_values(RNType type, const string& paramName)
 {
-	ValueListString strList;
-	ParameterTableIter iter;
-	pair<ParameterTableIter, ParameterTableIter> iterRange;
+	ValueList<string> strList;
+	ParameterTableConstIter iter;
+	pair<ParameterTableConstIter, ParameterTableConstIter> iterRange;
 	if (type == STEERPLUGIN)
 	{
 		iterRange = mNavMeshesParameterTable.equal_range(paramName);
@@ -254,38 +276,39 @@ ValueListString OSSteerManager::get_parameter_values(RNType type, const string& 
 }
 
 /**
- * Sets the single value (i.e. the first one) of a parameter of the RNNavMesh.
+ * Sets a multi/single-valued parameter to a single value overwriting the existing one(s).
  */
 void OSSteerManager::set_parameter_value(RNType type, const string& paramName, const string& value)
 {
-	ValueListString valueList;
+	ValueList<string> valueList;
 	valueList.add_value(value);
 	set_parameter_values(type, paramName, valueList);
 }
 
 /**
- * Gets the single value (i.e. the first one) of a parameter of the RNNavMesh.
+ * Gets a single value (i.e. the first one) of a parameter.
  */
 string OSSteerManager::get_parameter_value(RNType type, const string& paramName)
 {
-	ValueListString valueList = get_parameter_values(type, paramName);
+	ValueList<string> valueList = get_parameter_values(type, paramName);
 	return (valueList.size() != 0 ? valueList[0] : string(""));
 }
 
 /**
- * Gets a list of the names of the parameters actually set into the OSSteerManager.
+ * Gets a list of the names of the parameters actually set.
  */
-ValueListString OSSteerManager::get_parameter_name_list(RNType type)
+ValueList<string> OSSteerManager::get_parameter_name_list(RNType type) const
 {
-	ValueListString strList;
+	ValueList<string> strList;
 	ParameterTableIter iter;
+	ParameterTable tempTable;
 	if (type == STEERPLUGIN)
 	{
-		for (iter = mNavMeshesParameterTable.begin();
-				iter != mNavMeshesParameterTable.end(); ++iter)
+		tempTable = mNavMeshesParameterTable;
+		for (iter = tempTable.begin(); iter != tempTable.end(); ++iter)
 		{
 			string name = (*iter).first;
-			if (not strList.has_value(name))
+			if (!strList.has_value(name))
 			{
 				strList.add_value(name);
 			}
@@ -293,11 +316,11 @@ ValueListString OSSteerManager::get_parameter_name_list(RNType type)
 	}
 	else if (type == STEERVEHICLE)
 	{
-		for (iter = mCrowdAgentsParameterTable.begin();
-				iter != mCrowdAgentsParameterTable.end(); ++iter)
+		tempTable = mCrowdAgentsParameterTable;
+		for (iter = tempTable.begin(); iter != tempTable.end(); ++iter)
 		{
 			string name = (*iter).first;
-			if (not strList.has_value(name))
+			if (!strList.has_value(name))
 			{
 				strList.add_value(name);
 			}
@@ -309,7 +332,7 @@ ValueListString OSSteerManager::get_parameter_name_list(RNType type)
 }
 
 /**
- * Sets the OSSteerManager parameters to their default values (if any).
+ * Sets all parameters to their default values (if any).
  */
 void OSSteerManager::set_parameters_defaults(RNType type)
 {
@@ -450,7 +473,7 @@ void OSSteerManager::stop_default_update()
  * - modelRadius = radius of the containing sphere
  */
 float OSSteerManager::get_bounding_dimensions(NodePath modelNP,
-		LVecBase3f& modelDims, LVector3f& modelDeltaCenter)
+		LVecBase3f& modelDims, LVector3f& modelDeltaCenter) const
 {
 	//get "tight" dimensions of model
 	LPoint3f minP, maxP;
@@ -469,12 +492,12 @@ float OSSteerManager::get_bounding_dimensions(NodePath modelNP,
 
 /**
  * Throws a ray downward (-z direction default) from rayOrigin.
- * If collisions are found returns a PairBoolFloat == (true, height),
+ * If collisions are found returns a Pair<bool,float> == (true, height),
  * with height equal to the z-value of the first one.
- * If collisions are not found returns a PairBoolFloat == (false, 0.0).
+ * If collisions are not found returns a Pair<bool,float> == (false, 0.0).
  */
-PairBoolFloat OSSteerManager::get_collision_height(const LPoint3f& rayOrigin,
-		const NodePath& space)
+Pair<bool,float> OSSteerManager::get_collision_height(const LPoint3f& rayOrigin,
+		const NodePath& space) const
 {
 	//traverse downward starting at rayOrigin
 	mPickerRay->set_direction(LVecBase3f(0.0, 0.0, -1.0));
@@ -487,10 +510,55 @@ PairBoolFloat OSSteerManager::get_collision_height(const LPoint3f& rayOrigin,
 				mCollisionHandler->get_entry(0);
 		LPoint3f target = entry0->get_surface_point(space);
 		float collisionHeight = target.get_z();
-		return PairBoolFloat(true, collisionHeight);
+		return Pair<bool,float>(true, collisionHeight);
 	}
 	//
-	return PairBoolFloat(false, 0.0);
+	return Pair<bool,float>(false, 0.0);
+}
+
+/**
+ * Draws the specified primitive, given the points, the color (RGBA) and point's size.
+ */
+void RNNavMeshManager::debug_draw_primitive(RNDebugDrawPrimitives primitive,
+		const ValueList<LPoint3f>& points, const LVecBase4f color, float size)
+{
+#ifdef RN_DEBUG
+	mDD->begin((duDebugDrawPrimitives) primitive, size);
+	// calculate the real point list size
+	unsigned int realSize;
+	switch (primitive)
+	{
+	case POINTS:
+		realSize = points.size();
+		break;
+	case LINES:
+		realSize = points.size() - (points.size() % 2);
+		break;
+	case TRIS:
+		realSize = points.size() - (points.size() % 3);
+		break;
+	case QUADS:
+		realSize = points.size() - (points.size() % 4);
+		break;
+	default:
+		break;
+	}
+	for (unsigned int i = 0; i < realSize; ++i)
+	{
+		mDD->vertex(points[i], color);
+	}
+	mDD->end();
+#endif //RN_DEBUG
+}
+
+/**
+ * Erases all primitives drawn until now.
+ */
+void RNNavMeshManager::debug_draw_reset()
+{
+#ifdef RN_DEBUG
+	mDD->reset();
+#endif //RN_DEBUG
 }
 
 /**
@@ -507,29 +575,11 @@ bool OSSteerManager::write_to_bam_file(const string& fileName)
 		cout << "Current system Bam version: "
 				<< outBamFile.get_current_major_ver() << "."
 				<< outBamFile.get_current_minor_ver() << endl;
-		BamWriter* manager = outBamFile.get_writer();
-		DatagramSink* dgSink = manager->get_target();
-		Datagram dg;
-
-		//save nav meshes' number
-		unsigned int navMeshNum = mNavMeshes.size();
-		dg.add_uint32(navMeshNum);
-		dgSink->put_datagram(dg);
-		//for each nav mesh do:
-		NavMeshList::iterator iter;
-		for (iter = mNavMeshes.begin(); iter != mNavMeshes.end(); ++iter)
+		// just write the reference node
+		if (!outBamFile.write_object(mReferenceNP.node()))
 		{
-			//current underlying NavMeshType: used as flag for setup()
-			dg.clear();
-			&(*iter)->get_nav_mesh_type() != NULL ?
-					dg.add_bool(true) : dg.add_bool(false);
-			dgSink->put_datagram(dg);
-			//write the the nav mesh
-			if (not outBamFile.write_object((*iter)))
-			{
-				errorReport += string("Error writing ")
-						+ string((*iter)->get_name()) + string("\n");
-			}
+			errorReport += string("Error writing ") + mReferenceNP.get_name()
+					+ string(" node in ") + fileName + string("\n");
 		}
 		// close the file
 		outBamFile.close();
@@ -563,53 +613,30 @@ bool OSSteerManager::read_from_bam_file(const string& fileName)
 	BamFile inBamFile;
 	if (inBamFile.open_read(Filename(fileName)))
 	{
-		cout << "Current system Bam version: " << inBamFile.get_current_major_ver() << "."
+		cout << "Current system Bam version: "
+				<< inBamFile.get_current_major_ver() << "."
 				<< inBamFile.get_current_minor_ver() << endl;
 		cout << "Bam file version: " << inBamFile.get_file_major_ver() << "."
 				<< inBamFile.get_file_minor_ver() << endl;
-		BamReader* manager = inBamFile.get_reader();
-		DatagramGenerator* dgGenerator = manager->get_source();
-		Datagram dg;
-
-		//read the nav meshes' number
-		dgGenerator->get_datagram(dg);
-		DatagramIterator scan(dg);
-		unsigned int navMeshNum = scan.get_uint32();
-		//for each nav mesh do:
-		for (unsigned int i = 0; i < navMeshNum; ++i)
+		// just read the reference node
+		TypedWritable* reference = inBamFile.read_object();
+		if (reference)
 		{
-			//read the flag for setup()
-			dgGenerator->get_datagram(dg);
-			scan.assign(dg);
-			bool setupNavMesh = scan.get_bool();
-			//read the nav mesh
-			TypedWritable* navMesh = inBamFile.read_object();
-			if (navMesh)
+			//resolve pointers
+			if (!inBamFile.resolve())
 			{
-				//resolve pointers
-				if (inBamFile.resolve())
-				{
-					//setup if requested
-					if (setupNavMesh)
-					{
-						DCAST(RNNavMesh, navMesh)->setup();
-					}
-				}
-				else
-				{
-					errorReport += string(
-							"Error resolving pointers for nav mesh ") + str(i)
-							+ string("\n");
-				}
-			}
-			else
-			{
-				errorReport += string("Error reading nav mesh ") + str(i)
+				errorReport += string("Error resolving pointers in ") + fileName
 						+ string("\n");
 			}
 		}
+		else
+		{
+			errorReport += string("Error reading ") + fileName + string("\n");
+		}
 		// close the file
 		inBamFile.close();
+		// restore reference node
+		mReferenceNP = NodePath::any_path(DCAST(PandaNode, reference));
 	}
 	else
 	{

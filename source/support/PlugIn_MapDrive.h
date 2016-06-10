@@ -51,8 +51,8 @@
 /**
  * \file /Ely/include/Support/OpenSteerLocal/PlugIn_MapDrive.h
  *
- * \date 2014-05-17 
- * \author consultit
+ * \date 2016-05-13
+ * \author Craig Reynolds (modified by consultit)
  */
 
 #ifndef PLUGIN_MAPDRIVE_H_

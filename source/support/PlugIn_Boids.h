@@ -37,8 +37,8 @@
 /**
  * \file /Ely/include/Support/OpenSteerLocal/PlugIn_Boids.h
  *
- * \date 2014-01-23 
- * \author consultit
+ * \date 2016-05-13
+ * \author Craig Reynolds (modified by consultit)
  */
 
 #ifndef PLUGIN_BOIDS_H_

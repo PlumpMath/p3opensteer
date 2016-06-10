@@ -1,28 +1,12 @@
-/*
- *   This file is part of Ely.
- *
- *   Ely is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
- *
- *   Ely is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
- *
- *   You should have received a copy of the GNU General Public License
- *   along with Ely.  If not, see <http://www.gnu.org/licenses/>.
- */
 /**
- * \file /Ely/src/Support/OpenSteerLocal/DrawMeshDrawer.cpp
+ * \file DrawMeshDrawer.cpp
  *
- * \date 2013-11-30 
+ * \date 2016-05-13
  * \author consultit
  */
 
-#include "Support/OpenSteerLocal/DrawMeshDrawer.h"
-#include "Support/OpenSteerLocal/common.h"
+#include "DrawMeshDrawer.h"
+#include "common.h"
 #include <omniBoundingVolume.h>
 #include <textNode.h>
 
@@ -306,6 +290,164 @@ void DrawMeshDrawer::drawText(const std::string& text, const LPoint3f& location,
 	m_textNodes[m_textNodeIdx].set_color(color);
 	//increase index
 	++m_textNodeIdx;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+DebugDrawPanda3d::DebugDrawPanda3d(NodePath render) :
+		m_render(render), m_depthMask(true), m_texture(true), m_vertexIdx(0), m_prim(
+				DrawMeshDrawer::DRAW_TRIS), m_size(0), m_quadCurrIdx(0)
+{
+}
+
+DebugDrawPanda3d::~DebugDrawPanda3d()
+{
+}
+
+void DebugDrawPanda3d::depthMask(bool state)
+{
+	m_depthMask = state;
+}
+
+void DebugDrawPanda3d::texture(bool state)
+{
+	m_texture = state;
+}
+
+void DebugDrawPanda3d::begin(DrawMeshDrawer::DrawPrimitive prim, float size)
+{
+	m_vertexData = new GeomVertexData("VertexData",
+			GeomVertexFormat::get_v3c4t2(), Geom::UH_static);
+	m_vertex = GeomVertexWriter(m_vertexData, "vertex");
+	m_color = GeomVertexWriter(m_vertexData, "color");
+	m_texcoord = GeomVertexWriter(m_vertexData, "texcoord");
+	switch (prim)
+	{
+	case DrawMeshDrawer::DRAW_POINTS:
+		m_geomPrim = new GeomPoints(Geom::UH_static);
+		break;
+	case DrawMeshDrawer::DRAW_LINES:
+		m_geomPrim = new GeomLines(Geom::UH_static);
+		break;
+	case DrawMeshDrawer::DRAW_TRIS:
+		m_geomPrim = new GeomTriangles(Geom::UH_static);
+		break;
+	case DrawMeshDrawer::DRAW_QUADS:
+		m_geomPrim = new GeomTriangles(Geom::UH_static);
+		m_quadCurrIdx = 0;
+		break;
+	};
+	m_prim = prim;
+	m_size = size;
+	m_vertexIdx = 0;
+}
+
+void DebugDrawPanda3d::vertex(const LVector3f& vertex, const LVector4f& color,
+		const LVector2f& uv)
+{
+	if (m_prim != DrawMeshDrawer::DRAW_QUADS)
+	{
+		m_vertex.add_data3f(vertex);
+		m_color.add_data4f(color);
+		m_texcoord.add_data2f(uv);
+		//
+		m_geomPrim->add_vertex(m_vertexIdx);
+		++m_vertexIdx;
+	}
+	else
+	{
+		int quadCurrIdxMod = m_quadCurrIdx % 4;
+		LVector3f currVertex = vertex;
+		LVector4f currColor = color;
+		LVector2f currUV = uv;
+		switch (quadCurrIdxMod)
+		{
+		case 0:
+			m_quadFirstVertex = currVertex;
+			m_quadFirstColor = currColor;
+			m_quadFirstUV = currUV;
+			++m_quadCurrIdx;
+			break;
+		case 2:
+			m_quadThirdVertex = currVertex;
+			m_quadThirdColor = currColor;
+			m_quadThirdUV = currUV;
+			++m_quadCurrIdx;
+			break;
+		case 3:
+			//first
+			m_vertex.add_data3f(m_quadFirstVertex);
+			m_color.add_data4f(m_quadFirstColor);
+			m_texcoord.add_data2f(m_quadFirstUV);
+			//
+			m_geomPrim->add_vertex(m_vertexIdx);
+			++m_vertexIdx;
+			//last
+			m_vertex.add_data3f(m_quadThirdVertex);
+			m_color.add_data4f(m_quadThirdColor);
+			m_texcoord.add_data2f(m_quadThirdUV);
+			//
+			m_geomPrim->add_vertex(m_vertexIdx);
+			++m_vertexIdx;
+			m_quadCurrIdx = 0;
+			break;
+		case 1:
+			++m_quadCurrIdx;
+			break;
+		default:
+			break;
+		};
+		//current vertex
+		///
+		m_vertex.add_data3f(currVertex);
+		m_color.add_data4f(currColor);
+		m_texcoord.add_data2f(currUV);
+		//
+		m_geomPrim->add_vertex(m_vertexIdx);
+		++m_vertexIdx;
+		///
+	}
+}
+
+void DebugDrawPanda3d::end()
+{
+	m_geomPrim->close_primitive();
+	m_geom = new Geom(m_vertexData);
+	m_geom->add_primitive(m_geomPrim);
+	m_geomNodeNP =
+			NodePath(
+					new GeomNode(
+							"DebugDrawPanda3d_GeomNode_"
+									+ dynamic_cast<std::ostringstream&>(std::ostringstream().operator <<(
+											m_geomNodeNPCollection.size())).str()));
+	DCAST(GeomNode, m_geomNodeNP.node())->add_geom(m_geom);
+	m_geomNodeNP.reparent_to(m_render);
+	m_geomNodeNP.set_depth_write(m_depthMask);
+	m_geomNodeNP.set_transparency(TransparencyAttrib::M_alpha);
+	m_geomNodeNP.set_render_mode_thickness(m_size);
+	//add to geom node paths.
+	m_geomNodeNPCollection.push_back(m_geomNodeNP);
+}
+
+NodePath DebugDrawPanda3d::getGeomNode(int i)
+{
+	return m_geomNodeNPCollection[i];
+}
+
+int DebugDrawPanda3d::getGeomNodesNum()
+{
+	return m_geomNodeNPCollection.size();
+}
+
+void DebugDrawPanda3d::reset()
+{
+	std::vector<NodePath>::iterator iter;
+	for (iter = m_geomNodeNPCollection.begin();
+			iter != m_geomNodeNPCollection.end(); ++iter)
+	{
+		(*iter).remove_node();
+	}
+	m_geomNodeNPCollection.clear();
 }
 
 }  // namespace ossup
