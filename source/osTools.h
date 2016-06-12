@@ -306,6 +306,59 @@ string replaceCharacter(const string& source, int character,
  */
 string eraseCharacter(const string& source, int character);
 
+///OSObstacleSettings.
+struct EXPORT_CLASS OSObstacleSettings
+{
+PUBLISHED:
+	OSObstacleSettings();
+
+	INLINE bool operator==(
+			const OSObstacleSettings &other) const;
+	INLINE string get_type() const;
+	INLINE void set_type(const string& value);
+	INLINE string get_seenFromState() const;
+	INLINE void set_seenFromState(const string& value);
+	INLINE LPoint3f get_position() const;
+	INLINE void set_position(const LPoint3f& value);
+	INLINE LVector3f get_forward() const;
+	INLINE void set_forward(const LVector3f& value);
+	INLINE LVector3f get_up() const;
+	INLINE void set_up(const LVector3f& value);
+	INLINE LVector3f get_side() const;
+	INLINE void set_side(const LVector3f& value);
+	INLINE float get_width() const;
+	INLINE void set_width(float value);
+	INLINE float get_height() const;
+	INLINE void set_height(float value);
+	INLINE float get_depth() const;
+	INLINE void set_depth(float value);
+	INLINE float get_radius() const;
+	INLINE void set_radius(float value);
+	INLINE int get_ref() const;
+	INLINE void set_ref(int value);
+public:
+	inline OpenSteer::AbstractObstacle* get_obstacle() const;
+	inline void set_obstacle(OpenSteer::AbstractObstacle* value);
+private:
+	string _type;
+	string _seenFromState;
+	LPoint3f _position;
+	LVector3f _forward;
+	LVector3f _up;
+	LVector3f _side;
+	float _width;
+	float _height;
+	float _depth;
+	float _radius;
+	int _ref;
+	//not serialized
+	OpenSteer::AbstractObstacle* _obstacle;
+
+public:
+	void write_datagram(Datagram &dg) const;
+	void read_datagram(DatagramIterator &scan);
+};
+
 ///ValueList template
 template<typename Type>
 class ValueList
@@ -342,9 +395,8 @@ private:
 };
 
 ///Result values
-#define RN_SUCCESS 0
-#define RN_ERROR -1
-#define RN_NAVMESH_NULL -2
+#define OS_SUCCESS 0
+#define OS_ERROR -1
 
 ///inline
 #include "osTools.I"

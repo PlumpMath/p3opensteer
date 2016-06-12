@@ -37,11 +37,21 @@ INLINE NodePath OSSteerManager::get_reference_node_path_debug() const
 }
 
 /**
+ * Returns the reference NodePath 2D for debug drawing.
+ * This node should be a descendant of a 2D top NodePath of the scene graph (ie
+ * aspect2d, render2d, pixel2d).
+ */
+INLINE NodePath OSSteerManager::get_reference_node_path_debug_2d() const
+{
+	return mReferenceDebug2DNP;
+}
+
+/**
  * Returns the number of RNNavMeshes.
  */
 INLINE int OSSteerManager::get_num_steer_plug_ins() const
 {
-	return (int) mNavMeshes.size();
+	return (int) mSteerPlugIns.size();
 }
 
 /**
@@ -49,7 +59,7 @@ INLINE int OSSteerManager::get_num_steer_plug_ins() const
  */
 INLINE int OSSteerManager::get_num_steer_vehicles() const
 {
-	return (int) mCrowdAgents.size();
+	return (int) mSteerVehicles.size();
 }
 
 /**
@@ -61,9 +71,17 @@ INLINE OSSteerManager* OSSteerManager::get_global_ptr()
 }
 
 /**
+ * Returns a reference to the storage of all obstacles.
+ */
+inline pvector<OSSteerManager::Obstacle>& OSSteerManager::get_obstacles()
+{
+	return mObstacles;
+}
+
+/**
  * Get the collide mask.
  */
-INLINE CollideMask OSSteerManager::get_collide_mask()
+INLINE CollideMask OSSteerManager::get_collide_mask() const
 {
 	return mMask;
 }
@@ -71,7 +89,7 @@ INLINE CollideMask OSSteerManager::get_collide_mask()
 /**
  * Get the collision root.
  */
-INLINE NodePath OSSteerManager::get_collision_root()
+INLINE NodePath OSSteerManager::get_collision_root() const
 {
 	return mRoot;
 }

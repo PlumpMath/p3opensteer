@@ -12,6 +12,7 @@
 #include "osTools.h"
 #include "opensteer_includes.h"
 #include "nodePath.h"
+#include "throw_event.h"
 
 #ifndef CPPPARSER
 #include "support/common.h"

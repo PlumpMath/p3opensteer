@@ -120,6 +120,42 @@ void ThrowEventData::read_datagram(DatagramIterator &scan)
 	mPeriod = scan.get_stdfloat();
 }
 
+///OSObstacleSettings.
+/**
+ * Writes the OSObstacleSettings into a datagram.
+ */
+void OSObstacleSettings::write_datagram(Datagram &dg) const
+{
+	dg.add_string(_type);
+	dg.add_string(_seenFromState);
+	_position.write_datagram(dg);
+	_forward.write_datagram(dg);
+	_up.write_datagram(dg);
+	_side.write_datagram(dg);
+	dg.add_stdfloat(get_width());
+	dg.add_stdfloat(get_height());
+	dg.add_stdfloat(get_depth());
+	dg.add_stdfloat(get_radius());
+	dg.add_int32(get_ref());
+}
+/**
+ * Restores the OSObstacleSettings from the datagram.
+ */
+void OSObstacleSettings::read_datagram(DatagramIterator &scan)
+{
+	set_type(scan.get_string());
+	set_seenFromState(scan.get_string());
+	_position.read_datagram(scan);
+	_forward.read_datagram(scan);
+	_up.read_datagram(scan);
+	_side.read_datagram(scan);
+	set_width(scan.get_stdfloat());
+	set_height(scan.get_stdfloat());
+	set_depth(scan.get_stdfloat());
+	set_radius(scan.get_stdfloat());
+	set_ref(scan.get_int32());
+}
+
 ///ValueList template
 // Tell GCC that we'll take care of the instantiation explicitly here.
 #ifdef __GNUC__

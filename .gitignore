@@ -3,6 +3,15 @@
 *.so
 *.pdb
 *.boo
+*.o
+config.log
+config.status
+data.h
+libtool
+Makefile
+basic
+test*
+.deps/
 
 # Various output names
 win_*/

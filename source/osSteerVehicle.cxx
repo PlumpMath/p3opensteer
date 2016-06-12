@@ -43,68 +43,68 @@ void OSSteerVehicle::do_initialize()
 	param = mTmpl->get_parameter_value(OSSteerManager::STEERPLUGIN, std::string("type"));
 	if (param == std::string("pedestrian"))
 	{
-		not mExternalUpdate ?
+		! mExternalUpdate ?
 		mVehicle = new ossup::Pedestrian<OSSteerVehicle> :
 		mVehicle = new ossup::ExternalPedestrian<OSSteerVehicle>;
 	}
 	else if (param == std::string("boid"))
 	{
-		not mExternalUpdate ?
+		! mExternalUpdate ?
 		mVehicle = new ossup::Boid<OSSteerVehicle> :
 		mVehicle = new ossup::ExternalBoid<OSSteerVehicle>;
 	}
 	else if (param == std::string("mp_wanderer"))
 	{
-		not mExternalUpdate ?
+		! mExternalUpdate ?
 		mVehicle = new ossup::MpWanderer<OSSteerVehicle> :
 		mVehicle = new ossup::ExternalMpWanderer<OSSteerVehicle>;
 	}
 	else if (param == std::string("mp_pursuer"))
 	{
-		not mExternalUpdate ?
+		! mExternalUpdate ?
 		mVehicle = new ossup::MpPursuer<OSSteerVehicle> :
 		mVehicle = new ossup::ExternalMpPursuer<OSSteerVehicle>;
 	}
 	else if (param == std::string("player"))
 	{
-		not mExternalUpdate ?
+		! mExternalUpdate ?
 		mVehicle = new ossup::Player<OSSteerVehicle> :
 		mVehicle = new ossup::ExternalPlayer<OSSteerVehicle>;
 	}
 	else if (param == std::string("ball"))
 	{
-		not mExternalUpdate ?
+		! mExternalUpdate ?
 		mVehicle = new ossup::Ball<OSSteerVehicle> :
 		mVehicle = new ossup::ExternalBall<OSSteerVehicle>;
 	}
 	else if (param == std::string("ctf_seeker"))
 	{
-		not mExternalUpdate ?
+		! mExternalUpdate ?
 		mVehicle = new ossup::CtfSeeker<OSSteerVehicle> :
 		mVehicle = new ossup::ExternalCtfSeeker<OSSteerVehicle>;
 	}
 	else if (param == std::string("ctf_enemy"))
 	{
-		not mExternalUpdate ?
+		! mExternalUpdate ?
 		mVehicle = new ossup::CtfEnemy<OSSteerVehicle> :
 		mVehicle = new ossup::ExternalCtfEnemy<OSSteerVehicle>;
 	}
 	else if (param == std::string("low_speed_turn"))
 	{
-		not mExternalUpdate ?
+		! mExternalUpdate ?
 		mVehicle = new ossup::LowSpeedTurn<OSSteerVehicle> :
 		mVehicle = new ossup::ExternalLowSpeedTurn<OSSteerVehicle>;
 	}
 	else if (param == std::string("map_driver"))
 	{
-		not mExternalUpdate ?
+		! mExternalUpdate ?
 		mVehicle = new ossup::MapDriver<OSSteerVehicle> :
 		mVehicle = new ossup::ExternalMapDriver<OSSteerVehicle>;
 	}
 	else
 	{
 		//default: one_turning
-		not mExternalUpdate ?
+		! mExternalUpdate ?
 		mVehicle = new ossup::OneTurning<OSSteerVehicle> :
 		mVehicle = new ossup::ExternalOneTurning<OSSteerVehicle>;
 	}
@@ -200,7 +200,7 @@ void OSSteerVehicle::do_initialize()
 	//set entity and its related update method
 	dynamic_cast<VehicleAddOn*>(mVehicle)->setEntity(this);
 	//
-	not mExternalUpdate ?
+	! mExternalUpdate ?
 			dynamic_cast<VehicleAddOn*>(mVehicle)->setEntityUpdateMethod(
 					&OSSteerVehicle::doUpdateSteerVehicle) :
 			dynamic_cast<VehicleAddOn*>(mVehicle)->setEntityUpdateMethod(
@@ -452,7 +452,7 @@ void OSSteerVehicle::doUpdateSteerVehicle(const float currentTime,
 			doThrowEvent(mMove);
 		}
 		//reset Steady event (if enabled and if thrown)
-		if (mSteady.mEnable and mSteady.mThrown)
+		if (mSteady.mEnable && mSteady.mThrown)
 		{
 			mSteady.mThrown = false;
 			mSteady.mTimeElapsed = 0.0;
@@ -463,7 +463,7 @@ void OSSteerVehicle::doUpdateSteerVehicle(const float currentTime,
 		//handle Move/Steady events
 		//mVehicle.speed == 0.0
 		//reset Move event (if enabled and if thrown)
-		if (mMove.mEnable and mMove.mThrown)
+		if (mMove.mEnable && mMove.mThrown)
 		{
 			mMove.mThrown = false;
 			mMove.mTimeElapsed = 0.0;
@@ -514,7 +514,7 @@ void OSSteerVehicle::doExternalUpdateSteerVehicle(const float currentTime,
 void OSSteerVehicle::doEnableSteerVehicleEvent(EventThrown event, ThrowEventData eventData)
 {
 	//some checks
-	nassertv_always(not eventData.mEventName.empty())
+	nassertv_always(! eventData.mEventName.empty())
 
 	if (eventData.mFrequency <= 0.0)
 	{

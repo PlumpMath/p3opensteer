@@ -13,21 +13,24 @@
 
 #ifndef CPPPARSER
 #include "library/OpenSteer/PlugIn.h"
+#include "library/OpenSteer/Obstacle.h"
 #endif //CPPPARSER
 
 class OSSteerVehicle;
 
 /**
- * This class represents a "PlugIns" of the OpenSteer library.
+ * This class represents a "plug-in" of the OpenSteer library.
  *
  * \see http://opensteer.sourceforge.net
  *
  * This is a PandaNode.\n
- * Each OSSteerPlugIn component could handle a single pathway and several
+ * Each OSSteerPlugIn object could handle a single pathway and several
  * obstacles.\n
- * The parent node path of this component's object, will be the reference
- * which any SteerVehicle will be reparented to (if necessary) and which any
- * scene computation will be performed wrt.\n
+ * An "update" task should call this OSSteerPlugIn's update() method to allow
+ * the OSSteerVehicle(s) (simple vehicles), which are added to it, to perform
+ * their own steering behaviors.\n
+ * \note A OSSteerPlugIn will be reparented to the default reference node on
+ * creation (see OSSteerManager).
  *
  * > **OSSteerPlugIn text parameters**:
  * param | type | default | note
@@ -38,7 +41,7 @@ class OSSteerVehicle;
  *
  * \note parts inside [] are optional.\n
  */
-class OSSteerPlugIn: public PandaNode
+class EXPORT_CLASS OSSteerPlugIn: public PandaNode
 {
 PUBLISHED:
 	virtual ~OSSteerPlugIn();
@@ -47,8 +50,6 @@ PUBLISHED:
 	 * \name PLUGIN
 	 */
 	///@{
-	int setup();
-	int cleanup();
 	void update(float dt);
 	///@}
 
@@ -100,24 +101,31 @@ PUBLISHED:
 	 * @param seenFromState Possible values: outside, inside, both.
 	 * @return
 	 */
-	OpenSteer::AbstractObstacle* addObstacle(const NodePath& object,
+	/**
+	 * \brief Removes an OpenSteer obstacle, seen by all plugins.
+	 * @param obstacle The obstacle to remove.
+	 */
+	/**
+	 * \name OBSTACLES
+	 */
+	///@{
+	int add_obstacle(NodePath& object,
 			const std::string& type, const std::string& seenFromState,
 			float width = 0.0, float height = 0.0, float depth = 0.0,
 			float radius = 0.0, const LVector3f& side = LVector3f::zero(),
 			const LVector3f& up = LVector3f::zero(), const LVector3f& = LVector3f::zero(),
 			const LPoint3f& position = LPoint3f::zero());
-
-	/**
-	 * \brief Removes an OpenSteer obstacle, seen by all plugins.
-	 * @param obstacle The obstacle to remove.
-	 */
-	void removeObstacle(OpenSteer::AbstractObstacle* obstacle);
-
+	NodePath remove_obstacle(int ref);
+	OSObstacleSettings get_obstacle_settings(int ref) const;
+	INLINE int get_obstacle(int index) const;
+	INLINE int get_num_obstacles() const;
+	MAKE_SEQ(get_obstacles, get_num_obstacles, get_obstacle);
 	/**
 	 * \brief Gets the obstacles, seen by all plugins.
 	 * @return The obstacles.
 	 */
 	OpenSteer::ObstacleGroup getObstacles();
+	///@}
 
 	/**
 	 * \name OUTPUT
@@ -127,14 +135,12 @@ PUBLISHED:
 	///@}
 
 	/**
-	 * \name AbstractPlugIn reference getter & conversion function.
+	 * \name DEBUG DRAWING
 	 */
 	///@{
-	OpenSteer::AbstractPlugIn& getAbstractPlugIn();
-	operator OpenSteer::AbstractPlugIn&();
-	///@}
-
-#ifdef OS_DEBUG
+	void enable_debug_drawing(NodePath debugCamera);
+	void disable_debug_drawing();
+	int toggle_debug_drawing(bool enable);
 	/**
 	 * \brief Gets a reference to the OpenSteer Drawer3d Debug node path.
 	 * @return The OpenSteer Debug node.
@@ -145,12 +151,19 @@ PUBLISHED:
 	 * @return The OpenSteer Debug node.
 	 */
 	NodePath getDrawer2dDebugNodePath() const;
+	///@}
+
+public:
 	/**
-	 * \brief Enables/disables debugging.
-	 * @param enable True to enable, false to disable.
+	 * \name C++ ONLY
+	 * Library & support low level related methods.
 	 */
-	Result debug(bool enable);
-#endif
+	///@{
+	inline OpenSteer::AbstractPlugIn& getAbstractPlugIn();
+	inline operator OpenSteer::AbstractPlugIn&();
+	///Unique ref producer.
+	int unique_ref();
+	///@}
 
 protected:
 	friend class OSSteerManager;
@@ -160,19 +173,15 @@ protected:
 private:
 	///Current underlying AbstractPlugIn.
 	OpenSteer::AbstractPlugIn* mPlugIn;
-
-	///The reference node path (read only after creation).
+	///The reference node path.
 	NodePath mReferenceNP;
-
+	///The reference node path for debug drawing.
+	NodePath mReferenceDebugNP, mReferenceDebug2DNP;
 	///Current time.
 	float mCurrentTime;
-
 	///The SteerVehicle components handled by this OSSteerPlugIn.
-	std::set<PT(OSSteerVehicle)> mSteerVehicles;
-
-	///The global obstacles handled by all OSSteerPlugIns.
-	static OpenSteer::ObstacleGroup mObstacles;
-	///The local obstacles handled by this OSSteerPlugIn.
+	pset<PT(OSSteerVehicle)> mSteerVehicles;
+	///The "local" obstacles handled by this OSSteerPlugIn.
 	OpenSteer::ObstacleGroup mLocalObstacles;
 
 	///Unique ref.
@@ -181,18 +190,13 @@ private:
 	void do_reset();
 	void do_initialize();
 	void do_finalize();
-	virtual bool initialize();
-	virtual void onAddToObjectSetup();
-	virtual void onAddToSceneSetup();
-	virtual void onRemoveFromObjectCleanup();
-	virtual void onRemoveFromSceneCleanup();
 
 	/**
 	 * \name Helpers variables/functions.
 	 */
 	///@{
-	void doBuildPathway();
-	void doAddObstacles();
+	void doBuildPathway(const string& pathwayParam);
+	void doAddObstacles(const plist<string>& obstacleListParam);
 	///@}
 
 #ifdef OS_DEBUG
@@ -201,7 +205,7 @@ private:
 	///OpenSteer debug camera.
 	NodePath mDebugCamera;
 	///OpenSteer DebugDrawers.
-	DrawMeshDrawer *mDrawer3d, *mDrawer2d;
+	ossup::DrawMeshDrawer *mDrawer3d, *mDrawer2d;
 	///Enable Debug Draw update.
 	bool mEnableDebugDrawUpdate;
 #endif

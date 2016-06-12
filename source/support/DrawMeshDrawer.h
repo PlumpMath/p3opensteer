@@ -38,10 +38,12 @@ protected:
 	bool m_texture;
 	///Inner MeshDrawers.
 	std::vector<MeshDrawer*> m_generators;
-	///Current MeshDrawer index.
-	int m_meshDrawerIdx;
-	///Current MeshDrawers number.
-	int m_meshDrawersSize;
+	///Index of the currently used generator.
+	int m_generatorIdx;
+	///Number of currently allocated generators.
+	int m_generatorsSize;
+	///Number of used generators during last frame.
+	int m_generatorsSizeLast;
 	///Budget.
 	int m_budget;
 	///Single mesh flag.
@@ -84,7 +86,8 @@ public:
 			float textScale = 0.75, bool singleMesh = false);
 	virtual ~DrawMeshDrawer();
 
-	void reset();
+	void initialize();
+	void finalize();
 	void clear();
 
 	void begin(DrawPrimitive prim);

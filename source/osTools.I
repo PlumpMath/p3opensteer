@@ -215,4 +215,102 @@ inline ValueList<Type>::operator pvector<Type>() const
 }
 #endif //CPPPARSER
 
+///OSObstacleSettings.
+INLINE string OSObstacleSettings::get_type() const
+{
+	return _type;
+}
+INLINE void OSObstacleSettings::set_type(const string& value)
+{
+	_type = value;
+}
+INLINE string OSObstacleSettings::get_seenFromState() const
+{
+	return _seenFromState;
+}
+INLINE void OSObstacleSettings::set_seenFromState(const string& value)
+{
+	_seenFromState = value;
+}
+INLINE LPoint3f OSObstacleSettings::get_position() const
+{
+	return _position;
+}
+INLINE void OSObstacleSettings::set_position(const LPoint3f& value)
+{
+	_position = value;
+}
+INLINE LVector3f OSObstacleSettings::get_forward() const
+{
+	return _forward;
+}
+INLINE void OSObstacleSettings::set_forward(const LVector3f& value)
+{
+	_forward = value;
+}
+INLINE LVector3f OSObstacleSettings::get_up() const
+{
+	return _up;
+}
+INLINE void OSObstacleSettings::set_up(const LVector3f& value)
+{
+	_up = value;
+}
+INLINE LVector3f OSObstacleSettings::get_side() const
+{
+	return _side;
+}
+INLINE void OSObstacleSettings::set_side(const LVector3f& value)
+{
+	_side = value;
+}
+INLINE float OSObstacleSettings::get_width() const
+{
+	return _width;
+}
+INLINE void OSObstacleSettings::set_width(float value)
+{
+	_width = value;
+}
+INLINE float OSObstacleSettings::get_height() const
+{
+	return _height;
+}
+INLINE void OSObstacleSettings::set_height(float value)
+{
+	_height = value;
+}
+INLINE float OSObstacleSettings::get_depth() const
+{
+	return _depth;
+}
+INLINE void OSObstacleSettings::set_depth(float value)
+{
+	_depth = value;
+}
+INLINE float OSObstacleSettings::get_radius() const
+{
+	return _radius;
+}
+INLINE void OSObstacleSettings::set_radius(float value)
+{
+	_radius = value;
+}
+INLINE int OSObstacleSettings::get_ref() const
+{
+	return _ref;
+}
+INLINE void OSObstacleSettings::set_ref(int value)
+{
+	_ref = value;
+}
+inline OpenSteer::AbstractObstacle* OSObstacleSettings::get_obstacle() const
+{
+	return _obstacle;
+}
+inline void OSObstacleSettings::set_obstacle(OpenSteer::AbstractObstacle* value)
+{
+	_obstacle = value;
+}
+
 #endif /* OSTOOLS_I_ */

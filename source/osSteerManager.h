@@ -25,6 +25,10 @@ class OSSteerVehicle;
 class EXPORT_CLASS OSSteerManager: public TypedReferenceCount,
 		public Singleton<OSSteerManager>
 {
+public:
+	///obstacles
+	typedef Pair<OSObstacleSettings, NodePath> Obstacle;
+
 PUBLISHED:
 	OSSteerManager(const NodePath& root = NodePath(),
 			const CollideMask& mask = GeomNode::get_default_collide_mask());
@@ -37,6 +41,7 @@ PUBLISHED:
 	INLINE NodePath get_reference_node_path() const;
 	INLINE void set_reference_node_path(const NodePath& reference);
 	INLINE NodePath get_reference_node_path_debug() const;
+	INLINE NodePath get_reference_node_path_debug_2d() const;
 	///@}
 
 	/**
@@ -128,9 +133,9 @@ PUBLISHED:
 	{
 #ifndef CPPPARSER
 		POINTS = ossup::DrawMeshDrawer::DRAW_POINTS,
-		LINES = ossup:DrawMeshDrawer::DRAW_LINES,
-		TRIS = ossup:DrawMeshDrawer::DRAW_TRIS,
-		QUADS = ossup:DrawMeshDrawer::DRAW_QUADS,
+		LINES = ossup::DrawMeshDrawer::DRAW_LINES,
+		TRIS = ossup::DrawMeshDrawer::DRAW_TRIS,
+		QUADS = ossup::DrawMeshDrawer::DRAW_QUADS,
 #else
 		POINTS,LINES,TRIS,QUADS
 #endif //CPPPARSER
@@ -140,26 +145,38 @@ PUBLISHED:
 	 * \name LOW LEVEL DEBUG DRAWING
 	 */
 	///@{
-	void debug_draw_primitive(RNDebugDrawPrimitives primitive,
+	void debug_draw_primitive(OSDebugDrawPrimitives primitive,
 			const ValueList<LPoint3f>& points, const LVecBase4f color = LVecBase4f::zero(), float size =
 					1.0f);
 	void debug_draw_reset();
 	///@}
 
+public:
+	/**
+	 * \name Obstacles of all plug-ins (c++ only).
+	 */
+	///@{
+	inline pvector<Obstacle>& get_obstacles();
+	///@}
+
 private:
 	///The reference node path.
 	NodePath mReferenceNP;
+
 	///List of OSSteerPlugIns handled by this manager.
 	typedef pvector<PT(OSSteerPlugIn)> SteerPlugInList;
-	SteerPlugInList mNavMeshes;
+	SteerPlugInList mSteerPlugIns;
 	///OSSteerPlugIns' parameter table.
-	ParameterTable mNavMeshesParameterTable;
+	ParameterTable mSteerPlugInsParameterTable;
 
 	///List of OSSteerVehicles handled by this template.
 	typedef pvector<PT(OSSteerVehicle)> SteerVehicleList;
-	SteerVehicleList mCrowdAgents;
+	SteerVehicleList mSteerVehicles;
 	///OSSteerVehicles' parameter table.
-	ParameterTable mCrowdAgentsParameterTable;
+	ParameterTable mSteerVehiclesParameterTable;
+
+	///List of all obstacles (ie handled by all OSSteerPlugIns).
+	pvector<Obstacle> mObstacles;
 
 	///@{
 	///A task data for step simulation update.
@@ -174,18 +191,11 @@ private:
 	CollisionHandlerQueue* mCollisionHandler;
 	CollisionRay* mPickerRay;
 
-	///The reference node path for debug drawing.
-	NodePath mReferenceDebugNP;
+	///The reference node paths for debug drawing.
+	NodePath mReferenceDebugNP, mReferenceDebug2DNP;
 #ifdef OS_DEBUG
-	class DebugDrawPrimitives: public ossup::DebugDrawPanda3d
-	{
-	public:
-		DebugDrawPrimitives(NodePath render): ossup::DebugDrawPanda3d(render)
-		{
-		}
-	};
 	/// DebugDrawers.
-	DebugDrawPrimitives* mDD;
+	ossup::DebugDrawPanda3d* mDD;
 #endif //OS_DEBUG
 
 public:

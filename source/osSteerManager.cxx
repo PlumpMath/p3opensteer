@@ -15,10 +15,11 @@
 /**
  *
  */
-OSSteerManager::OSSteerManager(const NodePath& root,
-		const CollideMask& mask) : mReferenceNP(NodePath("ReferenceNode")),
-		mRoot(root), mMask(mask), mCollisionHandler(NULL), mPickerRay(NULL), mCTrav(
-		NULL), mReferenceDebugNP(NodePath("ReferenceDebugNode"))
+OSSteerManager::OSSteerManager(const NodePath& root, const CollideMask& mask) :
+		mReferenceNP(NodePath("ReferenceNode")), mRoot(root), mMask(mask), mCollisionHandler(
+				NULL), mPickerRay(NULL), mCTrav(
+		NULL), mReferenceDebugNP(NodePath("ReferenceDebugNode")), mReferenceDebug2DNP(
+				NodePath("ReferenceDebugNode2D"))
 {
 	PRINT_DEBUG(
 			"OSSteerManager::OSSteerManager: creating the singleton manager.");
@@ -46,7 +47,7 @@ OSSteerManager::OSSteerManager(const NodePath& root,
 	if (!mRoot.is_empty())
 	{
 		//create new DebugDrawer
-		mDD = new DebugDrawPrimitives(mRoot);
+		mDD = new ossup::DebugDrawPanda3d(mRoot);
 	}
 #endif //OS_DEBUG
 }
@@ -61,30 +62,30 @@ OSSteerManager::~OSSteerManager()
 	//stop any default update
 	stop_default_update();
 	//destroy all RNCrowdAgents
-	PTA(PT(RNCrowdAgent))::iterator iterC = mCrowdAgents.begin();
-	while (iterC != mCrowdAgents.end())
+	PTA(PT(OSSteerVehicle))::iterator iterC = mSteerVehicles.begin();
+	while (iterC != mSteerVehicles.end())
 	{
 		//\see http://stackoverflow.com/questions/596162/can-you-remove-elements-from-a-stdlist-while-iterating-through-it
 		//give a chance to RNCrowdAgent to cleanup itself before being destroyed.
 		(*iterC)->do_finalize();
 		//remove the RNCrowdAgents from the inner list (and from the update task)
-		mCrowdAgents.erase(iterC);
+		mSteerVehicles.erase(iterC);
 	}
 
 	//destroy all RNNavMeshes
-	PTA(PT(RNNavMesh))::iterator iterN = mNavMeshes.begin();
-	while (iterN != mNavMeshes.end())
+	PTA(PT(OSSteerPlugIn))::iterator iterN = mSteerPlugIns.begin();
+	while (iterN != mSteerPlugIns.end())
 	{
 		//\see http://stackoverflow.com/questions/596162/can-you-remove-elements-from-a-stdlist-while-iterating-through-it
 		//give a chance to RNCrowdAgent to cleanup itself before being destroyed.
 		(*iterN)->do_finalize();
 		//remove the RNCrowdAgents from the inner list (and from the update task)
-		mNavMeshes.erase(iterN);
+		mSteerPlugIns.erase(iterN);
 	}
 
 	//clear parameters' tables
-	mNavMeshesParameterTable.clear();
-	mCrowdAgentsParameterTable.clear();
+	mSteerPlugInsParameterTable.clear();
+	mSteerVehiclesParameterTable.clear();
 	//
 	delete mCTrav;
 
@@ -98,144 +99,148 @@ OSSteerManager::~OSSteerManager()
 }
 
 /**
- * Creates a RNNavMesh.
+ * Creates a OSSteerPlugIn.
  */
-NodePath OSSteerManager::create_nav_mesh()
+NodePath OSSteerManager::create_steer_plug_in()
 {
-	PT(RNNavMesh) newNavMesh = new RNNavMesh();
-	nassertr_always(newNavMesh, NodePath())
+	PT(OSSteerPlugIn) newSteerPlugIn = new OSSteerPlugIn();
+	nassertr_always(newSteerPlugIn, NodePath())
 
 	// set reference nodes
-	newNavMesh->mReferenceNP = mReferenceNP;
-	newNavMesh->mReferenceDebugNP = mReferenceDebugNP;
-	// initialize the new NavMesh
-	newNavMesh->do_initialize();
+	newSteerPlugIn->mReferenceNP = mReferenceNP;
+	newSteerPlugIn->mReferenceDebugNP = mReferenceDebugNP;
+	newSteerPlugIn->mReferenceDebug2DNP = mReferenceDebug2DNP;
+	// initialize the new SteerPlugIn
+	newSteerPlugIn->do_initialize();
 
-	// add the new NavMesh to the inner list (and to the update task)
-	mNavMeshes.push_back(newNavMesh);
+	// add the new SteerPlugIn to the inner list (and to the update task)
+	mSteerPlugIns.push_back(newSteerPlugIn);
 	// reparent to reference node
-	NodePath np = mReferenceNP.attach_new_node(newNavMesh);
+	NodePath np = mReferenceNP.attach_new_node(newSteerPlugIn);
 	//
 	return np;
 }
 
 /**
- * Destroys a RNNavMesh.
+ * Destroys a OSSteerPlugIn.
  */
-bool OSSteerManager::destroy_nav_mesh(NodePath navMeshNP)
+bool OSSteerManager::destroy_steer_plug_in(NodePath steerPlugInNP)
 {
-	CONTINUE_IF_ELSE_R(navMeshNP.node()->is_of_type(RNNavMesh::get_class_type()),
+	CONTINUE_IF_ELSE_R(
+			steerPlugInNP.node()->is_of_type(OSSteerPlugIn::get_class_type()),
 			false)
 
-	PT(RNNavMesh) navMesh = DCAST(RNNavMesh, navMeshNP.node());
-	NavMeshList::iterator iter = find(mNavMeshes.begin(), mNavMeshes.end(),
-			navMesh);
-	CONTINUE_IF_ELSE_R(iter != mNavMeshes.end(), false)
+	PT(OSSteerPlugIn)navMesh = DCAST(OSSteerPlugIn, steerPlugInNP.node());
+	SteerPlugInList::iterator iter = find(mSteerPlugIns.begin(),
+			mSteerPlugIns.end(), navMesh);
+	CONTINUE_IF_ELSE_R(iter != mSteerPlugIns.end(), false)
 
-	//give a chance to NavMesh to cleanup itself before being destroyed.
+	//give a chance to SteerPlugIn to cleanup itself before being destroyed.
 	navMesh->do_finalize();
 
-	//remove the NavMesh from the inner list (and from the update task)
-	mNavMeshes.erase(iter);
+	//remove the SteerPlugIn from the inner list (and from the update task)
+	mSteerPlugIns.erase(iter);
 	//
 	return true;
 }
 
 /**
- * Gets a RNNavMesh by index.
+ * Gets a OSSteerPlugIn by index.
  */
-NodePath OSSteerManager::get_nav_mesh(int index) const
+NodePath OSSteerManager::get_steer_plug_in(int index) const
 {
-	nassertr_always((index >= 0) && (index < (int ) mNavMeshes.size()), NodePath());
+	nassertr_always((index >= 0) && (index < (int ) mSteerPlugIns.size()),
+			NodePath());
 
-	return NodePath::any_path(mNavMeshes[index]);
+	return NodePath::any_path(mSteerPlugIns[index]);
 }
 
 /**
- * Creates a RNCrowdAgent with a given (not empty) name.
+ * Creates a OSSteerVehicle with a given (not empty) name.
  */
-NodePath OSSteerManager::create_crowd_agent(const string& name)
+NodePath OSSteerManager::create_steer_vehicle(const string& name)
 {
 	nassertr_always(! name.empty(), NodePath())
 
-	PT(RNCrowdAgent) newCrowdAgent = new RNCrowdAgent(name);
-	nassertr_always(newCrowdAgent, NodePath())
+	PT(OSSteerVehicle) newSteerVehicle = new OSSteerVehicle(name);
+	nassertr_always(newSteerVehicle, NodePath())
 
 	// set reference node
-	newCrowdAgent->mReferenceNP = mReferenceNP;
-	//initialize the new CrowdAgent
-	newCrowdAgent->do_initialize();
+//	newSteerVehicle->mReferenceNP = mReferenceNP; XXX
+	//initialize the new SteerVehicle
+	newSteerVehicle->do_initialize();
 
-	//add the new CrowdAgent to the inner list
-	mCrowdAgents.push_back(newCrowdAgent);
+	//add the new SteerVehicle to the inner list
+	mSteerVehicles.push_back(newSteerVehicle);
 	// reparent to reference node
-	NodePath np = mReferenceNP.attach_new_node(newCrowdAgent);
+	NodePath np = mReferenceNP.attach_new_node(newSteerVehicle);
 	//
 	return np;
 }
 
 /**
- * Destroys a RNCrowdAgent.
+ * Destroys a OSSteerVehicle.
  */
-bool OSSteerManager::destroy_crowd_agent(NodePath crowdAgentNP)
+bool OSSteerManager::destroy_steer_vehicle(NodePath steerVehicleNP)
 {
 	CONTINUE_IF_ELSE_R(
-			crowdAgentNP.node()->is_of_type(RNCrowdAgent::get_class_type()),
+			steerVehicleNP.node()->is_of_type(OSSteerVehicle::get_class_type()),
 			false)
 
-	PT(RNCrowdAgent)crowdAgent = DCAST(RNCrowdAgent, crowdAgentNP.node());
-	CrowdAgentList::iterator iter = find(mCrowdAgents.begin(),
-			mCrowdAgents.end(), crowdAgent);
-	CONTINUE_IF_ELSE_R(iter != mCrowdAgents.end(), false)
+	PT(OSSteerVehicle)crowdAgent = DCAST(OSSteerVehicle, steerVehicleNP.node());
+	SteerVehicleList::iterator iter = find(mSteerVehicles.begin(),
+			mSteerVehicles.end(), crowdAgent);
+	CONTINUE_IF_ELSE_R(iter != mSteerVehicles.end(), false)
 
-	//give a chance to CrowdAgent to cleanup itself before being destroyed.
+	//give a chance to SteerVehicle to cleanup itself before being destroyed.
 	crowdAgent->do_finalize();
-	//remove the CrowdAgent from the inner list (and from the update task)
-	mCrowdAgents.erase(iter);
+	//remove the SteerVehicle from the inner list (and from the update task)
+	mSteerVehicles.erase(iter);
 	//
 	return true;
 }
 
 /**
- * Gets a RNCrowdAgent by index.
+ * Gets a OSSteerVehicle by index.
  */
-NodePath OSSteerManager::get_crowd_agent(int index) const
+NodePath OSSteerManager::get_steer_vehicle(int index) const
 {
-	nassertr_always((index >= 0) && (index < (int ) mCrowdAgents.size()), NodePath());
+	nassertr_always((index >= 0) && (index < (int ) mSteerVehicles.size()),
+			NodePath());
 
-	return NodePath::any_path(mCrowdAgents[index]);
+	return NodePath::any_path(mSteerVehicles[index]);
 }
 
 /**
  * Sets a multi-valued parameter to a multi-value overwriting the existing one(s).
  */
-void OSSteerManager::set_parameter_values(RNType type, const string& paramName,
+void OSSteerManager::set_parameter_values(OSType type, const string& paramName,
 		const ValueList<string>& paramValues)
 {
 	pair<ParameterTableIter, ParameterTableIter> iterRange;
 	if (type == STEERPLUGIN)
 	{
 		//find from mParameterTable the paramName's values to be overwritten
-		iterRange = mNavMeshesParameterTable.equal_range(paramName);
+		iterRange = mSteerPlugInsParameterTable.equal_range(paramName);
 		//...and erase them
-		mNavMeshesParameterTable.erase(iterRange.first, iterRange.second);
+		mSteerPlugInsParameterTable.erase(iterRange.first, iterRange.second);
 		//insert the new values
 		for (int idx = 0; idx < paramValues.size(); ++idx)
 		{
-			mNavMeshesParameterTable.insert(
+			mSteerPlugInsParameterTable.insert(
 					ParameterNameValue(paramName, paramValues[idx]));
 		}
 	}
 	else if (type == STEERVEHICLE)
 	{
 		//find from mParameterTable the paramName's values to be overwritten
-		iterRange = mCrowdAgentsParameterTable.equal_range(paramName);
+		iterRange = mSteerVehiclesParameterTable.equal_range(paramName);
 		//...and erase them
-		mCrowdAgentsParameterTable.erase(iterRange.first, iterRange.second);
+		mSteerVehiclesParameterTable.erase(iterRange.first, iterRange.second);
 		//insert the new values
 		for (int idx = 0; idx < paramValues.size(); ++idx)
 		{
-			mCrowdAgentsParameterTable.insert(
+			mSteerVehiclesParameterTable.insert(
 					ParameterNameValue(paramName, paramValues[idx]));
 		}
 	}
@@ -244,14 +249,15 @@ void OSSteerManager::set_parameter_values(RNType type, const string& paramName,
 /**
  * Gets the multiple values of a (actually set) parameter.
  */
-ValueList<string> OSSteerManager::get_parameter_values(RNType type, const string& paramName)
+ValueList<string> OSSteerManager::get_parameter_values(OSType type,
+		const string& paramName) const
 {
 	ValueList<string> strList;
 	ParameterTableConstIter iter;
 	pair<ParameterTableConstIter, ParameterTableConstIter> iterRange;
 	if (type == STEERPLUGIN)
 	{
-		iterRange = mNavMeshesParameterTable.equal_range(paramName);
+		iterRange = mSteerPlugInsParameterTable.equal_range(paramName);
 		if (iterRange.first != iterRange.second)
 		{
 			for (iter = iterRange.first; iter != iterRange.second; ++iter)
@@ -262,7 +268,7 @@ ValueList<string> OSSteerManager::get_parameter_values(RNType type, const string
 	}
 	else if (type == STEERVEHICLE)
 	{
-		iterRange = mCrowdAgentsParameterTable.equal_range(paramName);
+		iterRange = mSteerVehiclesParameterTable.equal_range(paramName);
 		if (iterRange.first != iterRange.second)
 		{
 			for (iter = iterRange.first; iter != iterRange.second; ++iter)
@@ -278,7 +284,8 @@ ValueList<string> OSSteerManager::get_parameter_values(RNType type, const string
 /**
  * Sets a multi/single-valued parameter to a single value overwriting the existing one(s).
  */
-void OSSteerManager::set_parameter_value(RNType type, const string& paramName, const string& value)
+void OSSteerManager::set_parameter_value(OSType type, const string& paramName,
+		const string& value)
 {
 	ValueList<string> valueList;
 	valueList.add_value(value);
@@ -288,7 +295,8 @@ void OSSteerManager::set_parameter_value(RNType type, const string& paramName, c
 /**
  * Gets a single value (i.e. the first one) of a parameter.
  */
-string OSSteerManager::get_parameter_value(RNType type, const string& paramName)
+string OSSteerManager::get_parameter_value(OSType type,
+		const string& paramName) const
 {
 	ValueList<string> valueList = get_parameter_values(type, paramName);
 	return (valueList.size() != 0 ? valueList[0] : string(""));
@@ -297,14 +305,14 @@ string OSSteerManager::get_parameter_value(RNType type, const string& paramName)
 /**
  * Gets a list of the names of the parameters actually set.
  */
-ValueList<string> OSSteerManager::get_parameter_name_list(RNType type) const
+ValueList<string> OSSteerManager::get_parameter_name_list(OSType type) const
 {
 	ValueList<string> strList;
 	ParameterTableIter iter;
 	ParameterTable tempTable;
 	if (type == STEERPLUGIN)
 	{
-		tempTable = mNavMeshesParameterTable;
+		tempTable = mSteerPlugInsParameterTable;
 		for (iter = tempTable.begin(); iter != tempTable.end(); ++iter)
 		{
 			string name = (*iter).first;
@@ -316,7 +324,7 @@ ValueList<string> OSSteerManager::get_parameter_name_list(RNType type) const
 	}
 	else if (type == STEERVEHICLE)
 	{
-		tempTable = mCrowdAgentsParameterTable;
+		tempTable = mSteerVehiclesParameterTable;
 		for (iter = tempTable.begin(); iter != tempTable.end(); ++iter)
 		{
 			string name = (*iter).first;
@@ -334,86 +342,46 @@ ValueList<string> OSSteerManager::get_parameter_name_list(RNType type) const
 /**
  * Sets all parameters to their default values (if any).
  */
-void OSSteerManager::set_parameters_defaults(RNType type)
+void OSSteerManager::set_parameters_defaults(OSType type)
 {
 	if (type == STEERPLUGIN)
 	{
 		///mNavMeshesParameterTable must be the first cleared
-		mNavMeshesParameterTable.clear();
+		mSteerPlugInsParameterTable.clear();
 		//sets the (mandatory) parameters to their default values:
-		mNavMeshesParameterTable.insert(
-				ParameterNameValue("navmesh_type", "solo"));
-		mNavMeshesParameterTable.insert(ParameterNameValue("cell_size", "0.3"));
-		mNavMeshesParameterTable.insert(
-				ParameterNameValue("cell_height", "0.2"));
-		mNavMeshesParameterTable.insert(
-				ParameterNameValue("agent_height", "2.0"));
-		mNavMeshesParameterTable.insert(
-				ParameterNameValue("agent_radius", "0.6"));
-		mNavMeshesParameterTable.insert(
-				ParameterNameValue("agent_max_climb", "0.9"));
-		mNavMeshesParameterTable.insert(
-				ParameterNameValue("agent_max_slope", "45.0"));
-		mNavMeshesParameterTable.insert(
-				ParameterNameValue("region_min_size", "8"));
-		mNavMeshesParameterTable.insert(
-				ParameterNameValue("region_merge_size", "20"));
-		mNavMeshesParameterTable.insert(
-				ParameterNameValue("partition_type", "watershed"));
-		mNavMeshesParameterTable.insert(
-				ParameterNameValue("edge_max_len", "12.0"));
-		mNavMeshesParameterTable.insert(
-				ParameterNameValue("edge_max_error", "1.3"));
-		mNavMeshesParameterTable.insert(
-				ParameterNameValue("verts_per_poly", "6.0"));
-		mNavMeshesParameterTable.insert(
-				ParameterNameValue("detail_sample_dist", "6.0"));
-		mNavMeshesParameterTable.insert(
-				ParameterNameValue("detail_sample_max_error", "1.0"));
-		//nav mesh tile
-		mNavMeshesParameterTable.insert(
-				ParameterNameValue("build_all_tiles", "false"));
-		mNavMeshesParameterTable.insert(ParameterNameValue("max_tiles", "128"));
-		mNavMeshesParameterTable.insert(
-				ParameterNameValue("max_polys_per_tile", "32768"));
-		mNavMeshesParameterTable.insert(ParameterNameValue("tile_size", "32"));
-		//area flags cost
-		//NAVMESH_POLYAREA_GROUND@NAVMESH_POLYFLAGS_WALK@1.0
-		mNavMeshesParameterTable.insert(ParameterNameValue("area_flags_cost", "0@0x01@1.0"));
-		//NAVMESH_POLYAREA_WATER@NAVMESH_POLYFLAGS_SWIM@10.0
-		mNavMeshesParameterTable.insert(ParameterNameValue("area_flags_cost", "1@0x02@10.0"));
-		//NAVMESH_POLYAREA_ROAD@NAVMESH_POLYFLAGS_WALK@1.0
-		mNavMeshesParameterTable.insert(ParameterNameValue("area_flags_cost", "2@0x01@1.0"));
-		//NAVMESH_POLYAREA_DOOR@NAVMESH_POLYFLAGS_WALK:NAVMESH_POLYFLAGS_DOOR@1.0
-		mNavMeshesParameterTable.insert(ParameterNameValue("area_flags_cost", "3@0x01:0x04@1.0"));
-		//NAVMESH_POLYAREA_GRASS@NAVMESH_POLYFLAGS_WALK@2.0
-		mNavMeshesParameterTable.insert(ParameterNameValue("area_flags_cost", "4@0x01@2.0"));
-		//NAVMESH_POLYAREA_JUMP@NAVMESH_POLYFLAGS_JUMP@1.5
-		mNavMeshesParameterTable.insert(ParameterNameValue("area_flags_cost", "5@0x08@1.5"));
-		//crowd include flags = NAVMESH_POLYFLAGS_ALL ^ NAVMESH_POLYFLAGS_DISABLED = 0xffef
-		mNavMeshesParameterTable.insert(ParameterNameValue("crowd_include_flags", "0xffef"));
-		//crowd exclude flags = NAVMESH_POLYFLAGS_DISABLED = 0x10
-		mNavMeshesParameterTable.insert(ParameterNameValue("crowd_exclude_flags", "0x10"));
+		//sets the (mandatory) parameters to their default values:
+		mSteerPlugInsParameterTable.insert(
+				ParameterNameValue("type", "one_turning"));
+		mSteerPlugInsParameterTable.insert(
+				ParameterNameValue("pathway",
+						"0.0,0.0,0.0:1.0,1.0,1.0$1.0$false"));
 	}
 	else if (type == STEERVEHICLE)
 	{
 		///mCrowdAgentsParameterTable must be the first cleared
-		mCrowdAgentsParameterTable.clear();
+		mSteerVehiclesParameterTable.clear();
 		//sets the (mandatory) parameters to their default values:
-		mCrowdAgentsParameterTable.insert(ParameterNameValue("type", "one_turning"));
-		mCrowdAgentsParameterTable.insert(ParameterNameValue("external_update", "false"));
-		mCrowdAgentsParameterTable.insert(ParameterNameValue("mov_type", "opensteer"));
-		mCrowdAgentsParameterTable.insert(ParameterNameValue("up_axis_fixed", "false"));
-		mCrowdAgentsParameterTable.insert(ParameterNameValue("mass", "1.0"));
-		mCrowdAgentsParameterTable.insert(ParameterNameValue("speed", "0.0"));
-		mCrowdAgentsParameterTable.insert(ParameterNameValue("max_force", "0.1"));
-		mCrowdAgentsParameterTable.insert(ParameterNameValue("max_speed", "1.0"));
-		mCrowdAgentsParameterTable.insert(ParameterNameValue("ray_mask", "all_on"));
+		mSteerVehiclesParameterTable.insert(
+				ParameterNameValue("type", "one_turning"));
+		mSteerVehiclesParameterTable.insert(
+				ParameterNameValue("external_update", "false"));
+		mSteerVehiclesParameterTable.insert(
+				ParameterNameValue("mov_type", "opensteer"));
+		mSteerVehiclesParameterTable.insert(
+				ParameterNameValue("up_axis_fixed", "false"));
+		mSteerVehiclesParameterTable.insert(ParameterNameValue("mass", "1.0"));
+		mSteerVehiclesParameterTable.insert(ParameterNameValue("speed", "0.0"));
+		mSteerVehiclesParameterTable.insert(
+				ParameterNameValue("max_force", "0.1"));
+		mSteerVehiclesParameterTable.insert(
+				ParameterNameValue("max_speed", "1.0"));
+		mSteerVehiclesParameterTable.insert(
+				ParameterNameValue("ray_mask", "all_on"));
 	}
 }
 
 /**
- * Updates RNNavMeshes and their RNCrowdAgents.
+ * Updates OSSteerPlugIns and their RNCrowdAgents.
  *
  * Will be called automatically in a task.
  */
@@ -426,9 +394,10 @@ AsyncTask::DoneStatus OSSteerManager::update(GenericAsyncTask* task)
 #endif
 
 	// call all audio components update functions, passing delta time
-	for (PTA(PT(RNNavMesh))::size_type index = 0; index < mNavMeshes.size();	++index)
+	for (PTA(PT(OSSteerPlugIn))::size_type index = 0;
+			index < mSteerPlugIns.size(); ++index)
 	{
-		mNavMeshes[index]->update(dt);
+		mSteerPlugIns[index]->update(dt);
 	}
 	//
 	return AsyncTask::DS_cont;
@@ -519,11 +488,11 @@ Pair<bool,float> OSSteerManager::get_collision_height(const LPoint3f& rayOrigin,
 /**
  * Draws the specified primitive, given the points, the color (RGBA) and point's size.
  */
-void RNNavMeshManager::debug_draw_primitive(RNDebugDrawPrimitives primitive,
+void OSSteerManager::debug_draw_primitive(OSDebugDrawPrimitives primitive,
 		const ValueList<LPoint3f>& points, const LVecBase4f color, float size)
 {
-#ifdef RN_DEBUG
-	mDD->begin((duDebugDrawPrimitives) primitive, size);
+#ifdef OS_DEBUG
+	mDD->begin((ossup::DrawMeshDrawer::DrawPrimitive)primitive, size);
 	// calculate the real point list size
 	unsigned int realSize;
 	switch (primitive)
@@ -554,7 +523,7 @@ void RNNavMeshManager::debug_draw_primitive(RNDebugDrawPrimitives primitive,
 /**
  * Erases all primitives drawn until now.
  */
-void RNNavMeshManager::debug_draw_reset()
+void OSSteerManager::debug_draw_reset()
 {
 #ifdef RN_DEBUG
 	mDD->reset();

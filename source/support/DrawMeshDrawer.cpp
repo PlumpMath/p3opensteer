@@ -9,18 +9,21 @@
 #include "common.h"
 #include <omniBoundingVolume.h>
 #include <textNode.h>
+#include <geomPoints.h>
+#include <geomLines.h>
 
 namespace ossup
 {
 
 DrawMeshDrawer::DrawMeshDrawer(NodePath render, NodePath camera, int budget,
 		float textScale, bool singleMesh) :
-		m_render(render), m_camera(camera), m_depthMask(true), m_meshDrawersSize(
-				0), m_budget(budget), m_singleMesh(singleMesh), m_size(
-				1.0 / 50.0), m_twoSided(false), m_textNodeIdx(0), m_prevTextNodeIdx(-1), m_textNodesSize(
-				0), m_textScale(textScale)
+		m_render(render), m_camera(camera), m_depthMask(true), m_generatorsSize(
+				0), m_generatorsSizeLast(0), m_budget(budget), m_singleMesh(
+				singleMesh), m_size(1.0 / 50.0), m_twoSided(false), m_textNodeIdx(
+				0), m_prevTextNodeIdx(-1), m_textNodesSize(0), m_textScale(
+				textScale)
 {
-	reset();
+	initialize();
 }
 
 DrawMeshDrawer::~DrawMeshDrawer()
@@ -31,10 +34,10 @@ DrawMeshDrawer::~DrawMeshDrawer()
 	}
 }
 
-void DrawMeshDrawer::reset()
+void DrawMeshDrawer::initialize()
 {
-	//reset current MeshDrawer index
-	m_meshDrawerIdx = 0;
+	//reset current MeshDrawer in this frame
+	m_generatorIdx = 0;
 	m_prim = NULL_PRIM;
 	//clear text on not used text nodes
 	for (int idx = m_textNodeIdx; idx <= m_prevTextNodeIdx; ++idx)
@@ -46,11 +49,30 @@ void DrawMeshDrawer::reset()
 	m_textNodeIdx = 0;
 }
 
+void DrawMeshDrawer::finalize()
+{
+	//clean drawing of unused generators in this frame:
+	//m_meshDrawerIdx = number of most recently used generators
+	///NOTE: alternatively unused generators can be deallocated:
+	/// it should be less performant.
+	if (m_generatorIdx < m_generatorsSizeLast)
+	{
+		//
+		for (int i = m_generatorIdx; i < m_generatorsSizeLast; ++i)
+		{
+			m_generators[i]->begin(m_camera, m_render);
+			m_generators[i]->end();
+		}
+	}
+	//update m_meshDrawersSizeLast
+	m_generatorsSizeLast = m_generatorIdx;
+}
+
 void DrawMeshDrawer::clear()
 {
 	//reset to initial values
-	m_meshDrawerIdx = 0;
-	m_meshDrawersSize = 0;
+	m_generatorIdx = 0;
+	m_generatorsSize = 0;
 	m_prim = NULL_PRIM;
 	m_textNodeIdx = 0;
 	m_prevTextNodeIdx = -1;
@@ -71,7 +93,7 @@ void DrawMeshDrawer::clear()
 void DrawMeshDrawer::begin(DrawPrimitive prim)
 {
 	//dynamically allocate MeshDrawers if necessary
-	if (m_meshDrawerIdx >= m_meshDrawersSize)
+	if (m_generatorIdx >= m_generatorsSize)
 	{
 		//allocate a new MeshDrawer
 		m_generators.push_back(new MeshDrawer());
@@ -84,14 +106,14 @@ void DrawMeshDrawer::begin(DrawPrimitive prim)
 		m_generators.back()->get_root().node()->set_final(true);
 		m_generators.back()->get_root().reparent_to(m_render);
 		//update number of MeshDrawers
-		m_meshDrawersSize = m_generators.size();
+		m_generatorsSize = m_generators.size();
 	}
 	//setup current MeshDrawer
-	m_generators[m_meshDrawerIdx]->get_root().set_depth_write(m_depthMask);
-//	m_generator[m_meshDrawerIdx]->get_root().set_render_mode_thickness(m_size);
-	m_generators[m_meshDrawerIdx]->get_root().set_two_sided(m_twoSided);
+	m_generators[m_generatorIdx]->get_root().set_depth_write(m_depthMask);
+//	m_generator[m_generatorIdx]->get_root().set_render_mode_thickness(m_size);
+	m_generators[m_generatorIdx]->get_root().set_two_sided(m_twoSided);
 	//begin current MeshDrawer
-	m_generators[m_meshDrawerIdx]->begin(m_camera, m_render);
+	m_generators[m_generatorIdx]->begin(m_camera, m_render);
 	m_prim = prim;
 	m_lineIdx = m_triIdx = m_quadIdx = 0;
 	m_triStripUp = true;
@@ -102,16 +124,21 @@ void DrawMeshDrawer::end()
 	//close line loop (if any)
 	if (m_prim == DRAW_LINELOOP and (m_lineVertex != m_vertexLoop0))
 	{
-		m_generators[m_meshDrawerIdx]->segment(m_lineVertex, m_vertexLoop0,
+		m_generators[m_generatorIdx]->segment(m_lineVertex, m_vertexLoop0,
 				LVector4f(m_lineUV.get_x(), m_lineUV.get_y(), m_uvLoop0.get_x(),
 						m_uvLoop0.get_y()), m_size, m_colorLoop0);
 	}
+
+	ASSERT_TRUE(m_lineIdx == 0)
+	ASSERT_TRUE(m_triIdx == 0)
+	ASSERT_TRUE(m_quadIdx == 0)
+
 	//end current MeshDrawer
-	m_generators[m_meshDrawerIdx]->end();
+	m_generators[m_generatorIdx]->end();
 	//increase MeshDrawer index only if multiple mesh
 	if (not m_singleMesh)
 	{
-		++m_meshDrawerIdx;
+		++m_generatorIdx;
 	}
 	m_prim = NULL_PRIM;
 }
@@ -121,14 +148,14 @@ void DrawMeshDrawer::vertex(const LVector3f& vertex, const LVector2f& uv)
 	switch (m_prim)
 	{
 	case DRAW_POINTS:
-		m_generators[m_meshDrawerIdx]->billboard(vertex,
+		m_generators[m_generatorIdx]->billboard(vertex,
 				LVector4f(uv.get_x(), uv.get_y(), uv.get_x(), uv.get_y()),
 				m_size, m_color);
 		break;
 	case DRAW_LINES:
 		if ((m_lineIdx % 2) == 1)
 		{
-			m_generators[m_meshDrawerIdx]->segment(m_lineVertex, vertex,
+			m_generators[m_generatorIdx]->segment(m_lineVertex, vertex,
 					LVector4f(m_lineUV.get_x(), m_lineUV.get_y(), uv.get_x(),
 							uv.get_y()), m_size, m_color);
 			m_lineIdx = 0;
@@ -144,7 +171,7 @@ void DrawMeshDrawer::vertex(const LVector3f& vertex, const LVector2f& uv)
 	case DRAW_LINESTRIP:
 		if ((m_lineIdx % 2) == 1)
 		{
-			m_generators[m_meshDrawerIdx]->segment(m_lineVertex, vertex,
+			m_generators[m_generatorIdx]->segment(m_lineVertex, vertex,
 					LVector4f(m_lineUV.get_x(), m_lineUV.get_y(), uv.get_x(),
 							uv.get_y()), m_size, m_color);
 			m_lineVertex = vertex;
@@ -160,7 +187,7 @@ void DrawMeshDrawer::vertex(const LVector3f& vertex, const LVector2f& uv)
 	case DRAW_LINELOOP:
 		if ((m_lineIdx % 2) == 1)
 		{
-			m_generators[m_meshDrawerIdx]->segment(m_lineVertex, vertex,
+			m_generators[m_generatorIdx]->segment(m_lineVertex, vertex,
 					LVector4f(m_lineUV.get_x(), m_lineUV.get_y(), uv.get_x(),
 							uv.get_y()), m_size, m_color);
 			m_lineVertex = vertex;
@@ -176,7 +203,7 @@ void DrawMeshDrawer::vertex(const LVector3f& vertex, const LVector2f& uv)
 	case DRAW_TRIS:
 		if ((m_triIdx % 3) == 2)
 		{
-			m_generators[m_meshDrawerIdx]->tri(m_triVertex[0], m_triColor[0],
+			m_generators[m_generatorIdx]->tri(m_triVertex[0], m_triColor[0],
 					m_triUV[0], m_triVertex[1], m_triColor[1], m_triUV[1],
 					vertex, m_color, uv);
 			m_triIdx = 0;
@@ -192,7 +219,7 @@ void DrawMeshDrawer::vertex(const LVector3f& vertex, const LVector2f& uv)
 	case DRAW_TRIFAN:
 		if ((m_triIdx % 3) == 2)
 		{
-			m_generators[m_meshDrawerIdx]->tri(m_triVertex[0], m_triColor[0],
+			m_generators[m_generatorIdx]->tri(m_triVertex[0], m_triColor[0],
 					m_triUV[0], m_triVertex[1], m_triColor[1], m_triUV[1],
 					vertex, m_color, uv);
 			//store last vertex into vertex[1]
@@ -211,7 +238,7 @@ void DrawMeshDrawer::vertex(const LVector3f& vertex, const LVector2f& uv)
 	case DRAW_TRISTRIP:
 		if ((m_triIdx % 3) == 2)
 		{
-			m_generators[m_meshDrawerIdx]->tri(m_triVertex[0], m_triColor[0],
+			m_generators[m_generatorIdx]->tri(m_triVertex[0], m_triColor[0],
 					m_triUV[0], m_triVertex[1], m_triColor[1], m_triUV[1],
 					vertex, m_color, uv);
 			//slide vertices and toggle stripUp
@@ -241,10 +268,10 @@ void DrawMeshDrawer::vertex(const LVector3f& vertex, const LVector2f& uv)
 	case DRAW_QUADS:
 		if ((m_quadIdx % 4) == 3)
 		{
-			m_generators[m_meshDrawerIdx]->tri(m_quadVertex[0], m_quadColor[0],
+			m_generators[m_generatorIdx]->tri(m_quadVertex[0], m_quadColor[0],
 					m_quadUV[0], m_quadVertex[1], m_quadColor[1], m_quadUV[1],
 					m_quadVertex[2], m_quadColor[2], m_quadUV[2]);
-			m_generators[m_meshDrawerIdx]->tri(m_quadVertex[0], m_quadColor[0],
+			m_generators[m_generatorIdx]->tri(m_quadVertex[0], m_quadColor[0],
 					LVector2f::zero(), m_quadVertex[2], m_quadColor[2],
 					LVector2f::zero(), vertex, m_color, uv);
 			m_quadIdx = 0;

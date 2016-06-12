@@ -16,47 +16,69 @@ INLINE OpenSteer::ObstacleGroup OSSteerPlugIn::getObstacles()
 	return mObstacles;
 }
 
-INLINE OpenSteer::AbstractPlugIn& OSSteerPlugIn::getAbstractPlugIn()
-{
-	return *mPlugIn;
-}
-
-INLINE OSSteerPlugIn::operator OpenSteer::AbstractPlugIn&()
-{
-	return *mPlugIn;
-}
-
-#ifdef OS_DEBUG
 INLINE NodePath OSSteerPlugIn::getDrawer3dDebugNodePath() const
 {
+#ifdef OS_DEBUG
 	return mDrawer3dNP;
+#else
+	return NodePath();
+#endif //OS_DEBUG
 }
 
 INLINE NodePath OSSteerPlugIn::getDrawer2dDebugNodePath() const
 {
+#ifdef OS_DEBUG
 	return mDrawer2dNP;
-}
+#else
+	return NodePath();
 #endif //OS_DEBUG
+}
 
 inline void OSSteerPlugIn::do_reset()
 {
 	//
 	mPlugIn = NULL;
-	mReferenceNP = NodePath();
+	mReferenceNP.clear();
+	mReferenceDebugNP.clear();
+	mReferenceDebug2DNP.clear();
 	mCurrentTime = 0.0;
 	mSteerVehicles.clear();
 #ifdef OS_DEBUG
-	mDrawer3dNP = NodePath();
-	mDrawer2dNP = NodePath();
-	mDebugCamera = NodePath();
+	mDrawer3dNP.clear();
+	mDrawer2dNP.clear();
+	mDebugCamera.clear();
 	mDrawer3d = mDrawer2d = NULL;
 	mEnableDebugDrawUpdate = false;
 #endif
 }
 
-INLINE ostream &operator <<(ostream &out, const OSSteerPlugIn& pluIn)
+/**
+ * Returns a reference to underlying OpenSteer::AbstractPlugIn.
+ */
+inline OpenSteer::AbstractPlugIn& OSSteerPlugIn::getAbstractPlugIn()
 {
-	pluIn.output(out);
+	return *mPlugIn;
+}
+
+/**
+ *
+ */
+inline int OSSteerPlugIn::unique_ref()
+{
+	return ++mRef;
+}
+
+/**
+ * OpenSteer::AbstractPlugIn reference conversion function.
+ */
+inline OSSteerPlugIn::operator OpenSteer::AbstractPlugIn&()
+{
+	return *mPlugIn;
+}
+
+INLINE ostream &operator <<(ostream &out, const OSSteerPlugIn& plugIn)
+{
+	plugIn.output(out);
 	return out;
 }
 
