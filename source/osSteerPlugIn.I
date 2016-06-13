@@ -11,11 +11,6 @@
 
 ///OSSteerPlugIn inline definitions
 
-INLINE OpenSteer::ObstacleGroup OSSteerPlugIn::getObstacles()
-{
-	return mObstacles;
-}
-
 INLINE NodePath OSSteerPlugIn::getDrawer3dDebugNodePath() const
 {
 #ifdef OS_DEBUG

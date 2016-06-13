@@ -14,10 +14,8 @@
 #include "support/PlugIn_LowSpeedTurn.h"
 #include "support/PlugIn_MapDrive.h"
 
-//VehicleAddOn typedef.
-typedef ossup::VehicleAddOnMixin<ossup::SimpleVehicle, OSSteerVehicle> VehicleAddOn;
-
-OSSteerVehicle::OSSteerVehicle(const string& name):PandaNode(name)
+OSSteerVehicle::OSSteerVehicle(const string& name) :
+		PandaNode(name)
 {
 	mSteerPlugIn.clear();
 	do_reset();
@@ -35,9 +33,11 @@ void OSSteerVehicle::do_initialize()
 	float value;
 	//external update
 	mExternalUpdate = (mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
-					std::string("external_update")) == std::string("true") ? true : false);
+					std::string("external_update")) ==
+			std::string("true") ? true : false);
 	//type
-	param = mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE, std::string("type"));
+	param = mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
+			std::string("type"));
 	if (param == std::string("pedestrian"))
 	{
 		! mExternalUpdate ?
@@ -123,7 +123,8 @@ void OSSteerVehicle::do_initialize()
 	//up axis fixed
 	mUpAxisFixed = (
 			mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
-					std::string("up_axis_fixed")) == std::string("true") ? true : false);
+					std::string("up_axis_fixed")) ==
+							std::string("true") ? true : false);
 	//get settings
 	ossup::VehicleSettings settings;
 	//mass
@@ -215,8 +216,8 @@ void OSSteerVehicle::do_initialize()
 
 	//set thrown events if any
 	unsigned int idx1, valueNum1;
-	std::vector<std::string> paramValuesStr1, paramValuesStr2;
-	if (mThrownEventsParam != std::string(""))
+	pvector<string> paramValuesStr1, paramValuesStr2;
+	if (mThrownEventsParam != string(""))
 	{
 		//events specified
 		//event1@[event_name1]@[frequency1][:...[:eventN@[event_nameN]@[frequencyN]]]
@@ -395,7 +396,8 @@ void OSSteerVehicle::doUpdateSteerVehicle(const float currentTime,
 	if (mVehicle->speed() > 0.0)
 	{
 		NodePath ownerObjectNP/* = mOwnerObject->getNodePath()*/;
-		LPoint3f updatedPos = ossup::OpenSteerVec3ToLVecBase3f(mVehicle->position());
+		LPoint3f updatedPos = ossup::OpenSteerVec3ToLVecBase3f(
+				mVehicle->position());
 		switch (mMovType)
 		{
 		case OPENSTEER:
@@ -425,13 +427,16 @@ void OSSteerVehicle::doUpdateSteerVehicle(const float currentTime,
 		ownerObjectNP.set_pos(updatedPos);
 		//update node path dir
 		mUpAxisFixed ?
-			//up axis fixed: z
-			ownerObjectNP.heads_up(
-					updatedPos - ossup::OpenSteerVec3ToLVecBase3f(mVehicle->forward()),
-					LVector3f::up()):
-			//up axis free: from mVehicle
-			ownerObjectNP.heads_up(
-						updatedPos - ossup::OpenSteerVec3ToLVecBase3f(mVehicle->forward()),
+		//up axis fixed: z
+				ownerObjectNP.heads_up(
+						updatedPos
+								- ossup::OpenSteerVec3ToLVecBase3f(
+										mVehicle->forward()), LVector3f::up()) :
+				//up axis free: from mVehicle
+				ownerObjectNP.heads_up(
+						updatedPos
+								- ossup::OpenSteerVec3ToLVecBase3f(
+										mVehicle->forward()),
 						ossup::OpenSteerVec3ToLVecBase3f(mVehicle->up()));
 
 		//handle Move/Steady events
@@ -485,13 +490,13 @@ void OSSteerVehicle::doExternalUpdateSteerVehicle(const float currentTime,
 	//forward,
 	mVehicle->setForward(
 			ossup::LVecBase3fToOpenSteerVec3(
-					ownerNP.get_parent().get_relative_vector(
-							ownerNP, -LVector3f::forward())).normalize());
+					ownerNP.get_parent().get_relative_vector(ownerNP,
+							-LVector3f::forward())).normalize());
 	//up,
 	mVehicle->setUp(
 			ossup::LVecBase3fToOpenSteerVec3(
-					ownerNP.get_parent().get_relative_vector(
-							ownerNP, LVector3f::up())).normalize());
+					ownerNP.get_parent().get_relative_vector(ownerNP,
+							LVector3f::up())).normalize());
 	//side,
 	mVehicle->setUnitSideFromForwardAndUp();
 	//speed (elapsedTime should be != 0)
@@ -500,10 +505,11 @@ void OSSteerVehicle::doExternalUpdateSteerVehicle(const float currentTime,
 	//no event thrown: external updating sub-system will do, if expected
 }
 
-void OSSteerVehicle::doEnableSteerVehicleEvent(EventThrown event, ThrowEventData eventData)
+void OSSteerVehicle::doEnableSteerVehicleEvent(EventThrown event,
+		ThrowEventData eventData)
 {
 	//some checks
-	nassertv_always(! eventData.mEventName.empty())
+	nassertv_always(!eventData.mEventName.empty())
 
 	if (eventData.mFrequency <= 0.0)
 	{
@@ -513,21 +519,21 @@ void OSSteerVehicle::doEnableSteerVehicleEvent(EventThrown event, ThrowEventData
 	switch (event)
 	{
 	case MOVEEVENT:
-		if(mMove.mEnable != eventData.mEnable)
+		if (mMove.mEnable != eventData.mEnable)
 		{
 			mMove = eventData;
 			mMove.mTimeElapsed = 0;
 		}
 		break;
 	case STEADYEVENT:
-		if(mSteady.mEnable != eventData.mEnable)
+		if (mSteady.mEnable != eventData.mEnable)
 		{
 			mSteady = eventData;
 			mSteady.mTimeElapsed = 0;
 		}
 		break;
 	case PATHFOLLOWINGEVENT:
-		if(mPathFollowing.mEnable != eventData.mEnable)
+		if (mPathFollowing.mEnable != eventData.mEnable)
 		{
 			mPathFollowing = eventData;
 			mPathFollowing.mTimeElapsed = 0;
@@ -535,7 +541,7 @@ void OSSteerVehicle::doEnableSteerVehicleEvent(EventThrown event, ThrowEventData
 		}
 		break;
 	case AVOIDOBSTACLEEVENT:
-		if(mAvoidObstacle.mEnable != eventData.mEnable)
+		if (mAvoidObstacle.mEnable != eventData.mEnable)
 		{
 			mAvoidObstacle = eventData;
 			mAvoidObstacle.mTimeElapsed = 0;
@@ -543,7 +549,7 @@ void OSSteerVehicle::doEnableSteerVehicleEvent(EventThrown event, ThrowEventData
 		}
 		break;
 	case AVOIDCLOSENEIGHBOREVENT:
-		if(mAvoidCloseNeighbor.mEnable != eventData.mEnable)
+		if (mAvoidCloseNeighbor.mEnable != eventData.mEnable)
 		{
 			mAvoidCloseNeighbor = eventData;
 			mAvoidCloseNeighbor.mTimeElapsed = 0;
@@ -551,7 +557,7 @@ void OSSteerVehicle::doEnableSteerVehicleEvent(EventThrown event, ThrowEventData
 		}
 		break;
 	case AVOIDNEIGHBOREVENT:
-		if(mAvoidNeighbor.mEnable != eventData.mEnable)
+		if (mAvoidNeighbor.mEnable != eventData.mEnable)
 		{
 			mAvoidNeighbor = eventData;
 			mAvoidNeighbor.mTimeElapsed = 0;
@@ -587,8 +593,8 @@ void OSSteerVehicle::doAvoidObstacle(const float minDistanceToCollision)
 	}
 }
 
-void OSSteerVehicle::doAvoidCloseNeighbor(const OpenSteer::AbstractVehicle& other,
-		const float additionalDistance)
+void OSSteerVehicle::doAvoidCloseNeighbor(
+		const OpenSteer::AbstractVehicle& other, const float additionalDistance)
 {
 	//handle Avoid Close Neighbor event
 	if (mAvoidCloseNeighbor.mEnable)
@@ -633,7 +639,8 @@ void OSSteerVehicle::doThrowEvent(ThrowEventData& eventData)
 	}
 }
 
-void OSSteerVehicle::doHandleSteerLibraryEvent(ThrowEventData& eventData, bool callbackCalled)
+void OSSteerVehicle::doHandleSteerLibraryEvent(ThrowEventData& eventData,
+		bool callbackCalled)
 {
 	if (eventData.mEnable)
 	{

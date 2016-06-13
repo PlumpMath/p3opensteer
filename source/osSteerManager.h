@@ -27,7 +27,7 @@ class EXPORT_CLASS OSSteerManager: public TypedReferenceCount,
 {
 public:
 	///obstacles
-	typedef Pair<OSObstacleSettings, NodePath> Obstacle;
+	typedef Pair<OSObstacleSettings, NodePath> ObstacleAttributes;
 
 PUBLISHED:
 	OSSteerManager(const NodePath& root = NodePath(),
@@ -104,6 +104,38 @@ PUBLISHED:
 	///@}
 
 	/**
+	 * \name OBSTACLES
+	 */
+	/**
+	 * \brief Adds an OpenSteer obstacle, seen by all SteerPlugins.
+	 *
+	 * If the object parameter is not NULL,
+	 * @param object The Object used as obstacle.
+	 * @param type The obstacle type: box, plane, rectangle, sphere.
+	 * @param width Obstacle's width (box, rectangle).
+	 * @param height Obstacle's height (box, rectangle).
+	 * @param depth Obstacle's depth (box).
+	 * @param radius Obstacle's radius (sphere).
+	 * @param side Obstacle's right side direction.
+	 * @param up Obstacle's up direction.
+	 * @param forward Obstacle's forward direction.
+	 * @param position Obstacle's position.
+	 * @param seenFromState Possible values: outside, inside, both.
+	 * @return
+	 */
+	/**
+	 * \brief Removes an OpenSteer obstacle, seen by all plugins.
+	 * @param obstacle The obstacle to remove.
+	 */
+	///@{
+	OSObstacleSettings get_obstacle_settings(int ref) const;
+	INLINE NodePath get_obstacle_by_ref(int ref) const;
+	INLINE int get_obstacle(int index) const;
+	INLINE int get_num_obstacles() const;
+	MAKE_SEQ(get_obstacles, get_num_obstacles, get_obstacle);
+	///@}
+
+	/**
 	 * \name UTILITIES
 	 */
 	///@{
@@ -156,7 +188,7 @@ public:
 	 * \name Obstacles of all plug-ins (c++ only).
 	 */
 	///@{
-	inline pvector<Obstacle>& get_obstacles();
+	inline pvector<ObstacleAttributes>& get_opensteer_obstacles();
 	///@}
 
 private:
@@ -175,8 +207,9 @@ private:
 	///OSSteerVehicles' parameter table.
 	ParameterTable mSteerVehiclesParameterTable;
 
-	///List of all obstacles (ie handled by all OSSteerPlugIns).
-	pvector<Obstacle> mObstacles;
+	///List of all obstacles (ie handled by all OSSteerPlugIns).//XXX : REFACTOR!!!
+	map<OpenSteer::AbstractObstacle*, ObstacleAttributes> mObstacles;
+	OpenSteer::ObstacleGroup mOpensteerObstacles;
 
 	///@{
 	///A task data for step simulation update.

@@ -85,7 +85,8 @@ void OSSteerPlugIn::do_initialize()
 	//set the plugin local obstacles reference
 	dynamic_cast<ossup::PlugIn*>(mPlugIn)->localObstacles = &mLocalObstacles;
 	//set the plugin global obstacles reference
-	dynamic_cast<ossup::PlugIn*>(mPlugIn)->obstacles = &mTmpl->get_obstacles();
+	dynamic_cast<ossup::PlugIn*>(mPlugIn)->obstacles =
+			&mTmpl->get_opensteer_obstacles();
 	//add its own obstacles
 	if (! mReferenceNP.is_empty())
 	{
@@ -257,9 +258,9 @@ void OSSteerPlugIn::do_finalize()
 	{
 		//find in global obstacles and remove it
 		//get a reference to the global storage
-		pvector<OSSteerManager::Obstacle>& globalObstacles =
+		pvector<OSSteerManager::ObstacleAttributes>& globalObstacles =
 				OSSteerManager::get_global_ptr()->get_obstacles();
-		pvector<OSSteerManager::Obstacle>::iterator iter;
+		pvector<OSSteerManager::ObstacleAttributes>::iterator iter;
 		for(iter = globalObstacles.begin(); iter != globalObstacles.end(); ++iter)
 		{
 			if ((*iter).first().get_obstacle() == (*iterLocal))
@@ -492,7 +493,7 @@ int OSSteerPlugIn::add_obstacle(NodePath& objectNP,
 		settings.set_obstacle(obstacle);
 		//save into the global storage
 		OSSteerManager::get_global_ptr()->get_obstacles().push_back(
-				OSSteerManager::Obstacle(settings, objectNP));
+				OSSteerManager::ObstacleAttributes(settings, objectNP));
 	}
 	return ref;
 }
@@ -509,9 +510,9 @@ NodePath OSSteerPlugIn::remove_obstacle(int ref)
 	NodePath resultNP = NodePath::fail();
 	//find in global obstacles
 	//get a reference to the global storage
-	pvector<OSSteerManager::Obstacle>& globalObstacles =
+	pvector<OSSteerManager::ObstacleAttributes>& globalObstacles =
 			OSSteerManager::get_global_ptr()->get_obstacles();
-	pvector<OSSteerManager::Obstacle>::iterator iter;
+	pvector<OSSteerManager::ObstacleAttributes>::iterator iter;
 	for(iter = globalObstacles.begin(); iter != globalObstacles.end(); ++iter)
 	{
 		if ((*iter).first().get_ref() == ref)

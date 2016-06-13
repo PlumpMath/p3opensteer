@@ -21,6 +21,7 @@
 
 //
 #ifndef CPPPARSER
+#include "support/common.h"
 #include "support/DrawMeshDrawer.h"
 #endif //CPPPARSER
 

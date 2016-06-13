@@ -73,9 +73,9 @@ INLINE OSSteerManager* OSSteerManager::get_global_ptr()
 /**
  * Returns a reference to the storage of all obstacles.
  */
-inline pvector<OSSteerManager::Obstacle>& OSSteerManager::get_obstacles()
+inline pvector<OSSteerManager::ObstacleAttributes>& OSSteerManager::get_opensteer_obstacles()
 {
-	return mObstacles;
+	return mOpensteerObstacles;
 }
 
 /**

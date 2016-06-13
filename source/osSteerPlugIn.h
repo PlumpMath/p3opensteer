@@ -85,6 +85,9 @@ PUBLISHED:
 			float const radii[], bool closedCycle);
 
 	/**
+	 * \name OBSTACLES
+	 */
+	/**
 	 * \brief Adds an OpenSteer obstacle, seen by all SteerPlugins.
 	 *
 	 * If the object parameter is not NULL,
@@ -105,9 +108,6 @@ PUBLISHED:
 	 * \brief Removes an OpenSteer obstacle, seen by all plugins.
 	 * @param obstacle The obstacle to remove.
 	 */
-	/**
-	 * \name OBSTACLES
-	 */
 	///@{
 	int add_obstacle(NodePath& object,
 			const std::string& type, const std::string& seenFromState,
@@ -116,15 +116,6 @@ PUBLISHED:
 			const LVector3f& up = LVector3f::zero(), const LVector3f& = LVector3f::zero(),
 			const LPoint3f& position = LPoint3f::zero());
 	NodePath remove_obstacle(int ref);
-	OSObstacleSettings get_obstacle_settings(int ref) const;
-	INLINE int get_obstacle(int index) const;
-	INLINE int get_num_obstacles() const;
-	MAKE_SEQ(get_obstacles, get_num_obstacles, get_obstacle);
-	/**
-	 * \brief Gets the obstacles, seen by all plugins.
-	 * @return The obstacles.
-	 */
-	OpenSteer::ObstacleGroup getObstacles();
 	///@}
 
 	/**

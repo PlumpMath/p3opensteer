@@ -256,6 +256,9 @@ private:
 
 INLINE ostream &operator << (ostream &out, const OSSteerVehicle & crowdAgent);
 
+//VehicleAddOn typedef.
+typedef ossup::VehicleAddOnMixin<ossup::SimpleVehicle, OSSteerVehicle> VehicleAddOn;
+
 ///inline
 #include "osSteerVehicle.I"
 
