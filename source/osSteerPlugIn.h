@@ -61,7 +61,7 @@ PUBLISHED:
 	 * @param steerVehicle The SteerVehicle to add.
 	 * @return Result::OK on successful addition, various error conditions otherwise.
 	 */
-	int addSteerVehicle(PT(OSSteerVehicle)steerVehicle);
+	int addSteerVehicle(NodePath steerVehicle);
 
 	/**
 	 * \brief Removes a SteerVehicle component from the OpenSteer handling
@@ -71,7 +71,7 @@ PUBLISHED:
 	 * @param steerVehicle The SteerVehicle to remove.
 	 * @return Result::OK on successful removal, various error conditions otherwise.
 	 */
-	int removeSteerVehicle(PT(OSSteerVehicle)steerVehicle);
+	int removeSteerVehicle(NodePath steerVehicle);
 
 	/**
 	 * \brief Sets the pathway of this SteerPlugin.
@@ -162,7 +162,7 @@ public:
 	inline OpenSteer::AbstractPlugIn& getAbstractPlugIn();
 	inline operator OpenSteer::AbstractPlugIn&();
 	///Unique ref producer.
-	int unique_ref();
+	inline int unique_ref();
 	///@}
 
 protected:
@@ -209,6 +209,26 @@ private:
 	///Enable Debug Draw update.
 	bool mEnableDebugDrawUpdate;
 #endif
+
+	// Explicitly disabled copy constructor and copy assignment operator.
+	OSSteerPlugIn(const OSSteerPlugIn&);
+	OSSteerPlugIn& operator=(const OSSteerPlugIn&);
+
+public:
+	/**
+	 * \name TypedWritable API
+	 */
+	///@{
+	static void register_with_read_factory();
+	virtual void write_datagram (BamWriter *manager, Datagram &dg) override;
+	virtual int complete_pointers(TypedWritable **p_list, BamReader *manager) override;
+	virtual void finalize(BamReader *manager);
+	bool require_fully_complete() const;
+	///@}
+
+protected:
+	static TypedWritable *make_from_bam(const FactoryParams &params);
+	virtual void fillin(DatagramIterator &scan, BamReader *manager) override;
 
 public:
 	/**

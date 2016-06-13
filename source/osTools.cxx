@@ -120,6 +120,61 @@ void ThrowEventData::read_datagram(DatagramIterator &scan)
 	mPeriod = scan.get_stdfloat();
 }
 
+///Vehicle settings.
+/**
+ *
+ */
+OSVehicleSettings::OSVehicleSettings(): _vehicleSettings()
+{
+}
+/**
+ * Writes the Vehicle settings into a datagram.
+ */
+void OSVehicleSettings::write_datagram(Datagram &dg) const
+{
+	dg.add_stdfloat(get_mass());
+	dg.add_stdfloat(get_radius());
+	dg.add_stdfloat(get_speed());
+	dg.add_stdfloat(get_maxForce());
+	dg.add_stdfloat(get_maxSpeed());
+	get_forward().write_datagram(dg);
+	get_side().write_datagram(dg);
+	get_up().write_datagram(dg);
+	get_position().write_datagram(dg);
+}
+
+/**
+ * Restores the Vehicle settings from the datagram.
+ */
+void OSVehicleSettings::read_datagram(DatagramIterator &scan)
+{
+	// mass
+	float m_mass;
+	set_mass(scan.get_stdfloat());
+	// size of bounding sphere, for obstacle avoidance, etc.
+	float m_radius;
+	set_radius(scan.get_stdfloat());
+	// speed of vehicle
+	float m_speed;
+	set_speed(scan.get_stdfloat());
+	// the maximum steering force this vehicle can apply
+	float m_maxForce;
+	set_maxForce(scan.get_stdfloat());
+	// the maximum speed this vehicle is allowed to move
+	float m_maxSpeed;
+	set_maxSpeed(scan.get_stdfloat());
+	//
+	LVector3f value;
+	value.read_datagram(scan);
+	set_forward(value);
+	value.read_datagram(scan);
+	set_side(value);
+	value.read_datagram(scan);
+	set_up(value);
+	value.read_datagram(scan);
+	set_position(value);
+}
+
 ///OSObstacleSettings.
 /**
  * Writes the OSObstacleSettings into a datagram.

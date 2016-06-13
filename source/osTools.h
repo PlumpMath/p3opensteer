@@ -306,6 +306,47 @@ string replaceCharacter(const string& source, int character,
  */
 string eraseCharacter(const string& source, int character);
 
+///Vehicle settings.
+struct EXPORT_CLASS OSVehicleSettings
+{
+PUBLISHED:
+	OSVehicleSettings();
+#ifndef CPPPARSER
+	OSVehicleSettings(const ossup::VehicleSettings& settings) :
+		_vehicleSettings(settings)
+	{
+	}
+	operator ossup::VehicleSettings() const
+	{
+		return _vehicleSettings;
+	}
+#endif
+	INLINE float get_mass() const;
+	INLINE void set_mass(float value);
+	INLINE float get_radius() const;
+	INLINE void set_radius(float value);
+	INLINE float get_speed() const;
+	INLINE void set_speed(float value);
+	INLINE float get_maxForce() const;
+	INLINE void set_maxForce(float value);
+	INLINE float get_maxSpeed() const;
+	INLINE void set_maxSpeed(float value);
+	INLINE LVector3f get_forward() const;
+	INLINE void set_forward(const LVector3f& value);
+	INLINE LVector3f get_side() const;
+	INLINE void set_side(const LVector3f& value);
+	INLINE LVector3f get_up() const;
+	INLINE void set_up(const LVector3f& value);
+	INLINE LVector3f get_position() const;
+	INLINE void set_position(const LVector3f& value);
+private:
+	ossup::VehicleSettings _vehicleSettings;
+
+public:
+	void write_datagram(Datagram &dg) const;
+	void read_datagram(DatagramIterator &scan);
+};
+
 ///OSObstacleSettings.
 struct EXPORT_CLASS OSObstacleSettings
 {

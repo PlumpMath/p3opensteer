@@ -13,7 +13,6 @@
 #include "support/PlugIn_CaptureTheFlag.h"
 #include "support/PlugIn_LowSpeedTurn.h"
 #include "support/PlugIn_MapDrive.h"
-//#include "Game/GamePhysicsManager.h"
 
 //VehicleAddOn typedef.
 typedef ossup::VehicleAddOnMixin<ossup::SimpleVehicle, OSSteerVehicle> VehicleAddOn;
@@ -32,15 +31,13 @@ void OSSteerVehicle::do_initialize()
 {
 	WPT(OSSteerManager)mTmpl = OSSteerManager::get_global_ptr();
 	//set OSSteerVehicle parameters
-	//
 	std::string param;
 	float value;
 	//external update
-	mExternalUpdate = (
-			mTmpl->get_parameter_value(OSSteerManager::STEERPLUGIN, std::string("external_update"))
-			== std::string("true") ? true : false);
+	mExternalUpdate = (mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
+					std::string("external_update")) == std::string("true") ? true : false);
 	//type
-	param = mTmpl->get_parameter_value(OSSteerManager::STEERPLUGIN, std::string("type"));
+	param = mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE, std::string("type"));
 	if (param == std::string("pedestrian"))
 	{
 		! mExternalUpdate ?
@@ -108,11 +105,13 @@ void OSSteerVehicle::do_initialize()
 		mVehicle = new ossup::OneTurning<OSSteerVehicle> :
 		mVehicle = new ossup::ExternalOneTurning<OSSteerVehicle>;
 	}
-//	//register to SteerPlugIn objectId
-//	mSteerPlugInObjectId = ObjectId(
-//			mTmpl->parameter(std::string("add_to_plugin")));
+	//register to SteerPlugIn objectId
+	string mSteerPlugInObjectId =
+	mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
+			std::string("add_to_plugin"));
 	//mov type
-	param = mTmpl->get_parameter_value(OSSteerManager::STEERPLUGIN, std::string("mov_type"));
+	param = mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
+			std::string("mov_type"));
 	if (param == std::string("kinematic"))
 	{
 		mMovType = OPENSTEER_KINEMATIC;
@@ -123,31 +122,35 @@ void OSSteerVehicle::do_initialize()
 	}
 	//up axis fixed
 	mUpAxisFixed = (
-			mTmpl->get_parameter_value(OSSteerManager::STEERPLUGIN, std::string("up_axis_fixed"))
-			== std::string("true") ? true : false);
+			mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
+					std::string("up_axis_fixed")) == std::string("true") ? true : false);
 	//get settings
 	ossup::VehicleSettings settings;
 	//mass
-	value = STRTOF(mTmpl->get_parameter_value(OSSteerManager::STEERPLUGIN, std::string("mass")).c_str(),
-			NULL);
+	value = STRTOF(mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
+					std::string("mass")).c_str(), NULL);
 	settings.m_mass = (value >= 0.0 ? value : 1.0);
 	//radius
-	mInputRadius = STRTOF(mTmpl->get_parameter_value(OSSteerManager::STEERPLUGIN, std::string("radius")).c_str(),
+	mInputRadius = STRTOF(mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
+					std::string("radius")).c_str(),
 			NULL);
 	//speed
-	value = STRTOF(mTmpl->get_parameter_value(OSSteerManager::STEERPLUGIN, std::string("speed")).c_str(),
+	value = STRTOF(mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
+					std::string("speed")).c_str(),
 			NULL);
 	settings.m_speed = (value >= 0.0 ? value : -value);
 	//max force
-	value = STRTOF(mTmpl->get_parameter_value(OSSteerManager::STEERPLUGIN, std::string("max_force")).c_str(),
+	value = STRTOF(mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
+					std::string("max_force")).c_str(),
 			NULL);
 	settings.m_maxForce = (value >= 0.0 ? value : -value);
 	//max speed
-	value = STRTOF(mTmpl->get_parameter_value(OSSteerManager::STEERPLUGIN, std::string("max_speed")).c_str(),
+	value = STRTOF(mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
+					std::string("max_speed")).c_str(),
 			NULL);
 	settings.m_maxSpeed = (value >= 0.0 ? value : 1.0);
-//	//ray mask
-//	param = mTmpl->get_parameter_value(OSSteerManager::STEERPLUGIN, std::string("ray_mask"));
+//	//ray mask XXX
+//	param = mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE, std::string("ray_mask"));
 //	if (param == std::string("all_on"))
 //	{
 //		mRayMask = BitMask32::all_on();
@@ -162,14 +165,15 @@ void OSSteerVehicle::do_initialize()
 //		mRayMask.set_word(mask);
 //	}
 	//set vehicle settings
-	dynamic_cast<VehicleAddOn*>(mVehicle)->setSettings(settings);
+	static_cast<VehicleAddOn*>(mVehicle)->setSettings(settings);
 	//thrown events
-	mThrownEventsParam = mTmpl->get_parameter_value(OSSteerManager::STEERPLUGIN, std::string("thrown_events"));
+	mThrownEventsParam = mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
+			std::string("thrown_events"));
 	//
 	LVecBase3f modelDims;
 	LVector3f modelDeltaCenter;
 	float modelRadius;
-//	GamePhysicsManager::GetSingletonPtr()->getBoundingDimensions(
+//	GamePhysicsManager::GetSingletonPtr()->getBoundingDimensions( XXX
 //			mOwnerObject->getNodePath(), modelDims, modelDeltaCenter,
 //			modelRadius);
 	//set definitive radius
@@ -177,11 +181,11 @@ void OSSteerVehicle::do_initialize()
 	{
 		// store new radius into settings
 		ossup::VehicleSettings settings =
-				dynamic_cast<VehicleAddOn*>(mVehicle)->getSettings();
+		static_cast<VehicleAddOn*>(mVehicle)->getSettings();
 		settings.m_radius = modelRadius;
-		dynamic_cast<VehicleAddOn*>(mVehicle)->setSettings(settings);
+		static_cast<VehicleAddOn*>(mVehicle)->setSettings(settings);
 	}
-//	//set physics parameters
+//	//set physics parameters XXX
 //	mMaxError = modelDims.get_z();
 //	mDeltaRayOrig = LVector3f(0, 0, mMaxError);
 //	mDeltaRayDown = LVector3f(0, 0, -10 * mMaxError);
@@ -198,15 +202,15 @@ void OSSteerVehicle::do_initialize()
 //		mCorrectHeightRigidBody = 0.0;
 //	}
 	//set entity and its related update method
-	dynamic_cast<VehicleAddOn*>(mVehicle)->setEntity(this);
+	static_cast<VehicleAddOn*>(mVehicle)->setEntity(this);
 	//
 	! mExternalUpdate ?
-			dynamic_cast<VehicleAddOn*>(mVehicle)->setEntityUpdateMethod(
-					&OSSteerVehicle::doUpdateSteerVehicle) :
-			dynamic_cast<VehicleAddOn*>(mVehicle)->setEntityUpdateMethod(
-					&OSSteerVehicle::doExternalUpdateSteerVehicle);
+	static_cast<VehicleAddOn*>(mVehicle)->setEntityUpdateMethod(
+			&OSSteerVehicle::doUpdateSteerVehicle) :
+	static_cast<VehicleAddOn*>(mVehicle)->setEntityUpdateMethod(
+			&OSSteerVehicle::doExternalUpdateSteerVehicle);
 
-//	//set the bullet physics
+//	//set the bullet physics XXX
 //	mBulletWorld = GamePhysicsManager::GetSingletonPtr()->bulletWorld();
 
 	//set thrown events if any
@@ -227,7 +231,7 @@ void OSSteerVehicle::do_initialize()
 				EventThrown event;
 				ThrowEventData eventData;
 				//get default name prefix
-//				std::string objectType = std::string(
+//				std::string objectType = std::string( XXX
 //						mOwnerObject->objectTmpl()->objectType());
 				//get name
 				std::string name = paramValuesStr2[1];
@@ -245,7 +249,7 @@ void OSSteerVehicle::do_initialize()
 					if (name == "")
 					{
 						//set default name
-//						name = objectType + "_SteerVehicle_Move";
+//						name = objectType + "_SteerVehicle_Move"; XXX
 					}
 				}
 				else if (paramValuesStr2[0] == "steady")
@@ -255,7 +259,7 @@ void OSSteerVehicle::do_initialize()
 					if (name == "")
 					{
 						//set default name
-//						name = objectType + "_SteerVehicle_Steady";
+//						name = objectType + "_SteerVehicle_Steady"; XXX
 					}
 				}
 				else if (paramValuesStr2[0] == "path_following")
@@ -265,7 +269,7 @@ void OSSteerVehicle::do_initialize()
 					if (name == "")
 					{
 						//set default name
-//						name = objectType + "_SteerVehicle_PathFollowing";
+//						name = objectType + "_SteerVehicle_PathFollowing"; XXX
 					}
 				}
 				else if (paramValuesStr2[0] == "avoid_obstacle")
@@ -275,7 +279,7 @@ void OSSteerVehicle::do_initialize()
 					if (name == "")
 					{
 						//set default name
-//						name = objectType + "_SteerVehicle_AvoidObstacle";
+//						name = objectType + "_SteerVehicle_AvoidObstacle"; XXX
 					}
 				}
 				else if (paramValuesStr2[0] == "avoid_close_neighbor")
@@ -285,7 +289,7 @@ void OSSteerVehicle::do_initialize()
 					if (name == "")
 					{
 						//set default name
-//						name = objectType + "_SteerVehicle_AvoidCloseNeighbor";
+//						name = objectType + "_SteerVehicle_AvoidCloseNeighbor"; XXX
 					}
 				}
 				else if (paramValuesStr2[0] == "avoid_neighbor")
@@ -295,7 +299,7 @@ void OSSteerVehicle::do_initialize()
 					if (name == "")
 					{
 						//set default name
-						name = objectType + "_SteerVehicle_AvoidNeighbor";
+//						name = objectType + "_SteerVehicle_AvoidNeighbor"; XXX
 					}
 				}
 				else
@@ -314,90 +318,75 @@ void OSSteerVehicle::do_initialize()
 			}
 		}
 	}
-
 	//set the callbacks
 	//Path Following
-	dynamic_cast<VehicleAddOn*>(mVehicle)->setEntityPathFollowingMethod(
+	static_cast<VehicleAddOn*>(mVehicle)->setEntityPathFollowingMethod(
 			&OSSteerVehicle::doPathFollowing);
 	//Avoid Obstacle
-	dynamic_cast<VehicleAddOn*>(mVehicle)->setEntityAvoidObstacleMethod(
+	static_cast<VehicleAddOn*>(mVehicle)->setEntityAvoidObstacleMethod(
 			&OSSteerVehicle::doAvoidObstacle);
 	//Avoid Close Neighbor
-	dynamic_cast<VehicleAddOn*>(mVehicle)->setEntityAvoidCloseNeighborMethod(
+	static_cast<VehicleAddOn*>(mVehicle)->setEntityAvoidCloseNeighborMethod(
 			&OSSteerVehicle::doAvoidCloseNeighbor);
 	//Avoid Neighbor
-	dynamic_cast<VehicleAddOn*>(mVehicle)->setEntityAvoidNeighborMethod(
+	static_cast<VehicleAddOn*>(mVehicle)->setEntityAvoidNeighborMethod(
 			&OSSteerVehicle::doAvoidNeighbor);
 	//clear all no more needed "Param" variables
 	mThrownEventsParam.clear();
-}
-
-void OSSteerVehicle::onAddToSceneSetup()
-{
 	//set vehicle's forward,( side,) up and position
 	NodePath ownerNP/* = mOwnerObject->getNodePath()*/;
 	ossup::VehicleSettings settings =
-			dynamic_cast<VehicleAddOn*>(mVehicle)->getSettings();
+	static_cast<VehicleAddOn*>(mVehicle)->getSettings();
 	settings.m_forward =
-			ossup::LVecBase3fToOpenSteerVec3(
-					ownerNP.get_parent().get_relative_vector(
-							ownerNP, -LVector3f::forward())).normalize();
+	ossup::LVecBase3fToOpenSteerVec3(
+			ownerNP.get_parent().get_relative_vector(
+					ownerNP, -LVector3f::forward())).normalize();
 	settings.m_up = ossup::LVecBase3fToOpenSteerVec3(
 			ownerNP.get_parent().get_relative_vector(
 					ownerNP, LVector3f::up())).normalize();
 	settings.m_position = ossup::LVecBase3fToOpenSteerVec3(
 			ownerNP.get_pos());
-	dynamic_cast<VehicleAddOn*>(mVehicle)->setSettings(settings);
-
-	//set SteerPlugIn object (if any)
-//	PT(Object)steerPlugInObject =
-//			ObjectTemplateManager::GetSingleton().getCreatedObject(mSteerPlugInObjectId);
-	//Add to SteerPlugIn update
-//	if (steerPlugInObject)
-//	{
-//		SMARTPTR(Component)aiComp = steerPlugInObject->getComponent(componentFamilyType());
-//		//
-//		if (aiComp and (aiComp->componentType() == ComponentType("SteerPlugIn")))
-//		{
-//			DCAST(SteerPlugIn, aiComp)->addSteerVehicle(this);
-//		}
-//	}
+	static_cast<VehicleAddOn*>(mVehicle)->setSettings(settings);
+	// set this NodePath
+	NodePath thisNP = NodePath::any_path(this);
+	// set the collide mask to avoid hit with the steer manager ray
+	thisNP.set_collide_mask(~mTmpl->get_collide_mask() &
+			thisNP.get_collide_mask());
+	//add to SteerPlugIn, if requested
+	PT(OSSteerPlugIn) plugIn = NULL;
+	for (int index = 0;
+			index < OSSteerManager::get_global_ptr()->get_num_steer_plug_ins();
+			++index)
+	{
+		plugIn = DCAST(OSSteerPlugIn,
+				OSSteerManager::get_global_ptr()->get_steer_plug_in(index).node());
+		if (plugIn->get_name() == mSteerPlugInObjectId)
+		{
+			plugIn->addSteerVehicle(thisNP);
+			break;
+		}
+	}
 }
 
-void OSSteerVehicle::onRemoveFromObjectCleanup()
+void OSSteerVehicle::do_finalize()
 {
+	//Remove from SteerPlugIn (if previously added)
+	if (mSteerPlugIn)
+	{
+		mSteerPlugIn->removeSteerVehicle(NodePath::any_path(this));
+	}
 	//
 	delete mVehicle;
 	do_reset();
 }
 
-void OSSteerVehicle::onRemoveFromSceneCleanup()
+/**
+ * Writes a sensible description of the OSSteerVehicle to the indicated output
+ * stream.
+ */
+void OSSteerVehicle::output(ostream &out) const
 {
-	//Remove from SteerPlugIn update (if previously added)
-	//mSteerPlugIn will be cleared during removing, so
-	//remove through a temporary pointer
-	PT(OSSteerPlugIn) steerPlugIn = mSteerPlugIn;
-	if (steerPlugIn)
-	{
-		steerPlugIn->removeSteerVehicle(this);
-	}
-}
-
-void OSSteerVehicle::setSettings(const ossup::VehicleSettings& settings)
-{
-	//set vehicle settings
-	dynamic_cast<VehicleAddOn*>(mVehicle)->setSettings(settings);
-}
-
-ossup::VehicleSettings OSSteerVehicle::getSettings()
-{
-	//get vehicle settings
-	return dynamic_cast<VehicleAddOn*>(mVehicle)->getSettings();
-}
-
-PT(OSSteerPlugIn) OSSteerVehicle::getSteerPlugIn() const
-{
-	return mSteerPlugIn;
+	out << get_type() << " " << get_name();
 }
 
 void OSSteerVehicle::doUpdateSteerVehicle(const float currentTime,
@@ -414,7 +403,7 @@ void OSSteerVehicle::doUpdateSteerVehicle(const float currentTime,
 		case OPENSTEER_KINEMATIC:
 		{
 			//correct updatedPos.z if needed
-//			//ray down
+//			//ray down XXX
 //			mHitResult = mBulletWorld->ray_test_closest(
 //					updatedPos + mDeltaRayOrig, updatedPos + mDeltaRayDown,
 //					mRayMask);
@@ -571,6 +560,97 @@ void OSSteerVehicle::doEnableSteerVehicleEvent(EventThrown event, ThrowEventData
 		break;
 	default:
 		break;
+	}
+}
+
+void OSSteerVehicle::doPathFollowing(const OpenSteer::Vec3& future,
+		const OpenSteer::Vec3& onPath, const OpenSteer::Vec3& target,
+		const float outside)
+{
+	//handle Path Following event
+	if (mPathFollowing.mEnable)
+	{
+		doThrowEvent(mPathFollowing);
+		//set the flag
+		mPFCallbackCalled = true;
+	}
+}
+
+void OSSteerVehicle::doAvoidObstacle(const float minDistanceToCollision)
+{
+	//handle Avoid Obstacle event
+	if (mAvoidObstacle.mEnable)
+	{
+		doThrowEvent(mAvoidObstacle);
+		//set the flag
+		mAOCallbackCalled = true;
+	}
+}
+
+void OSSteerVehicle::doAvoidCloseNeighbor(const OpenSteer::AbstractVehicle& other,
+		const float additionalDistance)
+{
+	//handle Avoid Close Neighbor event
+	if (mAvoidCloseNeighbor.mEnable)
+	{
+		doThrowEvent(mAvoidCloseNeighbor);
+		//set the flag
+		mACNCallbackCalled = true;
+	}
+}
+
+void OSSteerVehicle::doAvoidNeighbor(const OpenSteer::AbstractVehicle& threat,
+		const float steer, const OpenSteer::Vec3& ourFuture,
+		const OpenSteer::Vec3& threatFuture)
+{
+	//handle Avoid Neighbor event
+	if (mAvoidNeighbor.mEnable)
+	{
+		doThrowEvent(mAvoidNeighbor);
+		//set the flag
+		mANCallbackCalled = true;
+	}
+}
+
+void OSSteerVehicle::doThrowEvent(ThrowEventData& eventData)
+{
+	if (eventData.mThrown)
+	{
+		eventData.mTimeElapsed += ClockObject::get_global_clock()->get_dt();
+		if (eventData.mTimeElapsed >= eventData.mPeriod)
+		{
+			//enough time is passed: throw the event
+			throw_event(eventData.mEventName, EventParameter(this));
+			//update elapsed time
+			eventData.mTimeElapsed -= eventData.mPeriod;
+		}
+	}
+	else
+	{
+		//throw the event
+		throw_event(eventData.mEventName, EventParameter(this));
+		eventData.mThrown = true;
+	}
+}
+
+void OSSteerVehicle::doHandleSteerLibraryEvent(ThrowEventData& eventData, bool callbackCalled)
+{
+	if (eventData.mEnable)
+	{
+		if (callbackCalled)
+		{
+			//event was handled this (or last) frame
+			callbackCalled = false;
+		}
+		else
+		{
+			//reset event
+			if (eventData.mThrown)
+			{
+				eventData.mThrown = false;
+				eventData.mTimeElapsed = 0.0;
+			}
+		}
 	}
 }
 

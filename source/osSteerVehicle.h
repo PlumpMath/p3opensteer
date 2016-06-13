@@ -59,7 +59,6 @@
  * | *speed*					|single| 0.0 | -
  * | *max_force*				|single| 0.1 | -
  * | *max_speed*				|single| 1.0 | -
- * | *ray_mask*					|single| *all_on* | -
  *
  * \note parts inside [] are optional.\n
  */
@@ -92,37 +91,51 @@ PUBLISHED:
 	virtual ~OSSteerVehicle();
 
 	/**
-	 * Getters/setters of OSSteerVehicle default settings.
+	 * \name CONFIGURATION SETTINGS
 	 */
 	///@{
-	void setSettings(const ossup::VehicleSettings& settings);
-	ossup::VehicleSettings getSettings();
-	///@}
-
-	/**
-	 * AbstractVehicle reference getter & conversion function.
-	 */
-	///@{
-	OpenSteer::AbstractVehicle& getAbstractVehicle();
-	operator OpenSteer::AbstractVehicle&();
-	///@}
-
+	INLINE void setSettings(const OSVehicleSettings& settings);
+	INLINE OSVehicleSettings getSettings();
 	/**
 	 * \name Get the SteerPlugIn owner object.
 	 *
 	 * \return The SteerPlugIn object.
 	 */
-	PT(OSSteerPlugIn) getSteerPlugIn() const;
+	INLINE PT(OSSteerPlugIn) getSteerPlugIn() const;
+	///@}
 
+	/**
+	 * \name EVENTS' CONFIGURATION
+	 */
+	///@{
 	/**
 	 * \brief Enables/disables the OSSteerVehicle event to be thrown.
 	 * @param event The OSSteerVehicle event.
 	 * @param eventData The OSSteerVehicle event data. ThrowEventData::mEnable
 	 * will enable/disable the event.
 	 */
-	void enableSteerVehicleEvent(EventThrown event, ThrowEventData eventData);
+	INLINE void enableSteerVehicleEvent(EventThrown event, ThrowEventData eventData);
+	///@}
 
+	/**
+	 * \name OUTPUT
+	 */
+	///@{
 	void output(ostream &out) const;
+	///@}
+
+public:
+	/**
+	 * \name C++ ONLY
+	 * Library & support low level related methods.
+	 */
+	///@{
+	/**
+	 * AbstractVehicle reference getter & conversion function.
+	 */
+	inline OpenSteer::AbstractVehicle& getAbstractVehicle();
+	inline operator OpenSteer::AbstractVehicle&();
+	///@}
 
 protected:
 	friend class OSSteerManager;
@@ -135,7 +148,8 @@ private:
 	OpenSteer::AbstractVehicle* mVehicle;
 	///The SteerPlugIn owner object.
 	PT(OSSteerPlugIn) mSteerPlugIn;
-//	ObjectId mSteerPlugInObjectId;
+	///The reference node path.
+	NodePath mReferenceNP;
 	///Input radius.
 	float mInputRadius;
 	///The movement type.
@@ -192,8 +206,29 @@ private:
 	std::string mThrownEventsParam;
 	///@}
 
-	///TypedObject semantics: hardcoded
+	// Explicitly disabled copy constructor and copy assignment operator.
+	OSSteerVehicle(const OSSteerVehicle&);
+	OSSteerVehicle& operator=(const OSSteerVehicle&);
+
 public:
+	/**
+	 * \name TypedWritable API
+	 */
+	///@{
+	static void register_with_read_factory();
+	virtual void write_datagram(BamWriter *manager, Datagram &dg) override;
+	virtual int complete_pointers(TypedWritable **plist, BamReader *manager) override;
+	///@}
+
+protected:
+	static TypedWritable *make_from_bam(const FactoryParams &params);
+	virtual void fillin(DatagramIterator &scan, BamReader *manager) override;
+
+public:
+	/**
+	 * \name TypedObject API
+	 */
+	///@{
 	static TypeHandle get_class_type()
 	{
 		return _type_handle;
@@ -212,6 +247,7 @@ public:
 		init_type();
 		return get_class_type();
 	}
+	///@}
 
 private:
 	static TypeHandle _type_handle;

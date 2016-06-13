@@ -294,7 +294,7 @@ void OSSteerPlugIn::do_finalize()
 
 typedef ossup::VehicleAddOnMixin<ossup::SimpleVehicle, OSSteerVehicle> VehicleAddOn;
 
-int OSSteerPlugIn::addSteerVehicle(PT(OSSteerVehicle)steerVehicle)
+int OSSteerPlugIn::addSteerVehicle(NodePath steerVehicle)
 {
 	// continue if steerVehicle is not NULL and  mReferenceNP is not empty
 	CONTINUE_IF_ELSE_R(steerVehicle && (!mReferenceNP.is_empty()), OS_ERROR)
@@ -338,7 +338,7 @@ int OSSteerPlugIn::addSteerVehicle(PT(OSSteerVehicle)steerVehicle)
 	return (result = true ? OS_SUCCESS:OS_ERROR);
 }
 
-int OSSteerPlugIn::removeSteerVehicle(PT(OSSteerVehicle)steerVehicle)
+int OSSteerPlugIn::removeSteerVehicle(NodePath steerVehicle)
 {
 	// continue if steerVehicle is not NULL and  mReferenceNP is not empty
 	CONTINUE_IF_ELSE_R(steerVehicle && (!mReferenceNP.is_empty()), OS_ERROR)

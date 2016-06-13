@@ -215,6 +215,80 @@ inline ValueList<Type>::operator pvector<Type>() const
 }
 #endif //CPPPARSER
 
+///Vehicle settings.
+INLINE float OSVehicleSettings::get_mass() const
+{
+	return _vehicleSettings.m_mass;
+}
+INLINE void OSVehicleSettings::set_mass(float value)
+{
+	_vehicleSettings.m_mass = value;
+}
+INLINE float OSVehicleSettings::get_radius() const
+{
+	return _vehicleSettings.m_radius;
+}
+INLINE void OSVehicleSettings::set_radius(float value)
+{
+	_vehicleSettings.m_radius = value;
+}
+INLINE float OSVehicleSettings::get_speed() const
+{
+	return _vehicleSettings.m_speed;
+}
+INLINE void OSVehicleSettings::set_speed(float value)
+{
+	_vehicleSettings.m_speed = value;
+}
+INLINE float OSVehicleSettings::get_maxForce() const
+{
+	return _vehicleSettings.m_maxForce;
+}
+INLINE void OSVehicleSettings::set_maxForce(float value)
+{
+	_vehicleSettings.m_maxForce = value;
+}
+INLINE float OSVehicleSettings::get_maxSpeed() const
+{
+	return _vehicleSettings.m_maxSpeed;
+}
+INLINE void OSVehicleSettings::set_maxSpeed(float value)
+{
+	_vehicleSettings.m_maxSpeed = value;
+}
+INLINE LVector3f OSVehicleSettings::get_forward() const
+{
+	return ossup::OpenSteerVec3ToLVecBase3f(_vehicleSettings.m_forward);
+}
+INLINE void OSVehicleSettings::set_forward(const LVector3f& value)
+{
+	_vehicleSettings.m_forward = ossup::LVecBase3fToOpenSteerVec3(value);
+}
+INLINE LVector3f OSVehicleSettings::get_side() const
+{
+	return ossup::OpenSteerVec3ToLVecBase3f(_vehicleSettings.m_side);
+}
+INLINE void OSVehicleSettings::set_side(const LVector3f& value)
+{
+	_vehicleSettings.m_side = ossup::LVecBase3fToOpenSteerVec3(value);
+}
+INLINE LVector3f OSVehicleSettings::get_up() const
+{
+	return ossup::OpenSteerVec3ToLVecBase3f(_vehicleSettings.m_up);
+}
+INLINE void OSVehicleSettings::set_up(const LVector3f& value)
+{
+	_vehicleSettings.m_up = ossup::LVecBase3fToOpenSteerVec3(value);
+}
+INLINE LVector3f OSVehicleSettings::get_position() const
+{
+	return ossup::OpenSteerVec3ToLVecBase3f(_vehicleSettings.m_position);
+}
+INLINE void OSVehicleSettings::set_position(const LVector3f& value)
+{
+	_vehicleSettings.m_position = ossup::LVecBase3fToOpenSteerVec3(value);
+}
+
 ///OSObstacleSettings.
 INLINE string OSObstacleSettings::get_type() const
 {

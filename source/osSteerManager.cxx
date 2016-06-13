@@ -166,7 +166,7 @@ NodePath OSSteerManager::create_steer_vehicle(const string& name)
 	nassertr_always(newSteerVehicle, NodePath())
 
 	// set reference node
-//	newSteerVehicle->mReferenceNP = mReferenceNP; XXX
+	newSteerVehicle->mReferenceNP = mReferenceNP;
 	//initialize the new SteerVehicle
 	newSteerVehicle->do_initialize();
 
