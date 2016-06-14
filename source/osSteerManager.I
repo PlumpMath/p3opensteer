@@ -113,8 +113,7 @@ INLINE CollisionRay* OSSteerManager::get_collision_ray() const
 /**
  * Returns a reference to the storage of all obstacles.
  */
-inline Pair<OpenSteer::ObstacleGroup,
-		pvector<OSSteerManager::ObstacleAttributes> >& OSSteerManager::get_global_obstacles()
+inline OSSteerManager::GlobalObstacles& OSSteerManager::get_global_obstacles()
 {
 	return mObstacles;
 }

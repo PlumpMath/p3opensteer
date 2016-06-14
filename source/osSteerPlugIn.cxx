@@ -83,9 +83,9 @@ void OSSteerPlugIn::do_initialize()
 	//build pathway
 	doBuildPathway(mPathwayParam);
 	//set the plugin local obstacles reference
-	dynamic_cast<ossup::PlugIn*>(mPlugIn)->localObstacles = &mLocalObstacles;
+	static_cast<ossup::PlugIn*>(mPlugIn)->localObstacles = &mLocalObstacles;
 	//set the plugin global obstacles reference
-	dynamic_cast<ossup::PlugIn*>(mPlugIn)->obstacles =
+	static_cast<ossup::PlugIn*>(mPlugIn)->obstacles =
 			&mTmpl->get_global_obstacles().first();
 	//add its own obstacles
 	if (! mReferenceNP.is_empty())
@@ -162,7 +162,7 @@ void OSSteerPlugIn::doBuildPathway(const string& pathwayParam)
 			radius = 1.0;
 		}
 		//set pathway: single radius
-		dynamic_cast<ossup::PlugIn*>(mPlugIn)->setPathway(numPoints, points, true,
+		static_cast<ossup::PlugIn*>(mPlugIn)->setPathway(numPoints, points, true,
 				&radius, closedCycle);
 	}
 	else
@@ -194,7 +194,7 @@ void OSSteerPlugIn::doBuildPathway(const string& pathwayParam)
 			radii[idx] = value;
 		}
 		//set pathway: several radius
-		dynamic_cast<ossup::PlugIn*>(mPlugIn)->setPathway(numPoints, points, false,
+		static_cast<ossup::PlugIn*>(mPlugIn)->setPathway(numPoints, points, false,
 				radii, closedCycle);
 		delete[] radii;
 	}
@@ -258,28 +258,38 @@ void OSSteerPlugIn::do_finalize()
 	for (iterLocal = mLocalObstacles.begin();
 			iterLocal != mLocalObstacles.end(); ++iterLocal)
 	{
+		if(	globalObstacles.first().size()
+						!= globalObstacles.second().size())
+		{
+			//VERY BAD!
+			abort();
+		}
+
 		//find in global obstacles and remove it
 		//1: remove the OpenSteer obstacle's pointer from the global list
 		OpenSteer::ObstacleGroup::iterator iterO = find(
 				globalObstacles.first().begin(), globalObstacles.first().end(),
 				(*iterLocal));
 		globalObstacles.first().erase(iterO);
-		//2: find the Obstacle attribute with the given pointer
-		pvector<OSSteerManager::ObstacleAttributes>::iterator iterA;
-		for (iterA = globalObstacles.second().begin();
+		//2: remove the obstacle's attributes from the global list
+		//NOTE: the i-th obstacle has pointer and attributes placed into the
+		//i-th places of their respective lists.
+		unsigned int pointerIdx = iterO - globalObstacles.first().begin();
+		pvector<OSSteerManager::ObstacleAttributes>::iterator iterA =
+				globalObstacles.second().begin() + pointerIdx;
+		/*for (iterA = globalObstacles.second().begin();
 				iterA != globalObstacles.second().end(); ++iterA)
 		{
 			if ((*iterA).first().get_obstacle() == (*iterLocal))
 			{
 				break;
 			}
-		}
-		//2: remove the obstacle's attributes from the global list
+		}*/
 		globalObstacles.second().erase(iterA);
 		//3: deallocate the OpenSteer obstacle
 		delete *iterLocal;
 	}
-	//clear local obstacles
+	//4: clear local obstacles' pointers
 	mLocalObstacles.clear();
 	//remove all handled SteerVehicles (if any) from update
 	set<PT(OSSteerVehicle)>::const_iterator iter;
@@ -288,7 +298,7 @@ void OSSteerPlugIn::do_finalize()
 		//set steerVehicle reference to null
 		(*iter)->mSteerPlugIn.clear();
 		//do remove from real update list
-		dynamic_cast<ossup::PlugIn*>(mPlugIn)->removeVehicle(
+		static_cast<ossup::PlugIn*>(mPlugIn)->removeVehicle(
 				&(*iter)->getAbstractVehicle());
 	}
 
@@ -328,17 +338,17 @@ int OSSteerPlugIn::addSteerVehicle(NodePath steerVehicle)
 //		//OSSteerPlugIn object updates SteerVehicle's pos/dir
 //		//wrt its reference node path
 //		VehicleSettings settings =
-//		dynamic_cast<VehicleAddOn*>(steerVehicle->mVehicle)->getSettings();
+//		static_cast<VehicleAddOn*>(steerVehicle->mVehicle)->getSettings();
 //		settings.m_forward = LVecBase3fToOpenSteerVec3(newForward).normalize();
 //		settings.m_up = LVecBase3fToOpenSteerVec3(newUp).normalize();
 //		settings.m_position = LVecBase3fToOpenSteerVec3(newPos);
-//		dynamic_cast<VehicleAddOn*>(steerVehicle->mVehicle)->setSettings(settings);
+//		static_cast<VehicleAddOn*>(steerVehicle->mVehicle)->setSettings(settings);
 //	}
 //
 //	//add to the set of SteerVehicles
 //	mSteerVehicles.insert(steerVehicle);
 //	//do add to real update list
-//	dynamic_cast<PlugIn*>(mPlugIn)->addVehicle(&steerVehicle->getAbstractVehicle());
+//	static_cast<PlugIn*>(mPlugIn)->addVehicle(&steerVehicle->getAbstractVehicle());
 //	//set steerVehicle reference to this plugin
 //	steerVehicle->mOSSteerPlugIn = this;
 	//
@@ -356,7 +366,7 @@ int OSSteerPlugIn::removeSteerVehicle(NodePath steerVehicle)
 //	//set steerVehicle reference to null
 //	steerVehicle->mOSSteerPlugIn.clear();
 //	//do remove from real update list
-//	dynamic_cast<ossup::PlugIn*>(mPlugIn)->removeVehicle(&steerVehicle->getAbstractVehicle());
+//	static_cast<ossup::PlugIn*>(mPlugIn)->removeVehicle(&steerVehicle->getAbstractVehicle());
 //	//remove from the set of SteerVehicles
 //	mSteerVehicles.erase(steerVehicle);
 	//
@@ -373,7 +383,7 @@ void OSSteerPlugIn::setPathway(int numOfPoints, LPoint3f const points[],
 		osPoints[idx] = ossup::LVecBase3fToOpenSteerVec3(points[idx]);
 	}
 	//set the actual path
-	dynamic_cast<ossup::PlugIn*>(mPlugIn)->setPathway(numOfPoints, osPoints,
+	static_cast<ossup::PlugIn*>(mPlugIn)->setPathway(numOfPoints, osPoints,
 			singleRadius, radii, closedCycle);
 	//
 	delete[] osPoints;
@@ -480,9 +490,13 @@ int OSSteerPlugIn::add_obstacle(NodePath& objectNP,
 	int ref = OS_ERROR;
 	if (obstacle)
 	{
-		//add to local obstacles
-		mLocalObstacles.push_back(obstacle);
-		//add to global obstacles
+		OSSteerManager::GlobalObstacles& globalObstacles =
+				OSSteerManager::get_global_ptr()->get_global_obstacles();
+		nassertr_always(
+				globalObstacles.first().size()
+						== globalObstacles.second().size(), OS_ERROR);
+
+		//1: set obstacle's settings
 		OSObstacleSettings settings;
 		settings.set_type(type);
 		settings.set_seenFromState(seenFromState);
@@ -497,11 +511,13 @@ int OSSteerPlugIn::add_obstacle(NodePath& objectNP,
 		ref = unique_ref();
 		settings.set_ref(ref);
 		settings.set_obstacle(obstacle);
-		//save into the global storage: double insert
-		OSSteerManager::get_global_ptr()->get_global_obstacles().first().push_back(
-				obstacle);
-		OSSteerManager::get_global_ptr()->get_global_obstacles().second().push_back(
+		//2: add OpenSteer obstacle's pointer to global list
+		globalObstacles.first().push_back(obstacle);
+		//3: add obstacle's attributes to global list
+		globalObstacles.second().push_back(
 				OSSteerManager::ObstacleAttributes(settings, objectNP));
+		//4: add OpenSteer obstacle's pointer to local list
+		mLocalObstacles.push_back(obstacle);
 	}
 	return ref;
 }
@@ -520,7 +536,7 @@ NodePath OSSteerPlugIn::remove_obstacle(int ref)
 	//get a reference to the global storage
 	OSSteerManager::GlobalObstacles& globalObstacles =
 			OSSteerManager::get_global_ptr()->get_global_obstacles();
-	//find the Obstacle attribute with the given ref
+	//find the Obstacle's attributes with the given ref, if any
 	pvector<OSSteerManager::ObstacleAttributes>::iterator iterA;
 	for (iterA = globalObstacles.second().begin();
 			iterA != globalObstacles.second().end(); ++iterA)
@@ -539,14 +555,21 @@ NodePath OSSteerPlugIn::remove_obstacle(int ref)
 			mLocalObstacles.end(), (*iterA).first().get_obstacle());
 	if (iterLocal != mLocalObstacles.end())
 	{
-		//it is in the local list (ie it was actually added by this
-		//OSSteerPlugIn)
+		//it is in the local list (ie added by this OSSteerPlugIn)
+		nassertr_always(
+				globalObstacles.first().size()
+						== globalObstacles.second().size(), NodePath::fail());
+
 		//get the node path
 		resultNP = (*iterA).second();
 		//1: remove the OpenSteer obstacle's pointer from the global list
-		OpenSteer::ObstacleGroup::iterator iterO = find(
-				globalObstacles.first().begin(), globalObstacles.first().end(),
-				(*iterA).first().get_obstacle());
+		//NOTE: the i-th obstacle has pointer and attributes placed into the
+		//i-th places of their respective lists.
+		unsigned int attributesIdx = iterA - globalObstacles.second().begin();
+		OpenSteer::ObstacleGroup::iterator iterO =
+				globalObstacles.first().begin() + attributesIdx;
+		/*= find(globalObstacles.first().begin(), globalObstacles.first().end(),
+		 (*iterA).first().get_obstacle());*/
 		globalObstacles.first().erase(iterO);
 		//2: remove the obstacle's attributes from the global list
 		globalObstacles.second().erase(iterA);

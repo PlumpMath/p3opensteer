@@ -18,6 +18,7 @@ OSSteerVehicle::OSSteerVehicle(const string& name) :
 		PandaNode(name)
 {
 	mSteerPlugIn.clear();
+
 	do_reset();
 }
 

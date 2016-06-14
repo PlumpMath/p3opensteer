@@ -24,6 +24,12 @@ OSSteerManager::OSSteerManager(const NodePath& root, const CollideMask& mask) :
 	PRINT_DEBUG(
 			"OSSteerManager::OSSteerManager: creating the singleton manager.");
 
+	mSteerPlugIns.clear();
+	mSteerPlugInsParameterTable.clear();
+	mSteerVehicles.clear();
+	mSteerVehiclesParameterTable.clear();
+	mObstacles.first().clear();
+	mObstacles.second().clear();
 	set_parameters_defaults(STEERPLUGIN);
 	set_parameters_defaults(STEERVEHICLE);
 	//

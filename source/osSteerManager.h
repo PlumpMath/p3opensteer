@@ -208,7 +208,11 @@ private:
 	///OSSteerVehicles' parameter table.
 	ParameterTable mSteerVehiclesParameterTable;
 
-	///List of all obstacles (ie handled by all OSSteerPlugIns).
+	///This is a Pair:
+	/// -first == list of pointers to all OpenSteer obstacles
+	/// -second == list of attributes of all obstacles
+	///The two lists are synchronized: pointer and attributes of the i-th
+	///obstacle are located in the i-th places of their respective lists.
 	GlobalObstacles mObstacles;
 
 	///@{
