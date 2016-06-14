@@ -71,14 +71,6 @@ INLINE OSSteerManager* OSSteerManager::get_global_ptr()
 }
 
 /**
- * Returns a reference to the storage of all obstacles.
- */
-inline pvector<OSSteerManager::ObstacleAttributes>& OSSteerManager::get_opensteer_obstacles()
-{
-	return mOpensteerObstacles;
-}
-
-/**
  * Get the collide mask.
  */
 INLINE CollideMask OSSteerManager::get_collide_mask() const
@@ -116,6 +108,15 @@ INLINE CollisionHandlerQueue* OSSteerManager::get_collision_handler() const
 INLINE CollisionRay* OSSteerManager::get_collision_ray() const
 {
 	return mPickerRay;
+}
+
+/**
+ * Returns a reference to the storage of all obstacles.
+ */
+inline Pair<OpenSteer::ObstacleGroup,
+		pvector<OSSteerManager::ObstacleAttributes> >& OSSteerManager::get_global_obstacles()
+{
+	return mObstacles;
 }
 
 #endif /* OSSTEERMANGER_I_ */

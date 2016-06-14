@@ -26,8 +26,8 @@ class EXPORT_CLASS OSSteerManager: public TypedReferenceCount,
 		public Singleton<OSSteerManager>
 {
 public:
-	///obstacles
 	typedef Pair<OSObstacleSettings, NodePath> ObstacleAttributes;
+	typedef Pair<OpenSteer::ObstacleGroup, pvector<ObstacleAttributes> > GlobalObstacles;
 
 PUBLISHED:
 	OSSteerManager(const NodePath& root = NodePath(),
@@ -188,7 +188,8 @@ public:
 	 * \name Obstacles of all plug-ins (c++ only).
 	 */
 	///@{
-	inline pvector<ObstacleAttributes>& get_opensteer_obstacles();
+	inline Pair<OpenSteer::ObstacleGroup,
+			pvector<ObstacleAttributes> >& get_global_obstacles();
 	///@}
 
 private:
@@ -207,9 +208,8 @@ private:
 	///OSSteerVehicles' parameter table.
 	ParameterTable mSteerVehiclesParameterTable;
 
-	///List of all obstacles (ie handled by all OSSteerPlugIns).//XXX : REFACTOR!!!
-	map<OpenSteer::AbstractObstacle*, ObstacleAttributes> mObstacles;
-	OpenSteer::ObstacleGroup mOpensteerObstacles;
+	///List of all obstacles (ie handled by all OSSteerPlugIns).
+	GlobalObstacles mObstacles;
 
 	///@{
 	///A task data for step simulation update.

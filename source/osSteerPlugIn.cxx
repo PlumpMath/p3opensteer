@@ -86,7 +86,7 @@ void OSSteerPlugIn::do_initialize()
 	dynamic_cast<ossup::PlugIn*>(mPlugIn)->localObstacles = &mLocalObstacles;
 	//set the plugin global obstacles reference
 	dynamic_cast<ossup::PlugIn*>(mPlugIn)->obstacles =
-			&mTmpl->get_opensteer_obstacles();
+			&mTmpl->get_global_obstacles().first();
 	//add its own obstacles
 	if (! mReferenceNP.is_empty())
 	{
@@ -251,26 +251,32 @@ void OSSteerPlugIn::do_finalize()
 {
 	//disable debug drawing if enabled
 	disable_debug_drawing();
-	//remove all local obstacles
+	//remove all local obstacles from the global
 	OpenSteer::ObstacleGroup::iterator iterLocal;
+	OSSteerManager::GlobalObstacles& globalObstacles =
+			OSSteerManager::get_global_ptr()->get_global_obstacles();
 	for (iterLocal = mLocalObstacles.begin();
 			iterLocal != mLocalObstacles.end(); ++iterLocal)
 	{
 		//find in global obstacles and remove it
-		//get a reference to the global storage
-		pvector<OSSteerManager::ObstacleAttributes>& globalObstacles =
-				OSSteerManager::get_global_ptr()->get_obstacles();
-		pvector<OSSteerManager::ObstacleAttributes>::iterator iter;
-		for(iter = globalObstacles.begin(); iter != globalObstacles.end(); ++iter)
+		//1: remove the OpenSteer obstacle's pointer from the global list
+		OpenSteer::ObstacleGroup::iterator iterO = find(
+				globalObstacles.first().begin(), globalObstacles.first().end(),
+				(*iterLocal));
+		globalObstacles.first().erase(iterO);
+		//2: find the Obstacle attribute with the given pointer
+		pvector<OSSteerManager::ObstacleAttributes>::iterator iterA;
+		for (iterA = globalObstacles.second().begin();
+				iterA != globalObstacles.second().end(); ++iterA)
 		{
-			if ((*iter).first().get_obstacle() == (*iterLocal))
+			if ((*iterA).first().get_obstacle() == (*iterLocal))
 			{
-				//found: remove it from global obstacles
-				globalObstacles.erase(iter);
 				break;
 			}
 		}
-		//delete inner OpenSteer obstacle
+		//2: remove the obstacle's attributes from the global list
+		globalObstacles.second().erase(iterA);
+		//3: deallocate the OpenSteer obstacle
 		delete *iterLocal;
 	}
 	//clear local obstacles
@@ -491,8 +497,10 @@ int OSSteerPlugIn::add_obstacle(NodePath& objectNP,
 		ref = unique_ref();
 		settings.set_ref(ref);
 		settings.set_obstacle(obstacle);
-		//save into the global storage
-		OSSteerManager::get_global_ptr()->get_obstacles().push_back(
+		//save into the global storage: double insert
+		OSSteerManager::get_global_ptr()->get_global_obstacles().first().push_back(
+				obstacle);
+		OSSteerManager::get_global_ptr()->get_global_obstacles().second().push_back(
 				OSSteerManager::ObstacleAttributes(settings, objectNP));
 	}
 	return ref;
@@ -510,31 +518,41 @@ NodePath OSSteerPlugIn::remove_obstacle(int ref)
 	NodePath resultNP = NodePath::fail();
 	//find in global obstacles
 	//get a reference to the global storage
-	pvector<OSSteerManager::ObstacleAttributes>& globalObstacles =
-			OSSteerManager::get_global_ptr()->get_obstacles();
-	pvector<OSSteerManager::ObstacleAttributes>::iterator iter;
-	for(iter = globalObstacles.begin(); iter != globalObstacles.end(); ++iter)
+	OSSteerManager::GlobalObstacles& globalObstacles =
+			OSSteerManager::get_global_ptr()->get_global_obstacles();
+	//find the Obstacle attribute with the given ref
+	pvector<OSSteerManager::ObstacleAttributes>::iterator iterA;
+	for (iterA = globalObstacles.second().begin();
+			iterA != globalObstacles.second().end(); ++iterA)
 	{
-		if ((*iter).first().get_ref() == ref)
+		if ((*iterA).first().get_ref() == ref)
 		{
 			break;
 		}
 	}
-	//continue only if found
-	CONTINUE_IF_ELSE_R(iter != globalObstacles.end(), resultNP)
+	//continue only if ref is found
+	CONTINUE_IF_ELSE_R(iterA != globalObstacles.second().end(), resultNP)
 
-	//remove only if obstacle has been added by this OSSteerPlugIn
+	//remove only if OpenSteer obstacle is in the local list (ie has been
+	//added by this OSSteerPlugIn)
 	OpenSteer::ObstacleGroup::iterator iterLocal = find(mLocalObstacles.begin(),
-			mLocalObstacles.end(), (*iter).first().get_obstacle());
+			mLocalObstacles.end(), (*iterA).first().get_obstacle());
 	if (iterLocal != mLocalObstacles.end())
 	{
-		//it was actually added
-		resultNP = (*iter).second();
-		//remove from global obstacles
-		globalObstacles.erase(iter);
-		//delete inner OpenSteer obstacle
+		//it is in the local list (ie it was actually added by this
+		//OSSteerPlugIn)
+		//get the node path
+		resultNP = (*iterA).second();
+		//1: remove the OpenSteer obstacle's pointer from the global list
+		OpenSteer::ObstacleGroup::iterator iterO = find(
+				globalObstacles.first().begin(), globalObstacles.first().end(),
+				(*iterA).first().get_obstacle());
+		globalObstacles.first().erase(iterO);
+		//2: remove the obstacle's attributes from the global list
+		globalObstacles.second().erase(iterA);
+		//3: deallocate the OpenSteer obstacle
 		delete *iterLocal;
-		//remove from local obstacles
+		//4: remove the OpenSteer obstacle's pointer from the local list
 		mLocalObstacles.erase(iterLocal);
 	}
 	//
