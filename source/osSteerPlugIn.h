@@ -54,6 +54,10 @@ PUBLISHED:
 	///@}
 
 	/**
+	 * \name STEERVEHICLES
+	 */
+	///@{
+	/**
 	 * \brief Adds a SteerVehicle component to the OpenSteer handling
 	 * mechanism.
 	 *
@@ -61,8 +65,7 @@ PUBLISHED:
 	 * @param steerVehicle The SteerVehicle to add.
 	 * @return Result::OK on successful addition, various error conditions otherwise.
 	 */
-	int addSteerVehicle(NodePath steerVehicle);
-
+	int addSteerVehicle(NodePath steerVehicleNP);
 	/**
 	 * \brief Removes a SteerVehicle component from the OpenSteer handling
 	 * mechanism.
@@ -71,8 +74,13 @@ PUBLISHED:
 	 * @param steerVehicle The SteerVehicle to remove.
 	 * @return Result::OK on successful removal, various error conditions otherwise.
 	 */
-	int removeSteerVehicle(NodePath steerVehicle);
+	int removeSteerVehicle(NodePath steerVehicleNP);
+	///@}
 
+	/**
+	 * \name PATHWAY
+	 */
+	///@{
 	/**
 	 * \brief Sets the pathway of this SteerPlugin.
 	 * @param numOfPoints Number of points.
@@ -83,10 +91,13 @@ PUBLISHED:
 	 */
 	void setPathway(int numOfPoints, LPoint3f const points[], bool singleRadius,
 			float const radii[], bool closedCycle);
+	// XXX: IMPLEMENT A WIDER API ABOUT PATHWAY (see ossup::PlugInAddOnMixin::Pathway)
+	///@}
 
 	/**
 	 * \name OBSTACLES
 	 */
+	///@{
 	/**
 	 * \brief Adds an OpenSteer obstacle, seen by all SteerPlugins.
 	 *
@@ -108,7 +119,6 @@ PUBLISHED:
 	 * \brief Removes an OpenSteer obstacle, seen by all plugins.
 	 * @param obstacle The obstacle to remove.
 	 */
-	///@{
 	int add_obstacle(NodePath& object,
 			const std::string& type, const std::string& seenFromState,
 			float width = 0.0, float height = 0.0, float depth = 0.0,
