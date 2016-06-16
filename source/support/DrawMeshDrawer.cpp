@@ -122,7 +122,7 @@ void DrawMeshDrawer::begin(DrawPrimitive prim)
 void DrawMeshDrawer::end()
 {
 	//close line loop (if any)
-	if (m_prim == DRAW_LINELOOP and (m_lineVertex != m_vertexLoop0))
+	if (m_prim == DRAW_LINELOOP && (m_lineVertex != m_vertexLoop0))
 	{
 		m_generators[m_generatorIdx]->segment(m_lineVertex, m_vertexLoop0,
 				LVector4f(m_lineUV.get_x(), m_lineUV.get_y(), m_uvLoop0.get_x(),
@@ -136,7 +136,7 @@ void DrawMeshDrawer::end()
 	//end current MeshDrawer
 	m_generators[m_generatorIdx]->end();
 	//increase MeshDrawer index only if multiple mesh
-	if (not m_singleMesh)
+	if (! m_singleMesh)
 	{
 		++m_generatorIdx;
 	}

@@ -293,7 +293,7 @@ public:
 	// (parameter names commented out to prevent compiler warning from "-W")
 	void update(const float currentTime, const float elapsedTime)
 	{
-		if ((not m_Ball) or (not m_TeamAssigned))
+		if ((! m_Ball) || (! m_TeamAssigned))
 		{
 			// otherwise consider avoiding collisions with others
 			Vec3 collisionAvoidance = this->steerToAvoidNeighbors(1,
@@ -425,7 +425,7 @@ public:
 			if (distHomeToBall < 12.0f)
 			{
 				// go for ball if I'm on the 'right' side of the ball
-				if (not (
+				if (! (
 						this->b_ImTeamA ?
 								this->position().x > this->m_Ball->position().x :
 								this->position().x < this->m_Ball->position().x))
@@ -518,7 +518,7 @@ public:
 			(*iter)->update(currentTime, elapsedTime);
 		}
 
-		if (not m_Ball)
+		if (! m_Ball)
 		{
 			return;
 		}
@@ -652,7 +652,7 @@ public:
 
 	virtual bool addVehicle(AbstractVehicle* vehicle)
 	{
-		if(not PlugInAddOnMixin<OpenSteer::PlugIn>::addVehicle(vehicle))
+		if(! PlugInAddOnMixin<OpenSteer::PlugIn>::addVehicle(vehicle))
 		{
 			return false;
 		}
@@ -695,7 +695,7 @@ public:
 
 	virtual bool removeVehicle(OpenSteer::AbstractVehicle* vehicle)
 	{
-		if(not PlugInAddOnMixin<OpenSteer::PlugIn>::removeVehicle(vehicle))
+		if(! PlugInAddOnMixin<OpenSteer::PlugIn>::removeVehicle(vehicle))
 		{
 			return false;
 		}

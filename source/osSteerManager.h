@@ -128,10 +128,10 @@ PUBLISHED:
 	 * @param obstacle The obstacle to remove.
 	 */
 	///@{
-	OSObstacleSettings get_obstacle_settings(int ref) const;
-	INLINE NodePath get_obstacle_by_ref(int ref) const;
-	INLINE int get_obstacle(int index) const;
-	INLINE int get_num_obstacles() const;
+	OSObstacleSettings get_obstacle_settings(int ref) const; //XXX
+	INLINE NodePath get_obstacle_by_ref(int ref) const; //XXX
+	INLINE int get_obstacle(int index) const; //XXX
+	INLINE int get_num_obstacles() const; //XXX
 	MAKE_SEQ(get_obstacles, get_num_obstacles, get_obstacle);
 	///@}
 

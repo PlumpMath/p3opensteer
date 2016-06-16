@@ -10,25 +10,37 @@
 
 ///OSSteerVehicle inline definitions
 
-INLINE void OSSteerVehicle::enableSteerVehicleEvent(EventThrown event,
+/**
+ * Enables/disables the OSSteerVehicle's events to be thrown.
+ */
+INLINE void OSSteerVehicle::enable_steer_vehicle_event(EventThrown event,
 		ThrowEventData eventData)
 {
-	doEnableSteerVehicleEvent(event, eventData);
+	do_enable_steer_vehicle_event(event, eventData);
 }
 
-INLINE void OSSteerVehicle::setSettings(const OSVehicleSettings& settings)
+/**
+ * Sets the OSSteerVehicle's settings.
+ */
+INLINE void OSSteerVehicle::set_settings(const OSVehicleSettings& settings)
 {
 	//set vehicle settings
 	static_cast<VehicleAddOn*>(mVehicle)->setSettings(settings);
 }
 
-INLINE OSVehicleSettings OSSteerVehicle::getSettings()
+/**
+ * Returns OSSteerVehicle's settings.
+ */
+INLINE OSVehicleSettings OSSteerVehicle::get_settings()
 {
 	//get vehicle settings
 	return static_cast<VehicleAddOn*>(mVehicle)->getSettings();
 }
 
-INLINE PT(OSSteerPlugIn) OSSteerVehicle::getSteerPlugIn() const
+/**
+ * Returns the OSSteerPlugIn this OSSteerVehicle is added to.
+ */
+INLINE WPT(OSSteerPlugIn) OSSteerVehicle::get_steer_plug_in() const
 {
 	return mSteerPlugIn;
 }
@@ -41,14 +53,9 @@ inline void OSSteerVehicle::do_reset()
 	//
 	mVehicle = NULL;
 	mSteerPlugIn.clear();
-	mInputRadius = 0.0;
 	mMovType = OPENSTEER;
 	mUpAxisFixed = false;
-//	mBulletWorld.clear(); XXX
-//	mMaxError = 0.0;
-//	mDeltaRayDown = mDeltaRayOrig = LVector3f::zero();
-//	mRayMask = BitMask32::all_off();
-//	mCorrectHeightRigidBody = 0.0;
+	mHeigthCorrection = LVector3f::zero();
 	mExternalUpdate = false;
 	mPFCallbackCalled = mAOCallbackCalled = mACNCallbackCalled =
 			mANCallbackCalled = false;
@@ -57,11 +64,17 @@ inline void OSSteerVehicle::do_reset()
 	mThrownEventsParam.clear();
 }
 
-inline OpenSteer::AbstractVehicle& OSSteerVehicle::getAbstractVehicle()
+/**
+ * Returns a reference to underlying AbstractVehicle.
+ */
+inline OpenSteer::AbstractVehicle& OSSteerVehicle::get_abstract_vehicle()
 {
 	return *mVehicle;
 }
 
+/**
+ * AbstractVehicle reference conversion function.
+ */
 inline OSSteerVehicle::operator OpenSteer::AbstractVehicle&()
 {
 	return *mVehicle;

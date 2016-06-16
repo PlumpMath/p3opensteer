@@ -382,7 +382,7 @@ void OSSteerManager::set_parameters_defaults(OSType type)
 		mSteerVehiclesParameterTable.insert(
 				ParameterNameValue("max_speed", "1.0"));
 		mSteerVehiclesParameterTable.insert(
-				ParameterNameValue("ray_mask", "all_on"));
+				ParameterNameValue("radius", "1.0"));
 	}
 }
 

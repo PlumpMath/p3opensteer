@@ -324,23 +324,12 @@ int OSSteerPlugIn::addSteerVehicle(NodePath steerVehicleNP)
 	// continue if steerVehicle doesn't belong to any plug-in
 	CONTINUE_IF_ELSE_R(steerVehicle->mSteerPlugIn, OS_ERROR)
 
-//	//check if SteerVehicle object needs reparenting XXX
-//	NodePath steerVehicleObjectNP = steerVehicle->getOwnerObject()->getNodePath();
-//	if(mReferenceNP != steerVehicleObjectNP.get_parent())
-//	{
-//		//reparenting is needed
-
 	//get the actual pos
 	LPoint3f pos = steerVehicleNP.get_pos();
-//		LPoint3f newPos = steerVehicleObjectNP.get_pos(mReferenceNP); XXX
 	LVector3f newForward = mReferenceNP.get_relative_vector(steerVehicleNP,
 			LVector3f::forward());
 	LVector3f newUp = mReferenceNP.get_relative_vector(steerVehicleNP,
 			LVector3f::up());
-//		//the SteerVehicle owner object is reparented to the OSSteerPlugIn XXX
-//		//object reference node path, updating pos/dir
-//		steerVehicleObject.reparent_to(mReferenceNP);
-//		steerVehicleObject.set_pos(newPos);
 	steerVehicleNP.heads_up(pos + newForward, newUp);
 	//OSSteerPlugIn object updates SteerVehicle's pos/dir wrt reference node path
 	ossup::VehicleSettings settings =
@@ -349,11 +338,10 @@ int OSSteerPlugIn::addSteerVehicle(NodePath steerVehicleNP)
 			ossup::LVecBase3fToOpenSteerVec3(newForward).normalize();
 	settings.m_up = ossup::LVecBase3fToOpenSteerVec3(newUp).normalize();
 	settings.m_position = ossup::LVecBase3fToOpenSteerVec3(pos);
-//	} XXX
 
 	//get steerVehicle dimensions
-	LVecBase3f modelDims;		//not used
-	LVector3f modelDeltaCenter;		//not used
+	LVecBase3f modelDims;
+	LVector3f modelDeltaCenter;
 	float modelRadius;
 //	if (!buildFromBam) XXX
 //	{
@@ -372,6 +360,9 @@ int OSSteerPlugIn::addSteerVehicle(NodePath steerVehicleNP)
 	settings.m_radius = modelRadius;
 	static_cast<VehicleAddOn*>(steerVehicle->mVehicle)->setSettings(settings);
 
+	//set height correction
+	steerVehicle->mHeigthCorrection = LVector3f(0.0, 0.0, modelDims.get_z());
+
 	//add to the set of SteerVehicles
 	mSteerVehicles.insert(steerVehicle);
 	//do add to real update list
@@ -385,18 +376,22 @@ int OSSteerPlugIn::addSteerVehicle(NodePath steerVehicleNP)
 
 int OSSteerPlugIn::removeSteerVehicle(NodePath steerVehicleNP)
 {
-	// continue if steerVehicle is not NULL and  mReferenceNP is not empty
-	CONTINUE_IF_ELSE_R(steerVehicleNP && (!mReferenceNP.is_empty()), OS_ERROR)
+	CONTINUE_IF_ELSE_R(
+			(!steerVehicleNP.is_empty())
+					&& (steerVehicleNP.node()->is_of_type(
+							OSSteerVehicle::get_class_type())), OS_ERROR)
 
-//	//return if steerVehicle is destroying or doesn't belong to this plug in XXX
-//	RETURN_ON_COND(steerVehicle->mSteerPlugIn != this, Result::ERROR)
-//
-//	//set steerVehicle reference to null
-//	steerVehicle->mOSSteerPlugIn.clear();
-//	//do remove from real update list
-//	static_cast<ossup::PlugIn*>(mPlugIn)->removeVehicle(&steerVehicle->getAbstractVehicle());
-//	//remove from the set of SteerVehicles
-//	mSteerVehicles.erase(steerVehicle);
+	PT(OSSteerVehicle)steerVehicle = DCAST(OSSteerVehicle, steerVehicleNP.node());
+
+	// continue if steerVehicle belongs to this plug-in
+	CONTINUE_IF_ELSE_R(steerVehicle->mSteerPlugIn == this, OS_ERROR)
+
+	//set steerVehicle reference to null
+	steerVehicle->mSteerPlugIn.clear();
+	//do remove from real update list
+	static_cast<ossup::PlugIn*>(mPlugIn)->removeVehicle(&steerVehicle->getAbstractVehicle());
+	//remove from the set of SteerVehicles
+	mSteerVehicles.erase(steerVehicle);
 	//
 	return OS_SUCCESS;
 }

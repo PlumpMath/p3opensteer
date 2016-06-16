@@ -251,7 +251,7 @@ public:
 
 	virtual bool addVehicle(AbstractVehicle* vehicle)
 	{
-		if (not PlugInAddOnMixin<OpenSteer::PlugIn>::addVehicle(vehicle))
+		if (! PlugInAddOnMixin<OpenSteer::PlugIn>::addVehicle(vehicle))
 		{
 			return false;
 		}

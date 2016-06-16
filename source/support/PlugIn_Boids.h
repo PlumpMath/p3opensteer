@@ -618,7 +618,7 @@ public:
 
 	virtual bool addVehicle(AbstractVehicle* vehicle)
 	{
-		if (not PlugInAddOnMixin<OpenSteer::PlugIn>::addVehicle(vehicle))
+		if (! PlugInAddOnMixin<OpenSteer::PlugIn>::addVehicle(vehicle))
 		{
 			return false;
 		}
@@ -631,7 +631,7 @@ public:
 			boid->worldCenter = worldCenter;
 			boid->worldRadius = worldRadius;
 			//if not ExternalBoid then randomize
-			if (not dynamic_cast<ExternalBoid<Entity>*>(boid))
+			if (! dynamic_cast<ExternalBoid<Entity>*>(boid))
 			{
 				// randomize initial orientation
 				boid->regenerateOrthonormalBasisUF(RandomUnitVector());
