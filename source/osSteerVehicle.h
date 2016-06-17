@@ -22,30 +22,37 @@
  * This class represents a "vehicle" of the RecastNavigation library.
  *
  * \see http://opensteer.sourceforge.net
- * XXX
- * This component should be associated to a "Scene" component.\n
- * If specified in "thrown_events", this component can throw
- * these events (shown with default names):
- * - on moving (<ObjectType>_SteerVehiclet_Move)
- * - on being steady (<ObjectType>_SteerVehicle_Steady)
- * - when steering is required to follow a path
- * (<ObjectType>_SteerVehicle_PathFollowing)
- * - when steering is required to avoid an obstacle
- * (<ObjectType>_SteerVehicle_AvoidObstacle)
- * - when steering is required to avoid a close neighbor (i.e. when
- * there is a collision) (<ObjectType>_SteerVehicle_AvoidCloseNeighbor)
- * - when steering is required to avoid a neighbor (i.e. when there
- * is a potential collision) (<ObjectType>_SteerVehicle_AvoidNeighbor)
+ *
+ * This PandaNode should be added to an OSSteerPlugIn, to perform a "steering
+ * behavior".\n
+ * A model could be reparented to this OSSteerVehicle.\n
+ * An OSSteerVehicle could be of type:
+ * - **opensteer** (the default): its movement/orientation follows strictly the
+ * path as updated by OpenSteer library
+ * - **kinematic**: its movement/orientation is corrected to stand on floor.\n
+ * If enabled, this object can throw these events:
+ * - on moving (default event name: NODENAME_SteerVehiclet_Move)
+ * - on being steady (default event name: NODENAME_SteerVehicle_Steady)
+ * - when steering is required to follow a path (default event name:
+ *   NODENAME_SteerVehicle_PathFollowing)
+ * - when steering is required to avoid an obstacle (default event name:
+ *   NODENAME_SteerVehicle_AvoidObstacle)
+ * - when steering is required to avoid a close neighbor (i.e. when there is a
+ *   collision) (default event name: NODENAME_SteerVehicle_AvoidCloseNeighbor)
+ * - when steering is required to avoid a neighbor (i.e. when there is a
+ *   potential collision) (default event name:
+ *   NODENAME_SteerVehicle_AvoidNeighbor)
  * Events are thrown continuously at a frequency which is the minimum between
- * the fps and the frequency specified (which defaults to 30 times per seconds).\n
+ * the fps and the frequency specified (which defaults to 30 times per seconds).
+ * \n
  * The argument of each event is a reference to this component.\n
  * \see annotate* SteerLibraryMixin member functions in SteerLibrary.h
  * for more information.
  *
- * \note debug drawing works correctly only if the owner object's
- * parent is "render".\n
+ * \note A OSSteerVehicle will be reparented to the default reference node on
+ * creation (see OSSteerManager).
  *
- * > **XML Param(s)**:
+ * > **OSSteerVehicle text parameters**:
  * param | type | default | note
  * ------|------|---------|-----
  * | *thrown_events*			|single| - | specified as "event1@[event_name1]@[frequency1][:...[:eventN@[event_nameN]@[frequencyN]]]" with eventX = move,steady,path_following,avoid_obstacle,avoid_close_neighbor,avoid_neighbor
@@ -67,7 +74,7 @@ PUBLISHED:
 	/**
 	 * OSSteerVehicle movement type.
 	 */
-	enum SteerVehicleMovType
+	enum OSSteerVehicleMovType
 	{
 		OPENSTEER,
 		OPENSTEER_KINEMATIC,
@@ -77,7 +84,7 @@ PUBLISHED:
 	/**
 	 * OSSteerVehicle thrown events.
 	 */
-	enum EventThrown
+	enum OSEventThrown
 	{
 		MOVEEVENT,              //!< MOVEEVENT
 		STEADYEVENT,            //!< STEADYEVENT
@@ -102,7 +109,7 @@ PUBLISHED:
 	 * \name EVENTS' CONFIGURATION
 	 */
 	///@{
-	INLINE void enable_steer_vehicle_event(EventThrown event, ThrowEventData eventData);
+	INLINE void enable_steer_vehicle_event(OSEventThrown event, ThrowEventData eventData);
 	///@}
 
 	/**
@@ -118,9 +125,6 @@ public:
 	 * Library & support low level related methods.
 	 */
 	///@{
-	/**
-	 * AbstractVehicle reference getter & conversion function.
-	 */
 	inline OpenSteer::AbstractVehicle& get_abstract_vehicle();
 	inline operator OpenSteer::AbstractVehicle&();
 	///@}
@@ -132,14 +136,14 @@ protected:
 	OSSteerVehicle(const string& name);
 
 private:
-	///The SteerPlugIn owner object.
+	///The SteerPlugIn this OSSteerVehicle is added to.
 	WPT(OSSteerPlugIn) mSteerPlugIn;
-	///Current underlying Vehicle.
+	///Current underlying OpenSteer Vehicle.
 	OpenSteer::AbstractVehicle* mVehicle;
 	///The reference node path.
 	NodePath mReferenceNP;
 	///The movement type.
-	SteerVehicleMovType mMovType;
+	OSSteerVehicleMovType mMovType;
 	///Flag for up axis fixed (z).
 	bool mUpAxisFixed;
 	///Height correction for kinematic OSSteerVehicle(s).
@@ -175,10 +179,10 @@ private:
 	ThrowEventData mMove, mSteady, mPathFollowing, mAvoidObstacle,
 	mAvoidCloseNeighbor, mAvoidNeighbor;
 	///Helper.
-	void do_enable_steer_vehicle_event(EventThrown event, ThrowEventData eventData);
+	void do_enable_steer_vehicle_event(OSEventThrown event, ThrowEventData eventData);
 	void do_throw_event(ThrowEventData& eventData);
 	void do_handle_steer_library_event(ThrowEventData& eventData, bool callbackCalled);
-	std::string mThrownEventsParam;
+	string mThrownEventsParam;
 	///@}
 
 	// Explicitly disabled copy constructor and copy assignment operator.

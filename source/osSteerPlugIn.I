@@ -11,24 +11,9 @@
 
 ///OSSteerPlugIn inline definitions
 
-INLINE NodePath OSSteerPlugIn::getDrawer3dDebugNodePath() const
-{
-#ifdef OS_DEBUG
-	return mDrawer3dNP;
-#else
-	return NodePath();
-#endif //OS_DEBUG
-}
-
-INLINE NodePath OSSteerPlugIn::getDrawer2dDebugNodePath() const
-{
-#ifdef OS_DEBUG
-	return mDrawer2dNP;
-#else
-	return NodePath();
-#endif //OS_DEBUG
-}
-
+/**
+ * Resets the OSSteerPlugIn.
+ */
 inline void OSSteerPlugIn::do_reset()
 {
 	//

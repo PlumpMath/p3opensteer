@@ -13,7 +13,7 @@
 /**
  * Enables/disables the OSSteerVehicle's events to be thrown.
  */
-INLINE void OSSteerVehicle::enable_steer_vehicle_event(EventThrown event,
+INLINE void OSSteerVehicle::enable_steer_vehicle_event(OSEventThrown event,
 		ThrowEventData eventData)
 {
 	do_enable_steer_vehicle_event(event, eventData);

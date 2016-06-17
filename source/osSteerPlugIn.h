@@ -23,7 +23,7 @@ class OSSteerVehicle;
  *
  * \see http://opensteer.sourceforge.net
  *
- * This is a PandaNode.\n
+ * This PandaNode will create a "plug-in".\n
  * Each OSSteerPlugIn object could handle a single pathway and several
  * obstacles.\n
  * An "update" task should call this OSSteerPlugIn's update() method to allow
@@ -57,23 +57,7 @@ PUBLISHED:
 	 * \name STEERVEHICLES
 	 */
 	///@{
-	/**
-	 * \brief Adds a SteerVehicle component to the OpenSteer handling
-	 * mechanism.
-	 *
-	 * If SteerVehicle belongs to any OSSteerPlugIn it is not added.\n
-	 * @param steerVehicle The SteerVehicle to add.
-	 * @return Result::OK on successful addition, various error conditions otherwise.
-	 */
 	int addSteerVehicle(NodePath steerVehicleNP);
-	/**
-	 * \brief Removes a SteerVehicle component from the OpenSteer handling
-	 * mechanism.
-	 *
-	 * If SteerVehicle doesn't belong to any OSSteerPlugIn it is not removed.\n
-	 * @param steerVehicle The SteerVehicle to remove.
-	 * @return Result::OK on successful removal, various error conditions otherwise.
-	 */
 	int removeSteerVehicle(NodePath steerVehicleNP);
 	///@}
 
@@ -81,14 +65,6 @@ PUBLISHED:
 	 * \name PATHWAY
 	 */
 	///@{
-	/**
-	 * \brief Sets the pathway of this SteerPlugin.
-	 * @param numOfPoints Number of points.
-	 * @param points Points' vector.
-	 * @param singleRadius Single radius flag.
-	 * @param radii Radii' vector.
-	 * @param closedCycle Closed cycle flag.
-	 */
 	void setPathway(int numOfPoints, LPoint3f const points[], bool singleRadius,
 			float const radii[], bool closedCycle);
 	// XXX: IMPLEMENT A WIDER API ABOUT PATHWAY (see ossup::PlugInAddOnMixin::Pathway)
@@ -98,29 +74,8 @@ PUBLISHED:
 	 * \name OBSTACLES
 	 */
 	///@{
-	/**
-	 * \brief Adds an OpenSteer obstacle, seen by all SteerPlugins.
-	 *
-	 * If the object parameter is not NULL,
-	 * @param object The Object used as obstacle.
-	 * @param type The obstacle type: box, plane, rectangle, sphere.
-	 * @param width Obstacle's width (box, rectangle).
-	 * @param height Obstacle's height (box, rectangle).
-	 * @param depth Obstacle's depth (box).
-	 * @param radius Obstacle's radius (sphere).
-	 * @param side Obstacle's right side direction.
-	 * @param up Obstacle's up direction.
-	 * @param forward Obstacle's forward direction.
-	 * @param position Obstacle's position.
-	 * @param seenFromState Possible values: outside, inside, both.
-	 * @return
-	 */
-	/**
-	 * \brief Removes an OpenSteer obstacle, seen by all plugins.
-	 * @param obstacle The obstacle to remove.
-	 */
 	int add_obstacle(NodePath& object,
-			const std::string& type, const std::string& seenFromState,
+			const string& type, const string& seenFromState,
 			float width = 0.0, float height = 0.0, float depth = 0.0,
 			float radius = 0.0, const LVector3f& side = LVector3f::zero(),
 			const LVector3f& up = LVector3f::zero(), const LVector3f& = LVector3f::zero(),
@@ -142,16 +97,6 @@ PUBLISHED:
 	void enable_debug_drawing(NodePath debugCamera);
 	void disable_debug_drawing();
 	int toggle_debug_drawing(bool enable);
-	/**
-	 * \brief Gets a reference to the OpenSteer Drawer3d Debug node path.
-	 * @return The OpenSteer Debug node.
-	 */
-	NodePath getDrawer3dDebugNodePath() const;
-	/**
-	 * \brief Gets a reference to the OpenSteer Drawer2d Debug node path.
-	 * @return The OpenSteer Debug node.
-	 */
-	NodePath getDrawer2dDebugNodePath() const;
 	///@}
 
 public:

@@ -14,6 +14,9 @@
 #include "support/PlugIn_LowSpeedTurn.h"
 #include "support/PlugIn_MapDrive.h"
 
+/**
+ *
+ */
 OSSteerVehicle::OSSteerVehicle(const string& name) :
 		PandaNode(name)
 {
@@ -22,10 +25,16 @@ OSSteerVehicle::OSSteerVehicle(const string& name) :
 	do_reset();
 }
 
+/**
+ *
+ */
 OSSteerVehicle::~OSSteerVehicle()
 {
 }
 
+/**
+ * Initializes the OSSteerVehicle with starting settings.
+ */
 void OSSteerVehicle::do_initialize()
 {
 	WPT(OSSteerManager)mTmpl = OSSteerManager::get_global_ptr();
@@ -177,7 +186,7 @@ void OSSteerVehicle::do_initialize()
 			paramValuesStr2 = parseCompoundString(paramValuesStr1[idx1], '@');
 			if (paramValuesStr2.size() >= 3)
 			{
-				EventThrown event;
+				OSEventThrown event;
 				ThrowEventData eventData;
 				//get default name prefix
 				string objectType = get_name();
@@ -316,6 +325,11 @@ void OSSteerVehicle::do_initialize()
 	}
 }
 
+/**
+ * On destruction cleanup.
+ * Gives an OSSteerVehicle the ability to do any cleaning is necessary when
+ * destroyed
+ */
 void OSSteerVehicle::do_finalize()
 {
 	//Remove from SteerPlugIn (if previously added)
@@ -454,7 +468,7 @@ void OSSteerVehicle::do_external_update_steer_vehicle(const float currentTime,
 /**
  * Enables/disables event throwing.
  */
-void OSSteerVehicle::do_enable_steer_vehicle_event(EventThrown event,
+void OSSteerVehicle::do_enable_steer_vehicle_event(OSEventThrown event,
 		ThrowEventData eventData)
 {
 	//some checks
@@ -626,6 +640,85 @@ void OSSteerVehicle::do_handle_steer_library_event(ThrowEventData& eventData,
 			}
 		}
 	}
+}
+
+//TypedWritable API
+/**
+ * Tells the BamReader how to create objects of type OSSteerVehicle.
+ */
+void OSSteerVehicle::register_with_read_factory()
+{
+	BamReader::get_factory()->register_factory(get_class_type(), make_from_bam);
+}
+
+/**
+ * Writes the contents of this object to the datagram for shipping out to a
+ * Bam file.
+ */
+void OSSteerVehicle::write_datagram(BamWriter *manager, Datagram &dg)
+{
+	PandaNode::write_datagram(manager, dg);
+
+	///Name of this RNCrowdAgent.
+	dg.add_string(get_name());
+
+	//XXX
+
+	///The reference node path.
+	manager->write_pointer(dg, mReferenceNP.node());
+}
+
+/**
+ * Receives an array of pointers, one for each time manager->read_pointer()
+ * was called in fillin(). Returns the number of pointers processed.
+ */
+int OSSteerVehicle::complete_pointers(TypedWritable **p_list, BamReader *manager)
+{
+	int pi = PandaNode::complete_pointers(p_list, manager);
+
+	//XXX
+
+	return pi;
+}
+
+/**
+ * This function is called by the BamReader's factory when a new object of
+ * type OSSteerVehicle is encountered in the Bam file.  It should create the
+ * OSSteerVehicle and extract its information from the file.
+ */
+TypedWritable *OSSteerVehicle::make_from_bam(const FactoryParams &params)
+{
+	// return NULL if OSSteerManager if doesn't exist
+	nassertr_always(OSSteerManager::get_global_ptr(), NULL)
+
+	// create a OSSteerVehicle with default parameters' values: they'll be restored later
+	OSSteerManager::get_global_ptr()->set_parameters_defaults(
+			OSSteerManager::STEERVEHICLE);
+	OSSteerVehicle *node = DCAST(OSSteerVehicle,
+			OSSteerManager::get_global_ptr()->create_steer_vehicle(
+					"SteerVehicle").node());
+
+	DatagramIterator scan;
+	BamReader *manager;
+
+	parse_params(params, scan, manager);
+	node->fillin(scan, manager);
+
+	return node;
+}
+
+/**
+ * This internal function is called by make_from_bam to read in all of the
+ * relevant data from the BamFile for the new RNCrowdAgent.
+ */
+void OSSteerVehicle::fillin(DatagramIterator &scan, BamReader *manager)
+{
+	PandaNode::fillin(scan, manager);
+
+	///Name of this OSSteerVehicle. string mName;
+	set_name(scan.get_string());
+
+	//XXX
 }
 
 //TypedObject semantics: hardcoded

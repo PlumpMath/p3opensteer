@@ -21,16 +21,25 @@
 #include "support/PlugIn_MapDrive.h"
 #endif //CPPPARSER
 
+/**
+ *
+ */
 OSSteerPlugIn::OSSteerPlugIn(const string& name) :
 		PandaNode(name)
 {
 	do_reset();
 }
 
+/**
+ *
+ */
 OSSteerPlugIn::~OSSteerPlugIn()
 {
 }
 
+/**
+ * Initializes the OSSteerPlugIn with starting settings.
+ */
 void OSSteerPlugIn::do_initialize()
 {
 	WPT(OSSteerManager)mTmpl = OSSteerManager::get_global_ptr();
@@ -96,6 +105,9 @@ void OSSteerPlugIn::do_initialize()
 	mPlugIn->open();
 }
 
+/**
+ * Builds the pathway.
+ */
 void OSSteerPlugIn::doBuildPathway(const string& pathwayParam)
 {
 	//
@@ -311,6 +323,10 @@ void OSSteerPlugIn::do_finalize()
 
 typedef ossup::VehicleAddOnMixin<ossup::SimpleVehicle, OSSteerVehicle> VehicleAddOn;
 
+/**
+ * Adds a OSSteerVehicle to this OSSteerPlugIn (ie to the underlying OpenSteer
+ * management mechanism).
+ */
 int OSSteerPlugIn::addSteerVehicle(NodePath steerVehicleNP)
 {
 	CONTINUE_IF_ELSE_R(
@@ -374,6 +390,10 @@ int OSSteerPlugIn::addSteerVehicle(NodePath steerVehicleNP)
 	return (result = true ? OS_SUCCESS : OS_ERROR);
 }
 
+/**
+ * Removes a SteerVehicle from this OSSteerPlugIn (ie from the OpenSteer
+ * handling mechanism).
+ */
 int OSSteerPlugIn::removeSteerVehicle(NodePath steerVehicleNP)
 {
 	CONTINUE_IF_ELSE_R(
@@ -396,6 +416,9 @@ int OSSteerPlugIn::removeSteerVehicle(NodePath steerVehicleNP)
 	return OS_SUCCESS;
 }
 
+/**
+ * Sets the pathway of this OSSteerPlugin.
+ */
 void OSSteerPlugIn::setPathway(int numOfPoints, LPoint3f const points[],
 		bool singleRadius, float const radii[], bool closedCycle)
 {
@@ -413,10 +436,28 @@ void OSSteerPlugIn::setPathway(int numOfPoints, LPoint3f const points[],
 }
 
 /**
+ * If the object parameter is not NULL,
+ * @param object The Object used as obstacle.
+ * @param type The obstacle type: box, plane, rectangle, sphere.
+ * @param width Obstacle's width (box, rectangle).
+ * @param height Obstacle's height (box, rectangle).
+ * @param depth Obstacle's depth (box).
+ * @param radius Obstacle's radius (sphere).
+ * @param side Obstacle's right side direction.
+ * @param up Obstacle's up direction.
+ * @param forward Obstacle's forward direction.
+ * @param position Obstacle's position.
+ * @param seenFromState Possible values: outside, inside, both.
+ * @return
+ */
+/**
  * Adds an obstacle.
- * If objectNP is not empty then the added underlying obstacle corresponds to
- * this NodePath, which is directly reparented to the reference node, otherwise
- * it only seen by all the underlying plug-ins.
+ * A non empty NodePath (objectNP) will corresponds to the  underlying OpenSteer
+ * obstacle, and is directly reparented to the reference node. In this case
+ * parameters are extracted from the NodePath.
+ * Otherwise (empty NodePath) it is only seen by the OpenSteer library, and all
+ * parameters should be specified.\n
+ * objectNP, type and seenFromState parameters must be always specified.\n
  * Returns the obstacle's unique reference (>0), or a negative number on error.
  */
 int OSSteerPlugIn::add_obstacle(NodePath& objectNP,
@@ -546,7 +587,7 @@ int OSSteerPlugIn::add_obstacle(NodePath& objectNP,
 }
 
 /**
- * Removes an obstacle given its unique ref (>0).
+ * Removes an obstacle given its unique ref (>0).\n
  * Returns the NodePath (possibly empty) that was associated to the underlying
  * obstacle just removed, otherwise an empty NodePath with the ET_fail error
  * type set on error.
@@ -606,10 +647,8 @@ NodePath OSSteerPlugIn::remove_obstacle(int ref)
 }
 
 /**
- * \brief Updates OpenSteer underlying component.
- *
- * Will be called automatically by an ai manager update.
- * @param data The custom data.
+ * Updates the OpenSteer underlying plug-in.
+ * It allows the added OSSteerVehicle(s) to perform their "steering behaviors".
  */
 void OSSteerPlugIn::update(float dt)
 {
@@ -774,6 +813,103 @@ int OSSteerPlugIn::toggle_debug_drawing(bool enable)
 	//
 #endif
 	return OS_SUCCESS;
+}
+
+//TypedWritable API
+/**
+ * Tells the BamReader how to create objects of type OSSteerPlugIn.
+ */
+void OSSteerPlugIn::register_with_read_factory()
+{
+	BamReader::get_factory()->register_factory(get_class_type(), make_from_bam);
+}
+
+/**
+ * Writes the contents of this object to the datagram for shipping out to a
+ * Bam file.
+ */
+void OSSteerPlugIn::write_datagram(BamWriter *manager, Datagram &dg)
+{
+	PandaNode::write_datagram(manager, dg);
+
+	///Name of this RNNavMesh.
+	dg.add_string(get_name());
+
+	//XXX
+}
+
+/**
+ * Receives an array of pointers, one for each time manager->read_pointer()
+ * was called in fillin(). Returns the number of pointers processed.
+ */
+int OSSteerPlugIn::complete_pointers(TypedWritable **p_list, BamReader *manager)
+{
+	int pi = PandaNode::complete_pointers(p_list, manager);
+
+	//XXX
+
+	return pi;
+}
+
+/**
+ * Called by the BamReader to perform any final actions needed for setting up
+ * the object after all objects have been read and all pointers have been
+ * completed.
+ */
+void OSSteerPlugIn::finalize(BamReader *manager)
+{
+	//XXX
+}
+
+/**
+ * Some objects require all of their nested pointers to have been completed
+ * before the objects themselves can be completed.  If this is the case,
+ * override this method to return true, and be careful with circular
+ * references (which would make the object unreadable from a bam file).
+ */
+bool OSSteerPlugIn::require_fully_complete() const
+{
+	return true;
+}
+
+/**
+ * This function is called by the BamReader's factory when a new object of
+ * type OSSteerPlugIn is encountered in the Bam file.  It should create the
+ * OSSteerPlugIn and extract its information from the file.
+ */
+TypedWritable *OSSteerPlugIn::make_from_bam(const FactoryParams &params)
+{
+	// continue only if OSSteerManager exists
+	CONTINUE_IF_ELSE_R(OSSteerManager::get_global_ptr(), NULL)
+
+	// create a RNNavMesh with default parameters' values: they'll be restored later
+	OSSteerManager::get_global_ptr()->set_parameters_defaults(
+			OSSteerManager::STEERPLUGIN);
+	OSSteerPlugIn *node = DCAST(OSSteerPlugIn,
+			OSSteerManager::get_global_ptr()->create_steer_plug_in().node());
+
+	DatagramIterator scan;
+	BamReader *manager;
+
+	parse_params(params, scan, manager);
+	node->fillin(scan, manager);
+	manager->register_finalize(node);
+
+	return node;
+}
+
+/**
+ * This internal function is called by make_from_bam to read in all of the
+ * relevant data from the BamFile for the new OSSteerPlugIn.
+ */
+void OSSteerPlugIn::fillin(DatagramIterator &scan, BamReader *manager)
+{
+	PandaNode::fillin(scan, manager);
+
+	///Name of this RNNavMesh.
+	set_name(scan.get_string());
+
+	//XXX
 }
 
 //TypedObject semantics: hardcoded
