@@ -14,7 +14,7 @@ AM_LDFLAGS = -L/usr/lib/x86_64-linux-gnu/panda3d
 LDADD = -lp3framework -lpanda -lpandaexpress -lp3dtool -lp3dtoolconfig \
 		-lp3pystub -lXxf86dga -lpython2.7 -lpandaphysics -lpthread
 
-noinst_PROGRAMS = basic test1
+noinst_PROGRAMS = basic
 
 BUILT_SOURCES = data.h
 
@@ -26,26 +26,39 @@ data.h: $(srcdir)/data.h.in Makefile
 EXTRA_DIST = data.h.in
 
 common_sources = \
-	$(srcdir)/../../source/config_module.cxx \
-	$(srcdir)/../../source/opensteer_composite1.cxx \
 	$(srcdir)/../../source/osSteerManager.cxx \
 	$(srcdir)/../../source/osSteerPlugIn.cxx \
 	$(srcdir)/../../source/osSteerVehicle.cxx \
 	$(srcdir)/../../source/osTools.cxx \
+	$(srcdir)/../../source/library/OpenSteer/Camera.cpp \
+	$(srcdir)/../../source/library/OpenSteer/Clock.cpp \
+	$(srcdir)/../../source/library/OpenSteer/Color.cpp \
+	$(srcdir)/../../source/library/OpenSteer/lq.c \
+	$(srcdir)/../../source/library/OpenSteer/Obstacle.cpp \
+	$(srcdir)/../../source/library/OpenSteer/OldPathway.cpp \
+	$(srcdir)/../../source/library/OpenSteer/Path.cpp \
+	$(srcdir)/../../source/library/OpenSteer/Pathway.cpp \
+	$(srcdir)/../../source/library/OpenSteer/PlugIn.cpp \
+	$(srcdir)/../../source/library/OpenSteer/PolylineSegmentedPath.cpp \
+	$(srcdir)/../../source/library/OpenSteer/PolylineSegmentedPathwaySegmentRadii.cpp \
+	$(srcdir)/../../source/library/OpenSteer/PolylineSegmentedPathwaySingleRadius.cpp \
+	$(srcdir)/../../source/library/OpenSteer/SegmentedPath.cpp \
+	$(srcdir)/../../source/library/OpenSteer/SegmentedPathway.cpp \
+	$(srcdir)/../../source/library/OpenSteer/TerrainRayTest.cpp \
+	$(srcdir)/../../source/library/OpenSteer/Vec3.cpp \
+	$(srcdir)/../../source/library/OpenSteer/Vec3Utilities.cpp \
 	$(srcdir)/../../source/support/Draw.cpp \
 	$(srcdir)/../../source/support/DrawMeshDrawer.cpp \
 	$(srcdir)/../../source/support/SimpleVehicle.cpp
+#	$(srcdir)/../../source/library/OpenSteer/main.cpp
+#	$(srcdir)/../../source/library/OpenSteer/OpenSteerDemo.cpp
+#	$(srcdir)/../../source/library/OpenSteer/Draw.cpp
+#	$(srcdir)/../../source/library/OpenSteer/SimpleVehicle.cpp
 
 #basic
 basic_SOURCES = \
 	basic.cpp
 
 nodist_basic_SOURCES = $(common_sources)
-
-#test1
-test1_SOURCES = \
-	test1.cpp
-
-nodist_test1_SOURCES = $(common_sources)
 
 CLEANFILES = data.h

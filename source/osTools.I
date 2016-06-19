@@ -290,6 +290,16 @@ INLINE void OSVehicleSettings::set_position(const LVector3f& value)
 }
 
 ///OSObstacleSettings.
+INLINE bool OSObstacleSettings::operator==(
+		const OSObstacleSettings &other) const
+{
+	return (_type == other._type) && (_seenFromState == other._seenFromState)
+			&& (_position == other._position) && (_forward == other._forward)
+			&& (_up == other._up) && (_side == other._side)
+			&& (_width == other._width) && (_height == other._height)
+			&& (_depth == other._depth) && (_radius == other._radius)
+			&& (_ref == other._ref) && (_obstacle == other._obstacle);
+}
 INLINE string OSObstacleSettings::get_type() const
 {
 	return _type;

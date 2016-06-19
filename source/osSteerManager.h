@@ -106,32 +106,11 @@ PUBLISHED:
 	/**
 	 * \name OBSTACLES
 	 */
-	/**
-	 * \brief Adds an OpenSteer obstacle, seen by all SteerPlugins.
-	 *
-	 * If the object parameter is not NULL,
-	 * @param object The Object used as obstacle.
-	 * @param type The obstacle type: box, plane, rectangle, sphere.
-	 * @param width Obstacle's width (box, rectangle).
-	 * @param height Obstacle's height (box, rectangle).
-	 * @param depth Obstacle's depth (box).
-	 * @param radius Obstacle's radius (sphere).
-	 * @param side Obstacle's right side direction.
-	 * @param up Obstacle's up direction.
-	 * @param forward Obstacle's forward direction.
-	 * @param position Obstacle's position.
-	 * @param seenFromState Possible values: outside, inside, both.
-	 * @return
-	 */
-	/**
-	 * \brief Removes an OpenSteer obstacle, seen by all plugins.
-	 * @param obstacle The obstacle to remove.
-	 */
 	///@{
-	OSObstacleSettings get_obstacle_settings(int ref) const; //XXX
-	INLINE NodePath get_obstacle_by_ref(int ref) const; //XXX
-	INLINE int get_obstacle(int index) const; //XXX
-	INLINE int get_num_obstacles() const; //XXX
+	OSObstacleSettings get_obstacle_settings(int ref) const;
+	NodePath get_obstacle_by_ref(int ref) const;
+	INLINE int get_obstacle(int index) const;
+	INLINE int get_num_obstacles() const;
 	MAKE_SEQ(get_obstacles, get_num_obstacles, get_obstacle);
 	///@}
 
@@ -185,7 +164,7 @@ PUBLISHED:
 
 public:
 	/**
-	 * \name Obstacles of all plug-ins (c++ only).
+	 * \name Obstacles added by all OSSteerPlugIn(s) (C++ only).
 	 */
 	///@{
 	inline Pair<OpenSteer::ObstacleGroup,

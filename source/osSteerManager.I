@@ -63,6 +63,27 @@ INLINE int OSSteerManager::get_num_steer_vehicles() const
 }
 
 /**
+ * Returns the obstacle's unique reference (>0) given its index into the list of
+ * all defined obstacles, or a negative number on error.
+ */
+INLINE int OSSteerManager::get_obstacle(int index) const
+{
+	pvector<ObstacleAttributes> obstacleAttrs = mObstacles.get_second();
+	CONTINUE_IF_ELSE_R((index >= 0) && (index < (int ) obstacleAttrs.size()),
+			OS_ERROR)
+
+	return obstacleAttrs[index].get_first().get_ref();
+}
+
+/**
+ * Returns the number of all defined obstacles.
+ */
+INLINE int OSSteerManager::get_num_obstacles() const
+{
+	 return (int) mObstacles.get_second().size();
+}
+
+/**
  * Get singleton pointer.
  */
 INLINE OSSteerManager* OSSteerManager::get_global_ptr()

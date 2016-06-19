@@ -5,6 +5,7 @@
  * \author consultit
  */
 #include "osSteerVehicle.h"
+#include "throw_event.h"
 #include "support/PlugIn_OneTurning.h"
 #include "support/PlugIn_Pedestrian.h"
 #include "support/PlugIn_Boids.h"
@@ -34,6 +35,7 @@ OSSteerVehicle::~OSSteerVehicle()
 
 /**
  * Initializes the OSSteerVehicle with starting settings.
+ * \note Internal use only.
  */
 void OSSteerVehicle::do_initialize()
 {
@@ -134,7 +136,7 @@ void OSSteerVehicle::do_initialize()
 	mUpAxisFixed = (
 			mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
 					string("up_axis_fixed")) ==
-							string("true") ? true : false);
+			string("true") ? true : false);
 	//get settings
 	ossup::VehicleSettings settings;
 	//mass
@@ -290,22 +292,20 @@ void OSSteerVehicle::do_initialize()
 			&OSSteerVehicle::do_avoid_neighbor);
 	//clear all no more needed "Param" variables
 	mThrownEventsParam.clear();
-	//set vehicle's forward,( side,) up and position
-	NodePath ownerNP/* = mOwnerObject->getNodePath()*/;
-	ossup::VehicleSettings settings =
-	static_cast<VehicleAddOn*>(mVehicle)->getSettings();
-	settings.m_forward =
-	ossup::LVecBase3fToOpenSteerVec3(
-			ownerNP.get_parent().get_relative_vector(
-					ownerNP, -LVector3f::forward())).normalize();
-	settings.m_up = ossup::LVecBase3fToOpenSteerVec3(
-			ownerNP.get_parent().get_relative_vector(
-					ownerNP, LVector3f::up())).normalize();
-	settings.m_position = ossup::LVecBase3fToOpenSteerVec3(
-			ownerNP.get_pos());
-	static_cast<VehicleAddOn*>(mVehicle)->setSettings(settings);
 	// set this NodePath
 	NodePath thisNP = NodePath::any_path(this);
+	//set initial vehicle's forward,( side,) up and position
+	settings = static_cast<VehicleAddOn*>(mVehicle)->getSettings();
+	settings.m_forward =
+	ossup::LVecBase3fToOpenSteerVec3(
+			mReferenceNP.get_relative_vector(
+					thisNP, -LVector3f::forward())).normalize();
+	settings.m_up = ossup::LVecBase3fToOpenSteerVec3(
+			mReferenceNP.get_relative_vector(
+					thisNP, LVector3f::up())).normalize();
+	settings.m_position = ossup::LVecBase3fToOpenSteerVec3(
+			thisNP.get_pos());
+	static_cast<VehicleAddOn*>(mVehicle)->setSettings(settings);
 	// set the collide mask to avoid hit with the steer manager ray
 	thisNP.set_collide_mask(~mTmpl->get_collide_mask() &
 			thisNP.get_collide_mask());
@@ -319,7 +319,7 @@ void OSSteerVehicle::do_initialize()
 				OSSteerManager::get_global_ptr()->get_steer_plug_in(index).node());
 		if (plugIn->get_name() == mSteerPlugInObjectId)
 		{
-			plugIn->addSteerVehicle(thisNP);
+			plugIn->add_steer_vehicle(thisNP);
 			break;
 		}
 	}
@@ -328,14 +328,15 @@ void OSSteerVehicle::do_initialize()
 /**
  * On destruction cleanup.
  * Gives an OSSteerVehicle the ability to do any cleaning is necessary when
- * destroyed
+ * destroyed.
+ * \note Internal use only.
  */
 void OSSteerVehicle::do_finalize()
 {
 	//Remove from SteerPlugIn (if previously added)
 	if (mSteerPlugIn)
 	{
-		mSteerPlugIn->removeSteerVehicle(NodePath::any_path(this));
+		mSteerPlugIn->remove_steer_vehicle(NodePath::any_path(this));
 	}
 	//
 	delete mVehicle;
@@ -354,6 +355,7 @@ void OSSteerVehicle::output(ostream &out) const
 /**
  * Updates the OSSteerVehicle.
  * Called by the underlying OpenSteer component update.
+ * \note Internal use only.
  */
 void OSSteerVehicle::do_update_steer_vehicle(const float currentTime,
 		const float elapsedTime)
@@ -437,6 +439,7 @@ void OSSteerVehicle::do_update_steer_vehicle(const float currentTime,
 /**
  * Updates the OSSteerVehicle.
  * Called when component is updated outside of OpenSteer.
+ * \note Internal use only.
  */
 void OSSteerVehicle::do_external_update_steer_vehicle(const float currentTime,
 		const float elapsedTime)
@@ -467,6 +470,7 @@ void OSSteerVehicle::do_external_update_steer_vehicle(const float currentTime,
 
 /**
  * Enables/disables event throwing.
+ * \note Internal use only.
  */
 void OSSteerVehicle::do_enable_steer_vehicle_event(OSEventThrown event,
 		ThrowEventData eventData)
@@ -534,6 +538,7 @@ void OSSteerVehicle::do_enable_steer_vehicle_event(OSEventThrown event,
 
 /**
  * Path following callback.
+ * \note Internal use only.
  */
 void OSSteerVehicle::do_path_following(const OpenSteer::Vec3& future,
 		const OpenSteer::Vec3& onPath, const OpenSteer::Vec3& target,
@@ -550,6 +555,7 @@ void OSSteerVehicle::do_path_following(const OpenSteer::Vec3& future,
 
 /**
  * Avoid obstacle callback.
+ * \note Internal use only.
  */
 void OSSteerVehicle::do_avoid_obstacle(const float minDistanceToCollision)
 {
@@ -564,6 +570,7 @@ void OSSteerVehicle::do_avoid_obstacle(const float minDistanceToCollision)
 
 /**
  * Avoid close neighbor callback.
+ * \note Internal use only.
  */
 void OSSteerVehicle::do_avoid_close_neighbor(
 		const OpenSteer::AbstractVehicle& other, const float additionalDistance)
@@ -579,6 +586,7 @@ void OSSteerVehicle::do_avoid_close_neighbor(
 
 /**
  * Avoid neighbor callback.
+ * \note Internal use only.
  */
 void OSSteerVehicle::do_avoid_neighbor(const OpenSteer::AbstractVehicle& threat,
 		const float steer, const OpenSteer::Vec3& ourFuture,
@@ -595,6 +603,7 @@ void OSSteerVehicle::do_avoid_neighbor(const OpenSteer::AbstractVehicle& threat,
 
 /**
  * Throws an event when needed.
+ * \note Internal use only.
  */
 void OSSteerVehicle::do_throw_event(ThrowEventData& eventData)
 {
@@ -619,6 +628,7 @@ void OSSteerVehicle::do_throw_event(ThrowEventData& eventData)
 
 /**
  * Handles a OpenSteer library event.
+ * \note Internal use only.
  */
 void OSSteerVehicle::do_handle_steer_library_event(ThrowEventData& eventData,
 		bool callbackCalled)

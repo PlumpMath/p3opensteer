@@ -39,6 +39,7 @@ OSSteerPlugIn::~OSSteerPlugIn()
 
 /**
  * Initializes the OSSteerPlugIn with starting settings.
+ * \note Internal use only.
  */
 void OSSteerPlugIn::do_initialize()
 {
@@ -90,7 +91,7 @@ void OSSteerPlugIn::do_initialize()
 		mPlugIn = new ossup::OneTurningPlugIn<OSSteerVehicle>;
 	}
 	//build pathway
-	doBuildPathway(mPathwayParam);
+	do_build_pathway(mPathwayParam);
 	//set the plugin local obstacles reference
 	static_cast<ossup::PlugIn*>(mPlugIn)->localObstacles = &mLocalObstacles;
 	//set the plugin global obstacles reference
@@ -99,7 +100,7 @@ void OSSteerPlugIn::do_initialize()
 	//add its own obstacles
 	if (! mReferenceNP.is_empty())
 	{
-		doAddObstacles(mObstacleListParam);
+		do_add_obstacles(mObstacleListParam);
 	}
 	//open the plug in
 	mPlugIn->open();
@@ -107,8 +108,9 @@ void OSSteerPlugIn::do_initialize()
 
 /**
  * Builds the pathway.
+ * \note Internal use only.
  */
-void OSSteerPlugIn::doBuildPathway(const string& pathwayParam)
+void OSSteerPlugIn::do_build_pathway(const string& pathwayParam)
 {
 	//
 	pvector<string> paramValues1Str, paramValues2Str, paramValues3Str;
@@ -217,8 +219,9 @@ void OSSteerPlugIn::doBuildPathway(const string& pathwayParam)
  * Adds the initial set of obstacles.
  * \note Obstacles' NodePaths are searched as descendants of the reference node
  * (and directly reparented to it if necessary).
+ * \note Internal use only.
  */
-void OSSteerPlugIn::doAddObstacles(const plist<string>& obstacleListParam)
+void OSSteerPlugIn::do_add_obstacles(const plist<string>& obstacleListParam)
 {
 	//
 	pvector<string> paramValues1Str, paramValues2Str;
@@ -257,7 +260,8 @@ void OSSteerPlugIn::doAddObstacles(const plist<string>& obstacleListParam)
 /**
  * On destruction cleanup.
  * Gives an OSSteerPlugIn the ability to do any cleaning is necessary when
- * destroyed
+ * destroyed.
+ * \note Internal use only.
  */
 void OSSteerPlugIn::do_finalize()
 {
@@ -311,7 +315,7 @@ void OSSteerPlugIn::do_finalize()
 		(*iter)->mSteerPlugIn.clear();
 		//do remove from real update list
 		static_cast<ossup::PlugIn*>(mPlugIn)->removeVehicle(
-				&(*iter)->getAbstractVehicle());
+				&(*iter)->get_abstract_vehicle());
 	}
 
 	//close the plug in
@@ -326,8 +330,9 @@ typedef ossup::VehicleAddOnMixin<ossup::SimpleVehicle, OSSteerVehicle> VehicleAd
 /**
  * Adds a OSSteerVehicle to this OSSteerPlugIn (ie to the underlying OpenSteer
  * management mechanism).
+ * Returns a negative number on error.
  */
-int OSSteerPlugIn::addSteerVehicle(NodePath steerVehicleNP)
+int OSSteerPlugIn::add_steer_vehicle(NodePath steerVehicleNP)
 {
 	CONTINUE_IF_ELSE_R(
 			(!steerVehicleNP.is_empty())
@@ -383,7 +388,7 @@ int OSSteerPlugIn::addSteerVehicle(NodePath steerVehicleNP)
 	mSteerVehicles.insert(steerVehicle);
 	//do add to real update list
 	static_cast<ossup::PlugIn*>(mPlugIn)->addVehicle(
-			&steerVehicle->getAbstractVehicle());
+			&steerVehicle->get_abstract_vehicle());
 	//set steerVehicle reference to this plugin
 	steerVehicle->mSteerPlugIn = this;
 	//
@@ -393,8 +398,9 @@ int OSSteerPlugIn::addSteerVehicle(NodePath steerVehicleNP)
 /**
  * Removes a SteerVehicle from this OSSteerPlugIn (ie from the OpenSteer
  * handling mechanism).
+ * Returns a negative number on error.
  */
-int OSSteerPlugIn::removeSteerVehicle(NodePath steerVehicleNP)
+int OSSteerPlugIn::remove_steer_vehicle(NodePath steerVehicleNP)
 {
 	CONTINUE_IF_ELSE_R(
 			(!steerVehicleNP.is_empty())
@@ -409,7 +415,8 @@ int OSSteerPlugIn::removeSteerVehicle(NodePath steerVehicleNP)
 	//set steerVehicle reference to null
 	steerVehicle->mSteerPlugIn.clear();
 	//do remove from real update list
-	static_cast<ossup::PlugIn*>(mPlugIn)->removeVehicle(&steerVehicle->getAbstractVehicle());
+	static_cast<ossup::PlugIn*>(mPlugIn)->removeVehicle(
+			&steerVehicle->get_abstract_vehicle());
 	//remove from the set of SteerVehicles
 	mSteerVehicles.erase(steerVehicle);
 	//
@@ -419,7 +426,7 @@ int OSSteerPlugIn::removeSteerVehicle(NodePath steerVehicleNP)
 /**
  * Sets the pathway of this OSSteerPlugin.
  */
-void OSSteerPlugIn::setPathway(int numOfPoints, LPoint3f const points[],
+void OSSteerPlugIn::set_pathway(int numOfPoints, LPoint3f const points[],
 		bool singleRadius, float const radii[], bool closedCycle)
 {
 	//convert to OpenSteer points
@@ -435,21 +442,6 @@ void OSSteerPlugIn::setPathway(int numOfPoints, LPoint3f const points[],
 	delete[] osPoints;
 }
 
-/**
- * If the object parameter is not NULL,
- * @param object The Object used as obstacle.
- * @param type The obstacle type: box, plane, rectangle, sphere.
- * @param width Obstacle's width (box, rectangle).
- * @param height Obstacle's height (box, rectangle).
- * @param depth Obstacle's depth (box).
- * @param radius Obstacle's radius (sphere).
- * @param side Obstacle's right side direction.
- * @param up Obstacle's up direction.
- * @param forward Obstacle's forward direction.
- * @param position Obstacle's position.
- * @param seenFromState Possible values: outside, inside, both.
- * @return
- */
 /**
  * Adds an obstacle.
  * A non empty NodePath (objectNP) will corresponds to the  underlying OpenSteer
@@ -775,6 +767,7 @@ void OSSteerPlugIn::disable_debug_drawing()
 
 /**
  * Enables/disables debugging.
+ * Returns a negative number on error.
  */
 int OSSteerPlugIn::toggle_debug_drawing(bool enable)
 {

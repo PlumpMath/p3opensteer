@@ -11,8 +11,17 @@
 #ifdef CPPPARSER
 //Panda3d interrogate fake declarations
 
+namespace OpenSteer
+{
+	struct AbstractObstacle;
+	struct AbstractPlugIn;
+	struct ObstacleGroup;
+	struct AbstractVehicle;
+}
 namespace ossup
 {
+	struct VehicleSettings;
+	template<typename T1, typename T2> struct VehicleAddOnMixin;
 }
 
 #endif //CPPPARSER

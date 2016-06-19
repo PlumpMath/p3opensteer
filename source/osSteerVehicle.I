@@ -40,13 +40,14 @@ INLINE OSVehicleSettings OSSteerVehicle::get_settings()
 /**
  * Returns the OSSteerPlugIn this OSSteerVehicle is added to.
  */
-INLINE WPT(OSSteerPlugIn) OSSteerVehicle::get_steer_plug_in() const
+INLINE PT(OSSteerPlugIn) OSSteerVehicle::get_steer_plug_in() const
 {
 	return mSteerPlugIn;
 }
 
 /**
  * Resets OSSteerVehicle.
+ * \note Internal use only.
  */
 inline void OSSteerVehicle::do_reset()
 {
@@ -65,7 +66,7 @@ inline void OSSteerVehicle::do_reset()
 }
 
 /**
- * Returns a reference to underlying AbstractVehicle.
+ * Returns a reference to underlying OpenSteer::AbstractVehicle.
  */
 inline OpenSteer::AbstractVehicle& OSSteerVehicle::get_abstract_vehicle()
 {

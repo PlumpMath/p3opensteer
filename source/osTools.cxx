@@ -148,22 +148,11 @@ void OSVehicleSettings::write_datagram(Datagram &dg) const
  */
 void OSVehicleSettings::read_datagram(DatagramIterator &scan)
 {
-	// mass
-	float m_mass;
 	set_mass(scan.get_stdfloat());
-	// size of bounding sphere, for obstacle avoidance, etc.
-	float m_radius;
 	set_radius(scan.get_stdfloat());
-	// speed of vehicle
-	float m_speed;
 	set_speed(scan.get_stdfloat());
-	// the maximum steering force this vehicle can apply
-	float m_maxForce;
 	set_maxForce(scan.get_stdfloat());
-	// the maximum speed this vehicle is allowed to move
-	float m_maxSpeed;
 	set_maxSpeed(scan.get_stdfloat());
-	//
 	LVector3f value;
 	value.read_datagram(scan);
 	set_forward(value);
@@ -176,6 +165,13 @@ void OSVehicleSettings::read_datagram(DatagramIterator &scan)
 }
 
 ///OSObstacleSettings.
+/**
+ *
+ */
+OSObstacleSettings::OSObstacleSettings() :
+		_width(0), _height(0), _depth(0), _radius(0), _ref(0), _obstacle(0)
+{
+}
 /**
  * Writes the OSObstacleSettings into a datagram.
  */

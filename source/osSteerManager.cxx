@@ -106,11 +106,13 @@ OSSteerManager::~OSSteerManager()
 
 /**
  * Creates a OSSteerPlugIn.
+ * Returns a NodePath to the new OSSteerPlugIn,or an empty NodePath with the
+ * ET_fail error type set on error.
  */
 NodePath OSSteerManager::create_steer_plug_in()
 {
 	PT(OSSteerPlugIn) newSteerPlugIn = new OSSteerPlugIn();
-	nassertr_always(newSteerPlugIn, NodePath())
+	nassertr_always(newSteerPlugIn, NodePath::fail())
 
 	// set reference nodes
 	newSteerPlugIn->mReferenceNP = mReferenceNP;
@@ -129,6 +131,7 @@ NodePath OSSteerManager::create_steer_plug_in()
 
 /**
  * Destroys a OSSteerPlugIn.
+ * Returns false on error.
  */
 bool OSSteerManager::destroy_steer_plug_in(NodePath steerPlugInNP)
 {
@@ -151,25 +154,28 @@ bool OSSteerManager::destroy_steer_plug_in(NodePath steerPlugInNP)
 }
 
 /**
- * Gets a OSSteerPlugIn by index.
+ * Gets a NodePath to OSSteerPlugIn by index.
+ * Return an empty NodePath with the ET_fail error type set on error.
  */
 NodePath OSSteerManager::get_steer_plug_in(int index) const
 {
 	nassertr_always((index >= 0) && (index < (int ) mSteerPlugIns.size()),
-			NodePath());
+			NodePath::fail());
 
 	return NodePath::any_path(mSteerPlugIns[index]);
 }
 
 /**
- * Creates a OSSteerVehicle with a given (not empty) name.
+ * Creates a OSSteerVehicle with a given (mandatory and not empty) name.
+ * Returns a NodePath to the new OSSteerVehicle,or an empty NodePath with the
+ * ET_fail error type set on error.
  */
 NodePath OSSteerManager::create_steer_vehicle(const string& name)
 {
-	nassertr_always(! name.empty(), NodePath())
+	nassertr_always(! name.empty(), NodePath::fail())
 
 	PT(OSSteerVehicle) newSteerVehicle = new OSSteerVehicle(name);
-	nassertr_always(newSteerVehicle, NodePath())
+	nassertr_always(newSteerVehicle, NodePath::fail())
 
 	// set reference node
 	newSteerVehicle->mReferenceNP = mReferenceNP;
@@ -186,6 +192,7 @@ NodePath OSSteerManager::create_steer_vehicle(const string& name)
 
 /**
  * Destroys a OSSteerVehicle.
+ * Returns false on error.
  */
 bool OSSteerManager::destroy_steer_vehicle(NodePath steerVehicleNP)
 {
@@ -207,12 +214,13 @@ bool OSSteerManager::destroy_steer_vehicle(NodePath steerVehicleNP)
 }
 
 /**
- * Gets a OSSteerVehicle by index.
+ * Gets a NodePath to OSSteerVehicle by index.
+ * Return an empty NodePath with the ET_fail error type set on error.
  */
 NodePath OSSteerManager::get_steer_vehicle(int index) const
 {
 	nassertr_always((index >= 0) && (index < (int ) mSteerVehicles.size()),
-			NodePath());
+			NodePath::fail());
 
 	return NodePath::any_path(mSteerVehicles[index]);
 }
@@ -438,6 +446,53 @@ void OSSteerManager::stop_default_update()
 	mUpdateTask.clear();
 }
 
+/**
+ * Returns the obstacle's settings with the specified unique reference (>0).
+ * Returns OSObstacleSettings::ref == a negative number on error.
+ */
+OSObstacleSettings OSSteerManager::get_obstacle_settings(int ref) const
+{
+	OSObstacleSettings settings = OSObstacleSettings();
+	settings.set_ref(OS_ERROR);
+	CONTINUE_IF_ELSE_R(ref > 0, settings)
+
+	// find settings by ref
+	pvector<ObstacleAttributes>::const_iterator iter;
+	for (iter = mObstacles.get_second().begin();
+			iter != mObstacles.get_second().end(); ++iter)
+	{
+		if ((*iter).get_first().get_ref() == ref)
+		{
+			settings = (*iter).get_first();
+			break;
+		}
+	}
+	//
+	return settings;
+}
+
+/**
+ * Returns the NodePath of the obstacle with the specified unique reference (>0).
+ * Return an empty NodePath with the ET_fail error type set on error.
+ */
+NodePath OSSteerManager::get_obstacle_by_ref(int ref) const
+{
+	NodePath obstacleNP = NodePath::fail();
+	CONTINUE_IF_ELSE_R(ref > 0, obstacleNP)
+
+	// find settings by ref
+	pvector<ObstacleAttributes>::const_iterator iter;
+	for (iter = mObstacles.get_second().begin();
+			iter != mObstacles.get_second().end(); ++iter)
+	{
+		if ((*iter).get_first().get_ref() == ref)
+		{
+			obstacleNP = (*iter).get_second();
+			break;
+		}
+	}
+	return obstacleNP;
+}
 
 /**
  * Gets bounding dimensions of a model NodePath.

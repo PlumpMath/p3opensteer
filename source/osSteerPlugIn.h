@@ -4,6 +4,7 @@
  * \date 2016-05-13
  * \author consultit
  */
+
 #ifndef OSSTEERPLUGIN_H_
 #define OSSTEERPLUGIN_H_
 
@@ -57,17 +58,16 @@ PUBLISHED:
 	 * \name STEERVEHICLES
 	 */
 	///@{
-	int addSteerVehicle(NodePath steerVehicleNP);
-	int removeSteerVehicle(NodePath steerVehicleNP);
+	int add_steer_vehicle(NodePath steerVehicleNP);
+	int remove_steer_vehicle(NodePath steerVehicleNP);
 	///@}
 
 	/**
 	 * \name PATHWAY
 	 */
 	///@{
-	void setPathway(int numOfPoints, LPoint3f const points[], bool singleRadius,
+	void set_pathway(int numOfPoints, LPoint3f const points[], bool singleRadius,
 			float const radii[], bool closedCycle);
-	// XXX: IMPLEMENT A WIDER API ABOUT PATHWAY (see ossup::PlugInAddOnMixin::Pathway)
 	///@}
 
 	/**
@@ -105,7 +105,7 @@ public:
 	 * Library & support low level related methods.
 	 */
 	///@{
-	inline OpenSteer::AbstractPlugIn& getAbstractPlugIn();
+	inline OpenSteer::AbstractPlugIn& get_abstract_plug_in();
 	inline operator OpenSteer::AbstractPlugIn&();
 	///Unique ref producer.
 	inline int unique_ref();
@@ -133,7 +133,7 @@ private:
 	///Unique ref.
 	int mRef;
 
-	void do_reset();
+	inline void do_reset();
 	void do_initialize();
 	void do_finalize();
 
@@ -141,8 +141,8 @@ private:
 	 * \name Helpers variables/functions.
 	 */
 	///@{
-	void doBuildPathway(const string& pathwayParam);
-	void doAddObstacles(const plist<string>& obstacleListParam);
+	void do_build_pathway(const string& pathwayParam);
+	void do_add_obstacles(const plist<string>& obstacleListParam);
 	///@}
 
 #ifdef OS_DEBUG

@@ -13,6 +13,7 @@
 
 /**
  * Resets the OSSteerPlugIn.
+ * \note Internal use only.
  */
 inline void OSSteerPlugIn::do_reset()
 {
@@ -35,7 +36,7 @@ inline void OSSteerPlugIn::do_reset()
 /**
  * Returns a reference to underlying OpenSteer::AbstractPlugIn.
  */
-inline OpenSteer::AbstractPlugIn& OSSteerPlugIn::getAbstractPlugIn()
+inline OpenSteer::AbstractPlugIn& OSSteerPlugIn::get_abstract_plug_in()
 {
 	return *mPlugIn;
 }

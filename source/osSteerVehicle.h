@@ -4,6 +4,7 @@
  * \date 2016-05-13
  * \author consultit
  */
+
 #ifndef OSSTEERVEHICLE_H_
 #define OSSTEERVEHICLE_H_
 
@@ -12,7 +13,6 @@
 #include "osTools.h"
 #include "opensteer_includes.h"
 #include "nodePath.h"
-#include "throw_event.h"
 
 #ifndef CPPPARSER
 #include "support/common.h"
@@ -102,7 +102,7 @@ PUBLISHED:
 	///@{
 	INLINE void set_settings(const OSVehicleSettings& settings);
 	INLINE OSVehicleSettings get_settings();
-	INLINE WPT(OSSteerPlugIn) get_steer_plug_in() const;
+	INLINE PT(OSSteerPlugIn) get_steer_plug_in() const;
 	///@}
 
 	/**
@@ -137,7 +137,7 @@ protected:
 
 private:
 	///The SteerPlugIn this OSSteerVehicle is added to.
-	WPT(OSSteerPlugIn) mSteerPlugIn;
+	PT(OSSteerPlugIn) mSteerPlugIn;
 	///Current underlying OpenSteer Vehicle.
 	OpenSteer::AbstractVehicle* mVehicle;
 	///The reference node path.
@@ -149,7 +149,7 @@ private:
 	///Height correction for kinematic OSSteerVehicle(s).
 	LVector3f mHeigthCorrection;
 
-	void do_reset();
+	inline void do_reset();
 	void do_initialize();
 	void do_finalize();
 
