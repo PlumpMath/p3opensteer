@@ -14,7 +14,6 @@ from common import dataDir, getCollisionEntryFromCamera, loadTerrain, mask, \
             
 # global data
 app = None
-sceneNP = None
 
 if __name__ == '__main__':
     # Load your application's configuration
@@ -45,43 +44,35 @@ if __name__ == '__main__':
     plugInNP = steerMgr.create_steer_plug_in()
     plugIn = plugInNP.node()
     
-#     print("mandatory: set sceneNP as owner of plugIn")
-#     plugIn.set_owner_node_path(sceneNP)
-    
-#     print("setup the plugIn with sceneNP as its owner object")
-#     plugIn.setup()
+    print("get the model")
+    modelNP = app.loader.load_model("eve.egg")
+    modelNP.set_scale(10.0)
 
-#     print("reparent sceneNP to the reference node")
-#     sceneNP.reparent_to(steerMgr.get_reference_node_path())
+    print("create the steer vehicle (it is attached to the reference node) and set its position")
+    vehicleNP = steerMgr.create_steer_vehicle("vehicle")
+    vehicle = vehicleNP.node()
+    vehicleNP.set_pos(750, 750.0, 0.0)
     
-#     print("get the agent model")
-#     agentNP = app.loader.load_model("eve.egg")
-#     agentNP.set_scale(0.40)
-
-#     print("create the crowd agent (it is attached to the reference node) and set its position")
-#     crowdAgentNP = steerMgr.create_crowd_agent("crowdAgent")
-#     crowdAgent = crowdAgentNP.node()
-#     crowdAgentNP.set_pos(24.0, -20.4, -2.37)
+    print("attach the model to steer vehicle")
+    modelNP.reparent_to(vehicleNP)
     
-#     print("attach the agent model to crowdAgent")
-#     agentNP.reparent_to(crowdAgentNP)
-    
-#     print("attach the crowd agent to the nav mesh")
-#     plugIn.add_crowd_agent(crowdAgentNP)
+    print("attach the steer vehicle to the plug-in")
+    plugIn.add_steer_vehicle(vehicleNP)
 
     print("start the default update task for all plug-ins")
     steerMgr.start_default_update()
 
-    print("DEBUG DRAWING: make the debug reference node path sibling of the reference node")
+    print("DEBUG DRAWING: make the debug reference node paths sibling of the reference node")
     steerMgr.get_reference_node_path_debug().reparent_to(app.render)
+    steerMgr.get_reference_node_path_debug_2d().reparent_to(app.aspect2d);
     print("enable debug drawing")
     plugIn.enable_debug_drawing(app.camera)
 
     print("toggle debug draw")
     plugIn.toggle_debug_drawing(True)
     
-#     print("set crowd agent move target on scene surface")
-#     crowdAgent.set_move_target(LPoint3f(-20.5, 5.2, -2.36))
+#     print("set crowd vehicle move target on scene surface")
+#     vehicle.set_move_target(LPoint3f(-20.5, 5.2, -2.36))
     
     # place camera
     trackball = app.trackball.node()

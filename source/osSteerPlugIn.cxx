@@ -9,6 +9,7 @@
 
 #include "osSteerVehicle.h"
 #include "osSteerManager.h"
+#include "camera.h"
 
 #ifndef CPPPARSER
 #include "support/PlugIn_OneTurning.h"
@@ -343,7 +344,7 @@ int OSSteerPlugIn::add_steer_vehicle(NodePath steerVehicleNP)
 
 	bool result;
 	// continue if steerVehicle doesn't belong to any plug-in
-	CONTINUE_IF_ELSE_R(steerVehicle->mSteerPlugIn, OS_ERROR)
+	CONTINUE_IF_ELSE_R(!steerVehicle->mSteerPlugIn, OS_ERROR)
 
 	//get the actual pos
 	LPoint3f pos = steerVehicleNP.get_pos();
@@ -729,9 +730,14 @@ void OSSteerPlugIn::enable_debug_drawing(NodePath debugCamera)
 		mDrawer3dNP.set_collide_mask(BitMask32::all_off());
 		mDrawer2dNP.set_collide_mask(BitMask32::all_off());
 		//create new Debug Drawers
-		mDrawer3d = new ossup::DrawMeshDrawer(mDrawer3dNP, mDebugCamera, 100,
+		NodePath meshDrawerCamera = mDebugCamera;
+		if (! mDebugCamera.node()->is_of_type(Camera::get_class_type()))
+		{
+			meshDrawerCamera = mDebugCamera.find(string("**/+Camera"));
+		}
+		mDrawer3d = new ossup::DrawMeshDrawer(mDrawer3dNP, meshDrawerCamera, 100,
 				0.04);
-		mDrawer2d = new ossup::DrawMeshDrawer(mDrawer2dNP, mDebugCamera, 50,
+		mDrawer2d = new ossup::DrawMeshDrawer(mDrawer2dNP, meshDrawerCamera, 50,
 				0.04);
 	}
 #endif //OS_DEBUG

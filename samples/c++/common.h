@@ -23,7 +23,6 @@ extern string dataDir;
 ///global data declaration
 extern PandaFramework framework;
 extern WindowFramework *window;
-extern NodePath sceneNP;
 extern CollideMask mask;
 
 ///functions' declarations
