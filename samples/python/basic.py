@@ -8,13 +8,13 @@ import panda3d.core
 from p3opensteer import OSSteerManager
 from panda3d.core import load_prc_file_data, LPoint3f
 from direct.showbase.ShowBase import ShowBase
-from common import loadTerrain, terrainUpdate, dataDir
-
+#
+from common import dataDir, getCollisionEntryFromCamera, loadTerrain, mask, \
+            loadPlane
+            
 # global data
 app = None
-# models and animations
-terrain = None
-terrainRootNetPos = LPoint3f()
+sceneNP = None
 
 if __name__ == '__main__':
     # Load your application's configuration
@@ -28,14 +28,18 @@ if __name__ == '__main__':
        
     # # here is room for your own code
     
-    print("create a steer manager")
-    steerMgr = OSSteerManager()
+    print("create a steer manager; set root and mask to manage 'kinematic' vehicles")
+    steerMgr = OSSteerManager(app.render, mask)
 
     print("reparent the reference node to render")
     steerMgr.get_reference_node_path().reparent_to(app.render)
 
-    print("get a terrain reparented to the reference node")
-    terrain = loadTerrain()
+    print("get a sceneNP and reparent to the reference node")
+    sceneNP = loadPlane()
+    sceneNP.reparent_to(steerMgr.get_reference_node_path())
+    
+    print("set sceneNP's collide mask")
+    sceneNP.set_collide_mask(mask)
     
     print("create a plug in (it is attached to the reference node)")
     plugInNP = steerMgr.create_steer_plug_in()

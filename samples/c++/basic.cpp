@@ -7,10 +7,10 @@
 
 #include "common.h"
 
-///global data
+///global data definition
 PandaFramework framework;
 WindowFramework *window;
-//models and animations
+NodePath sceneNP;
 GeoMipTerrain* terrain;
 
 int main(int argc, char *argv[])
@@ -41,14 +41,18 @@ int main(int argc, char *argv[])
 	OSSteerVehicle::register_with_read_factory();
 	///
 
-	cout << "create a steer manager" << endl;
-	WPT(OSSteerManager)steerMgr = new OSSteerManager(window->get_render());
+	cout << "create a steer manager; set root and mask to manage 'kinematic' vehicles" << endl;
+	WPT(OSSteerManager)steerMgr = new OSSteerManager(window->get_render(), mask);
 
 	cout << "reparent the reference node to render" << endl;
 	steerMgr->get_reference_node_path().reparent_to(window->get_render());
 
-	cout << "get a terrain reparented to the reference node" << endl;
-	terrain = loadTerrain();
+	cout << "get a sceneNP and reparent to the reference node" << endl;
+	sceneNP = loadPlane();
+	sceneNP.reparent_to(steerMgr->get_reference_node_path());
+
+	cout << "set sceneNP's collide mask" << endl;
+	sceneNP.set_collide_mask(mask);
 
 	cout << "create a plug in (it is attached to the reference node)" << endl;
 	NodePath plugInNP = steerMgr->create_steer_plug_in();
