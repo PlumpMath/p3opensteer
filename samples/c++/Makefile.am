@@ -14,6 +14,8 @@ AM_LDFLAGS = -L/usr/lib/x86_64-linux-gnu/panda3d
 LDADD = -lp3framework -lpanda -lpandaexpress -lp3dtool -lp3dtoolconfig \
 		-lp3pystub -lXxf86dga -lpython2.7 -lpandaphysics -lpthread
 
+noinst_HEADERS = common.h
+
 noinst_PROGRAMS = basic
 
 BUILT_SOURCES = data.h
@@ -26,6 +28,7 @@ data.h: $(srcdir)/data.h.in Makefile
 EXTRA_DIST = data.h.in
 
 common_sources = \
+	common.cpp \
 	$(srcdir)/../../source/osSteerManager.cxx \
 	$(srcdir)/../../source/osSteerPlugIn.cxx \
 	$(srcdir)/../../source/osSteerVehicle.cxx \
