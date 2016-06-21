@@ -61,35 +61,43 @@ void OSSteerPlugIn::do_initialize()
 	if (mPlugInTypeParam == string("pedestrian"))
 	{
 		mPlugIn = new ossup::PedestrianPlugIn<OSSteerVehicle>;
+		mPlugInType = PEDESTRIAN;
 	}
 	else if (mPlugInTypeParam == string("boid"))
 	{
 		mPlugIn = new ossup::BoidsPlugIn<OSSteerVehicle>;
+		mPlugInType = BOID;
 	}
 	else if (mPlugInTypeParam == string("multiple_pursuit"))
 	{
 		mPlugIn = new ossup::MpPlugIn<OSSteerVehicle>;
+		mPlugInType = MULTIPLE_PURSUIT;
 	}
 	else if (mPlugInTypeParam == string("soccer"))
 	{
 		mPlugIn = new ossup::MicTestPlugIn<OSSteerVehicle>;
+		mPlugInType = SOCCER;
 	}
 	else if (mPlugInTypeParam == string("capture_the_flag"))
 	{
 		mPlugIn = new ossup::CtfPlugIn<OSSteerVehicle>;
+		mPlugInType = CAPTURE_THE_FLAG;
 	}
 	else if (mPlugInTypeParam == string("low_speed_turn"))
 	{
 		mPlugIn = new ossup::LowSpeedTurnPlugIn<OSSteerVehicle>;
+		mPlugInType = LOW_SPEED_TURN;
 	}
 	else if (mPlugInTypeParam == string("map_drive"))
 	{
 		mPlugIn = new ossup::MapDrivePlugIn<OSSteerVehicle>;
+		mPlugInType = MAP_DRIVE;
 	}
 	else
 	{
 		//default: "one_turning"
 		mPlugIn = new ossup::OneTurningPlugIn<OSSteerVehicle>;
+		mPlugInType = ONE_TURNING;
 	}
 	//build pathway
 	do_build_pathway(mPathwayParam);
@@ -306,10 +314,8 @@ void OSSteerPlugIn::do_finalize()
 		//3: deallocate the OpenSteer obstacle
 		delete *iterLocal;
 	}
-	//4: clear local obstacles' pointers
-	mLocalObstacles.clear();
 	//remove all handled SteerVehicles (if any) from update
-	set<PT(OSSteerVehicle)>::const_iterator iter;
+	PTA(PT(OSSteerVehicle))::const_iterator iter;
 	for (iter = mSteerVehicles.begin(); iter != mSteerVehicles.end(); ++iter)
 	{
 		//set steerVehicle reference to null
@@ -318,7 +324,6 @@ void OSSteerPlugIn::do_finalize()
 		static_cast<ossup::PlugIn*>(mPlugIn)->removeVehicle(
 				&(*iter)->get_abstract_vehicle());
 	}
-
 	//close the plug in
 	mPlugIn->close();
 	//delete the plug in
@@ -342,34 +347,41 @@ int OSSteerPlugIn::add_steer_vehicle(NodePath steerVehicleNP)
 
 	PT(OSSteerVehicle)steerVehicle = DCAST(OSSteerVehicle, steerVehicleNP.node());
 
-	bool result;
 	// continue if steerVehicle doesn't belong to any plug-in
 	CONTINUE_IF_ELSE_R(!steerVehicle->mSteerPlugIn, OS_ERROR)
 
-	//get the actual pos
-	LPoint3f pos = steerVehicleNP.get_pos();
-	LVector3f newForward = mReferenceNP.get_relative_vector(steerVehicleNP,
-			LVector3f::forward());
-	LVector3f newUp = mReferenceNP.get_relative_vector(steerVehicleNP,
-			LVector3f::up());
-	steerVehicleNP.heads_up(pos + newForward, newUp);
-	//OSSteerPlugIn object updates SteerVehicle's pos/dir wrt reference node path
-	ossup::VehicleSettings settings =
-			static_cast<VehicleAddOn*>(steerVehicle->mVehicle)->getSettings();
-	settings.m_forward =
-			ossup::LVecBase3fToOpenSteerVec3(newForward).normalize();
-	settings.m_up = ossup::LVecBase3fToOpenSteerVec3(newUp).normalize();
-	settings.m_position = ossup::LVecBase3fToOpenSteerVec3(pos);
+	bool result = false;
+	//add to update list
+	PTA(PT(OSSteerVehicle))::iterator iter;
+	//check if OSSteerVehicle has not been already added
+	iter = find(mSteerVehicles.begin(), mSteerVehicles.end(), steerVehicle);
+	if (iter == mSteerVehicles.end())
+	{
+		//OSSteerVehicle needs to be added
+		//get the actual pos
+		LPoint3f pos = steerVehicleNP.get_pos();
+		LVector3f newForward = mReferenceNP.get_relative_vector(steerVehicleNP,
+				LVector3f::forward());
+		LVector3f newUp = mReferenceNP.get_relative_vector(steerVehicleNP,
+				LVector3f::up());
+		steerVehicleNP.heads_up(pos + newForward, newUp);
+		//OSSteerPlugIn object updates SteerVehicle's pos/dir wrt reference node path
+		ossup::VehicleSettings settings =
+				static_cast<VehicleAddOn*>(steerVehicle->mVehicle)->getSettings();
+		settings.m_forward =
+				ossup::LVecBase3fToOpenSteerVec3(newForward).normalize();
+		settings.m_up = ossup::LVecBase3fToOpenSteerVec3(newUp).normalize();
+		settings.m_position = ossup::LVecBase3fToOpenSteerVec3(pos);
 
-	//get steerVehicle dimensions
-	LVecBase3f modelDims;
-	LVector3f modelDeltaCenter;
-	float modelRadius;
+		//get steerVehicle dimensions
+		LVecBase3f modelDims;
+		LVector3f modelDeltaCenter;
+		float modelRadius;
 //	if (!buildFromBam) XXX
 //	{
-	//compute new agent dimensions
-	modelRadius = OSSteerManager::get_global_ptr()->get_bounding_dimensions(
-			steerVehicleNP, modelDims, modelDeltaCenter);
+		//compute new agent dimensions
+		modelRadius = OSSteerManager::get_global_ptr()->get_bounding_dimensions(
+				steerVehicleNP, modelDims, modelDeltaCenter);
 //	} XXX
 //	else
 //	{
@@ -378,22 +390,26 @@ int OSSteerPlugIn::add_steer_vehicle(NodePath steerVehicleNP)
 //		modelDims.set_y(0.0);
 //		modelDims.set_z(crowdAgent->mAgentParams.get_height());
 //	}
-	//update radius
-	settings.m_radius = modelRadius;
-	static_cast<VehicleAddOn*>(steerVehicle->mVehicle)->setSettings(settings);
+		//update radius
+		settings.m_radius = modelRadius;
+		static_cast<VehicleAddOn*>(steerVehicle->mVehicle)->setSettings(
+				settings);
 
-	//set height correction
-	steerVehicle->mHeigthCorrection = LVector3f(0.0, 0.0, modelDims.get_z());
-
-	//add to the set of SteerVehicles
-	mSteerVehicles.insert(steerVehicle);
-	//do add to real update list
-	static_cast<ossup::PlugIn*>(mPlugIn)->addVehicle(
-			&steerVehicle->get_abstract_vehicle());
-	//set steerVehicle reference to this plugin
-	steerVehicle->mSteerPlugIn = this;
+		//set height correction
+		steerVehicle->mHeigthCorrection = LVector3f(0.0, 0.0,
+				modelDims.get_z());
+		//add to the list of SteerVehicles
+		mSteerVehicles.push_back(steerVehicle);
+		//do add to real update list
+		static_cast<ossup::PlugIn*>(mPlugIn)->addVehicle(
+				&steerVehicle->get_abstract_vehicle());
+		//set steerVehicle reference to this plugin
+		steerVehicle->mSteerPlugIn = this;
+		//
+		result = true;
+	}
 	//
-	return (result = true ? OS_SUCCESS : OS_ERROR);
+	return (result ? OS_SUCCESS : OS_ERROR);
 }
 
 /**
@@ -413,15 +429,26 @@ int OSSteerPlugIn::remove_steer_vehicle(NodePath steerVehicleNP)
 	// continue if steerVehicle belongs to this plug-in
 	CONTINUE_IF_ELSE_R(steerVehicle->mSteerPlugIn == this, OS_ERROR)
 
-	//set steerVehicle reference to null
-	steerVehicle->mSteerPlugIn.clear();
-	//do remove from real update list
-	static_cast<ossup::PlugIn*>(mPlugIn)->removeVehicle(
-			&steerVehicle->get_abstract_vehicle());
-	//remove from the set of SteerVehicles
-	mSteerVehicles.erase(steerVehicle);
+	bool result = false;
+	//remove from the list of SteerVehicles
+	PTA(PT(OSSteerVehicle))::iterator iter;
+	//check if OSSteerVehicle has been already removed or not
+	iter = find(mSteerVehicles.begin(), mSteerVehicles.end(), steerVehicle);
+	if (iter != mSteerVehicles.end())
+	{
+
+		//set steerVehicle reference to null
+		steerVehicle->mSteerPlugIn.clear();
+		//do remove from real update list
+		static_cast<ossup::PlugIn*>(mPlugIn)->removeVehicle(
+				&steerVehicle->get_abstract_vehicle());
+		//OSSteerVehicle needs to be removed
+		mSteerVehicles.erase(iter);
+		//
+		result = true;
+	}
 	//
-	return OS_SUCCESS;
+	return (result ? OS_SUCCESS : OS_ERROR);
 }
 
 /**
@@ -479,7 +506,7 @@ int OSSteerPlugIn::add_obstacle(NodePath& objectNP,
 //			modelDims = mObstacles[index].first().get_dims();
 //		}
 
-		//the obstacle is reparented to the RNNavMesh's reference node path
+		//the obstacle is reparented to the OSSteerPlugIn's reference node path
 		objectNP.wrt_reparent_to(mReferenceNP);
 		//correct obstacle's parameters
 		newPos = objectNP.get_pos();
@@ -692,6 +719,28 @@ void OSSteerPlugIn::update(float dt)
 }
 
 /**
+ * Sets steering speed (LOW SPEED TURN).
+ */
+void OSSteerPlugIn::set_steering_speed(float steeringSpeed)
+{
+	if (mPlugInType == LOW_SPEED_TURN)
+	{
+		static_cast<ossup::LowSpeedTurnPlugIn<OSSteerVehicle>*>(mPlugIn)->steeringSpeed =
+				steeringSpeed;
+	}
+}
+
+/**
+ * Returns steering speed (LOW SPEED TURN).
+ */
+float OSSteerPlugIn::get_steering_speed()
+{
+	return mPlugInType == LOW_SPEED_TURN ?
+			static_cast<ossup::LowSpeedTurnPlugIn<OSSteerVehicle>*>(mPlugIn)->steeringSpeed :
+			0.0;
+}
+
+/**
  * Writes a sensible description of the OSSteerPlugIn to the indicated output
  * stream.
  */
@@ -831,10 +880,40 @@ void OSSteerPlugIn::write_datagram(BamWriter *manager, Datagram &dg)
 {
 	PandaNode::write_datagram(manager, dg);
 
-	///Name of this RNNavMesh.
+	///Name of this OSSteerPlugIn.
 	dg.add_string(get_name());
 
 	//XXX
+
+
+	///Current underlying AbstractPlugIn.
+//	OpenSteer::AbstractPlugIn* mPlugIn;
+	///The type of this OSSteerPlugIn.
+	dg.add_uint8((uint8_t) mPlugInType);
+	///The reference node path.
+	NodePath mReferenceNP;
+	///The reference node path for debug drawing.
+//	NodePath mReferenceDebugNP, mReferenceDebug2DNP;
+	///Current time.
+//	float mCurrentTime;
+	///The SteerVehicle components handled by this OSSteerPlugIn.
+	pset<PT(OSSteerVehicle)> mSteerVehicles;
+	///The "local" obstacles handled by this OSSteerPlugIn.
+	OpenSteer::ObstacleGroup mLocalObstacles;
+	///Unique ref.
+	int mRef;
+
+#ifdef OS_DEBUG
+	///OpenSteer debug node paths.
+	NodePath mDrawer3dNP, mDrawer2dNP;
+	///OpenSteer debug camera.
+	NodePath mDebugCamera;
+	///OpenSteer DebugDrawers.
+	ossup::DrawMeshDrawer *mDrawer3d, *mDrawer2d;
+	///Enable Debug Draw update.
+	bool mEnableDebugDrawUpdate;
+#endif
+
 }
 
 /**
@@ -881,7 +960,7 @@ TypedWritable *OSSteerPlugIn::make_from_bam(const FactoryParams &params)
 	// continue only if OSSteerManager exists
 	CONTINUE_IF_ELSE_R(OSSteerManager::get_global_ptr(), NULL)
 
-	// create a RNNavMesh with default parameters' values: they'll be restored later
+	// create a OSSteerPlugIn with default parameters' values: they'll be restored later
 	OSSteerManager::get_global_ptr()->set_parameters_defaults(
 			OSSteerManager::STEERPLUGIN);
 	OSSteerPlugIn *node = DCAST(OSSteerPlugIn,
@@ -905,7 +984,7 @@ void OSSteerPlugIn::fillin(DatagramIterator &scan, BamReader *manager)
 {
 	PandaNode::fillin(scan, manager);
 
-	///Name of this RNNavMesh.
+	///Name of this OSSteerPlugIn.
 	set_name(scan.get_string());
 
 	//XXX

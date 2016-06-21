@@ -48,9 +48,26 @@ PUBLISHED:
 	virtual ~OSSteerPlugIn();
 
 	/**
+	 * Steer Plug-In type.
+	 */
+	enum OSSteerPlugInType
+	{
+		ONE_TURNING = 0,
+		PEDESTRIAN,
+		BOID,
+		MULTIPLE_PURSUIT,
+		SOCCER,
+		CAPTURE_THE_FLAG,
+		LOW_SPEED_TURN,
+		MAP_DRIVE,
+		NONE_PLUGIN
+	};
+
+	/**
 	 * \name PLUGIN
 	 */
 	///@{
+	INLINE OSSteerPlugInType get_plug_in_type();
 	void update(float dt);
 	///@}
 
@@ -60,6 +77,11 @@ PUBLISHED:
 	///@{
 	int add_steer_vehicle(NodePath steerVehicleNP);
 	int remove_steer_vehicle(NodePath steerVehicleNP);
+	INLINE PT(OSSteerVehicle) get_steer_vehicle(int index) const;
+	INLINE int get_num_steer_vehicles() const;
+	MAKE_SEQ(get_steer_vehicles, get_num_steer_vehicles, get_steer_vehicle);
+	INLINE PT(OSSteerVehicle) operator [](int index) const;
+	INLINE int size() const;
 	///@}
 
 	/**
@@ -81,6 +103,14 @@ PUBLISHED:
 			const LVector3f& up = LVector3f::zero(), const LVector3f& = LVector3f::zero(),
 			const LPoint3f& position = LPoint3f::zero());
 	NodePath remove_obstacle(int ref);
+	///@}
+
+	/**
+	 * \name LOW SPEED TURN SETTINGS.
+	 */
+	///@{
+	void set_steering_speed(float steeringSpeed);
+	float get_steering_speed();
 	///@}
 
 	/**
@@ -119,6 +149,8 @@ protected:
 private:
 	///Current underlying AbstractPlugIn.
 	OpenSteer::AbstractPlugIn* mPlugIn;
+	///The type of this OSSteerPlugIn.
+	OSSteerPlugInType mPlugInType;
 	///The reference node path.
 	NodePath mReferenceNP;
 	///The reference node path for debug drawing.
@@ -126,7 +158,7 @@ private:
 	///Current time.
 	float mCurrentTime;
 	///The SteerVehicle components handled by this OSSteerPlugIn.
-	pset<PT(OSSteerVehicle)> mSteerVehicles;
+	pvector<PT(OSSteerVehicle)> mSteerVehicles;
 	///The "local" obstacles handled by this OSSteerPlugIn.
 	OpenSteer::ObstacleGroup mLocalObstacles;
 
@@ -175,6 +207,8 @@ public:
 protected:
 	static TypedWritable *make_from_bam(const FactoryParams &params);
 	virtual void fillin(DatagramIterator &scan, BamReader *manager) override;
+	void write_plug_in_datagram(OSSteerPlugInType type, Datagram &dg) const;
+	void read_plug_in_datagram(OSSteerPlugInType type, DatagramIterator &scan);
 
 public:
 	/**

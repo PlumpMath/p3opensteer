@@ -12,6 +12,14 @@
 ///OSSteerPlugIn inline definitions
 
 /**
+ * Returns the OSSteerPlugIn type.
+ */
+INLINE OSSteerPlugIn::OSSteerPlugInType OSSteerPlugIn::get_plug_in_type()
+{
+	return mPlugInType;
+}
+
+/**
  * Resets the OSSteerPlugIn.
  * \note Internal use only.
  */
@@ -19,11 +27,14 @@ inline void OSSteerPlugIn::do_reset()
 {
 	//
 	mPlugIn = NULL;
+	mPlugInType = ONE_TURNING;
 	mReferenceNP.clear();
 	mReferenceDebugNP.clear();
 	mReferenceDebug2DNP.clear();
 	mCurrentTime = 0.0;
+	mLocalObstacles.clear();
 	mSteerVehicles.clear();
+	mRef = 0;
 #ifdef OS_DEBUG
 	mDrawer3dNP.clear();
 	mDrawer2dNP.clear();

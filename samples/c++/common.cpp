@@ -19,15 +19,11 @@ static LPoint3f terrainRootNetPos;
 NodePath loadPlane()
 {
 	CardMaker cm("plane");
-	cm.set_frame(-10000, 10000, -10000, 10000);
+	cm.set_frame(-15, 15, -15, 15);
 	NodePath plane(cm.generate());
 	plane.set_p(-90.0);
 	plane.set_z(0.0);
-	PT(TextureStage)textureStage0 = new TextureStage("TextureStage0");
-	PT(Texture)textureImage = TexturePool::load_texture(
-			Filename(string("terrain.png")));
-	plane.set_texture(textureStage0, textureImage, 1);
-	plane.set_tex_scale(textureStage0, 1000, 1000);
+	plane.set_color(0.15, 0.35, 0.35);
 	return plane;
 }
 

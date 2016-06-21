@@ -102,6 +102,8 @@ PUBLISHED:
 	///@{
 	INLINE void set_settings(const OSVehicleSettings& settings);
 	INLINE OSVehicleSettings get_settings();
+	INLINE void set_mov_type(OSSteerVehicleMovType movType);
+	INLINE OSSteerVehicleMovType get_mov_type();
 	INLINE PT(OSSteerPlugIn) get_steer_plug_in() const;
 	///@}
 

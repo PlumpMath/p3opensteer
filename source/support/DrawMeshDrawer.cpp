@@ -129,14 +129,16 @@ void DrawMeshDrawer::end()
 						m_uvLoop0.get_y()), m_size, m_colorLoop0);
 	}
 
-	ASSERT_TRUE(m_lineIdx == 0)
-	ASSERT_TRUE(m_triIdx == 0)
+	//m_lineIdx can assume 0,1,3 values: 1 means an incomplete line
+	ASSERT_TRUE((m_lineIdx == 0) || (m_lineIdx == 3))
+	//m_triIdx can assume 0,1,2,5 values: 1,2 means an incomplete triangle
+	ASSERT_TRUE((m_triIdx == 0) || (m_triIdx == 5))
 	ASSERT_TRUE(m_quadIdx == 0)
 
 	//end current MeshDrawer
 	m_generators[m_generatorIdx]->end();
 	//increase MeshDrawer index only if multiple mesh
-	if (! m_singleMesh)
+	if (!m_singleMesh)
 	{
 		++m_generatorIdx;
 	}
@@ -175,6 +177,9 @@ void DrawMeshDrawer::vertex(const LVector3f& vertex, const LVector2f& uv)
 					LVector4f(m_lineUV.get_x(), m_lineUV.get_y(), uv.get_x(),
 							uv.get_y()), m_size, m_color);
 			m_lineVertex = vertex;
+#ifdef OS_DEBUG
+			m_lineIdx = 3; //flag: it signals that at least 2 points have been used.
+#endif //OS_DEBUG
 		}
 		else
 		{
@@ -191,6 +196,9 @@ void DrawMeshDrawer::vertex(const LVector3f& vertex, const LVector2f& uv)
 					LVector4f(m_lineUV.get_x(), m_lineUV.get_y(), uv.get_x(),
 							uv.get_y()), m_size, m_color);
 			m_lineVertex = vertex;
+#ifdef OS_DEBUG
+			m_lineIdx = 3; //flag: it signals that at least 2 points have been used.
+#endif //OS_DEBUG
 		}
 		else
 		{
@@ -226,6 +234,9 @@ void DrawMeshDrawer::vertex(const LVector3f& vertex, const LVector2f& uv)
 			m_triVertex[1] = vertex;
 			m_triColor[1] = m_color;
 			m_triUV[1] = uv;
+#ifdef OS_DEBUG
+			m_triIdx = 5; //flag: it signals that at least 3 points have been used.
+#endif //OS_DEBUG
 		}
 		else
 		{
@@ -256,6 +267,9 @@ void DrawMeshDrawer::vertex(const LVector3f& vertex, const LVector2f& uv)
 				m_triUV[1] = uv;
 				m_triStripUp = true;
 			}
+#ifdef OS_DEBUG
+			m_triIdx = 5; //flag: it signals that at least 3 points have been used.
+#endif //OS_DEBUG
 		}
 		else
 		{
@@ -362,6 +376,8 @@ void DebugDrawPanda3d::begin(DrawMeshDrawer::DrawPrimitive prim, float size)
 	case DrawMeshDrawer::DRAW_QUADS:
 		m_geomPrim = new GeomTriangles(Geom::UH_static);
 		m_quadCurrIdx = 0;
+		break;
+	default:
 		break;
 	};
 	m_prim = prim;

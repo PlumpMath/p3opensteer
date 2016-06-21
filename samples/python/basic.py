@@ -40,18 +40,18 @@ if __name__ == '__main__':
     print("set sceneNP's collide mask")
     sceneNP.set_collide_mask(mask)
     
-    print("create a plug in (it is attached to the reference node)")
+    print("create the default plug-in (attached to the reference node): 'one turning'")
     plugInNP = steerMgr.create_steer_plug_in()
     plugIn = plugInNP.node()
     
     print("get the model")
     modelNP = app.loader.load_model("eve.egg")
-    modelNP.set_scale(10.0)
+    modelNP.set_scale(0.25)
 
     print("create the steer vehicle (it is attached to the reference node) and set its position")
     vehicleNP = steerMgr.create_steer_vehicle("vehicle")
     vehicle = vehicleNP.node()
-    vehicleNP.set_pos(750, 750.0, 0.0)
+    vehicleNP.set_pos(5.0, -8.0, 0.1)
     
     print("attach the model to steer vehicle")
     modelNP.reparent_to(vehicleNP)
@@ -71,13 +71,10 @@ if __name__ == '__main__':
     print("toggle debug draw")
     plugIn.toggle_debug_drawing(True)
     
-#     print("set crowd vehicle move target on scene surface")
-#     vehicle.set_move_target(LPoint3f(-20.5, 5.2, -2.36))
-    
     # place camera
     trackball = app.trackball.node()
-    trackball.set_pos(-750.0, 400.0, -400.0);
-    trackball.set_hpr(0.0, 30.0, 0.0);
+    trackball.set_pos(0.0, 30.0, 0.0);
+    trackball.set_hpr(0.0, 20.0, 0.0);
    
     # app.run(), equals to do the main loop in C++
     app.run()

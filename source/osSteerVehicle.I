@@ -38,6 +38,24 @@ INLINE OSVehicleSettings OSSteerVehicle::get_settings()
 }
 
 /**
+ * Sets the OSSteerVehicle's move type (opensteer native or kinematic).
+ */
+INLINE void OSSteerVehicle::set_mov_type(OSSteerVehicle::OSSteerVehicleMovType movType)
+{
+	//if there isn't a traverser only OPENSTEER is allowed
+	OSSteerManager::GetSingletonPtr()->get_collision_traverser() ?
+			mMovType = movType : mMovType = OPENSTEER;
+}
+
+/**
+ * Returns OSSteerVehicle's move type (opensteer native or kinematic).
+ */
+INLINE OSSteerVehicle::OSSteerVehicleMovType OSSteerVehicle::get_mov_type()
+{
+	return mMovType;
+}
+
+/**
  * Returns the OSSteerPlugIn this OSSteerVehicle is added to.
  */
 INLINE PT(OSSteerPlugIn) OSSteerVehicle::get_steer_plug_in() const
