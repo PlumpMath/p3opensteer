@@ -19,7 +19,7 @@ OSSteerManager::OSSteerManager(const NodePath& root, const CollideMask& mask) :
 		mReferenceNP(NodePath("ReferenceNode")), mRoot(root), mMask(mask), mCollisionHandler(
 				NULL), mPickerRay(NULL), mCTrav(
 		NULL), mReferenceDebugNP(NodePath("ReferenceDebugNode")), mReferenceDebug2DNP(
-				NodePath("ReferenceDebugNode2D"))
+				NodePath("ReferenceDebugNode2D")), mRef(0)
 {
 	PRINT_DEBUG(
 			"OSSteerManager::OSSteerManager: creating the singleton manager.");

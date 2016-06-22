@@ -139,4 +139,12 @@ inline OSSteerManager::GlobalObstacles& OSSteerManager::get_global_obstacles()
 	return mObstacles;
 }
 
+/**
+ *
+ */
+inline int OSSteerManager::unique_ref()
+{
+	return ++mRef;
+}
+
 #endif /* OSSTEERMANGER_I_ */

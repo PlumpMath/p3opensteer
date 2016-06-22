@@ -9,6 +9,7 @@
 #define OSSTEERPLUGIN_H_
 
 #include "osTools.h"
+#include "osSteerManager.h"
 #include "opensteer_includes.h"
 #include "nodePath.h"
 
@@ -44,6 +45,10 @@ class OSSteerVehicle;
  */
 class EXPORT_CLASS OSSteerPlugIn: public PandaNode
 {
+public:
+//	typedef Pair<pvector<LPoint3f>, > ObstacleAttributes;
+//	typedef Pair<OpenSteer::ObstacleGroup, pvector<ObstacleAttributes> > GlobalObstacles;
+
 PUBLISHED:
 	virtual ~OSSteerPlugIn();
 
@@ -77,19 +82,19 @@ PUBLISHED:
 	///@{
 	int add_steer_vehicle(NodePath steerVehicleNP);
 	int remove_steer_vehicle(NodePath steerVehicleNP);
-	INLINE PT(OSSteerVehicle) get_steer_vehicle(int index) const;
-	INLINE int get_num_steer_vehicles() const;
-	MAKE_SEQ(get_steer_vehicles, get_num_steer_vehicles, get_steer_vehicle);
-	INLINE PT(OSSteerVehicle) operator [](int index) const;
-	INLINE int size() const;
+	INLINE PT(OSSteerVehicle) get_steer_vehicle(int index) const; //XXX
+	INLINE int get_num_steer_vehicles() const; //XXX
+	MAKE_SEQ(get_steer_vehicles, get_num_steer_vehicles, get_steer_vehicle); //XXX
+	INLINE PT(OSSteerVehicle) operator [](int index) const; //XXX
+	INLINE int size() const; //XXX
 	///@}
 
 	/**
 	 * \name PATHWAY
 	 */
 	///@{
-	void set_pathway(int numOfPoints, LPoint3f const points[], bool singleRadius,
-			float const radii[], bool closedCycle);
+	void set_pathway(const ValueList<LPoint3f>& pointList,
+			const ValueList<float>& radiusList, bool singleRadius, bool closedCycle);
 	///@}
 
 	/**
@@ -137,8 +142,6 @@ public:
 	///@{
 	inline OpenSteer::AbstractPlugIn& get_abstract_plug_in();
 	inline operator OpenSteer::AbstractPlugIn&();
-	///Unique ref producer.
-	inline int unique_ref();
 	///@}
 
 protected:
@@ -157,13 +160,16 @@ private:
 	NodePath mReferenceDebugNP, mReferenceDebug2DNP;
 	///Current time.
 	float mCurrentTime;
-	///The SteerVehicle components handled by this OSSteerPlugIn.
+	///Steer vehicles.
 	pvector<PT(OSSteerVehicle)> mSteerVehicles;
 	///The "local" obstacles handled by this OSSteerPlugIn.
-	OpenSteer::ObstacleGroup mLocalObstacles;
-
-	///Unique ref.
-	int mRef;
+	OSSteerManager::GlobalObstacles mLocalObstacles;
+	///Pathway stuff.
+	///@{
+	ValueList<LPoint3f> mPathwayPoints;
+	ValueList<float> mPathwayRadii;
+	bool mPathwaySingleRadius, mPathwayClosedCycle;
+	///@}
 
 	inline void do_reset();
 	void do_initialize();

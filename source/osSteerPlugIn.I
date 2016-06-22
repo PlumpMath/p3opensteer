@@ -32,9 +32,12 @@ inline void OSSteerPlugIn::do_reset()
 	mReferenceDebugNP.clear();
 	mReferenceDebug2DNP.clear();
 	mCurrentTime = 0.0;
-	mLocalObstacles.clear();
+	mLocalObstacles.first().clear();
+	mLocalObstacles.second().clear();
 	mSteerVehicles.clear();
-	mRef = 0;
+	mPathwayPoints.clear();
+	mPathwayRadii.clear();
+	mPathwaySingleRadius = mPathwayClosedCycle = false;
 #ifdef OS_DEBUG
 	mDrawer3dNP.clear();
 	mDrawer2dNP.clear();
@@ -50,14 +53,6 @@ inline void OSSteerPlugIn::do_reset()
 inline OpenSteer::AbstractPlugIn& OSSteerPlugIn::get_abstract_plug_in()
 {
 	return *mPlugIn;
-}
-
-/**
- *
- */
-inline int OSSteerPlugIn::unique_ref()
-{
-	return ++mRef;
 }
 
 /**

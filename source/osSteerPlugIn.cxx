@@ -102,10 +102,9 @@ void OSSteerPlugIn::do_initialize()
 	//build pathway
 	do_build_pathway(mPathwayParam);
 	//set the plugin local obstacles reference
-	static_cast<ossup::PlugIn*>(mPlugIn)->localObstacles = &mLocalObstacles;
+	static_cast<ossup::PlugIn*>(mPlugIn)->localObstacles = &mLocalObstacles.first();
 	//set the plugin global obstacles reference
-	static_cast<ossup::PlugIn*>(mPlugIn)->obstacles =
-			&mTmpl->get_global_obstacles().first();
+	static_cast<ossup::PlugIn*>(mPlugIn)->obstacles = &mTmpl->get_global_obstacles().first();
 	//add its own obstacles
 	if (! mReferenceNP.is_empty())
 	{
@@ -280,8 +279,8 @@ void OSSteerPlugIn::do_finalize()
 	OpenSteer::ObstacleGroup::iterator iterLocal;
 	OSSteerManager::GlobalObstacles& globalObstacles =
 			OSSteerManager::get_global_ptr()->get_global_obstacles();
-	for (iterLocal = mLocalObstacles.begin();
-			iterLocal != mLocalObstacles.end(); ++iterLocal)
+	for (iterLocal = mLocalObstacles.first().begin();
+			iterLocal != mLocalObstacles.first().end(); ++iterLocal)
 	{
 		if(	globalObstacles.first().size()
 						!= globalObstacles.second().size())
@@ -453,21 +452,42 @@ int OSSteerPlugIn::remove_steer_vehicle(NodePath steerVehicleNP)
 
 /**
  * Sets the pathway of this OSSteerPlugin.
+ * \note pointList and radiusList should have the same number of elements; if
+ * not the number of points will be considered as the number of segments.
  */
-void OSSteerPlugIn::set_pathway(int numOfPoints, LPoint3f const points[],
-		bool singleRadius, float const radii[], bool closedCycle)
+void OSSteerPlugIn::set_pathway(const ValueList<LPoint3f>& pointList,
+		const ValueList<float>& radiusList, bool singleRadius, bool closedCycle)
 {
-	//convert to OpenSteer points
+	unsigned long int numOfPoints = (unsigned long int) pointList.size();
+	//create vectors and convert to OpenSteer points
 	OpenSteer::Vec3* osPoints = new OpenSteer::Vec3[numOfPoints];
-	for (int idx = 0; idx < numOfPoints; ++idx)
+	float* radii = new float[numOfPoints];
+	int numOfRadii = radiusList.size();
+	float lastRadius = 1.0;
+	for (unsigned int idx = 0; idx < numOfPoints; ++idx)
 	{
-		osPoints[idx] = ossup::LVecBase3fToOpenSteerVec3(points[idx]);
+		osPoints[idx] = ossup::LVecBase3fToOpenSteerVec3(pointList[idx]);
+		if (numOfRadii < (int)(idx + 1))
+		{
+			radii[idx] = lastRadius;
+		}
+		else
+		{
+			radii[idx] = radiusList[idx];
+			lastRadius = radiusList[idx];
+		}
 	}
 	//set the actual path
 	static_cast<ossup::PlugIn*>(mPlugIn)->setPathway(numOfPoints, osPoints,
 			singleRadius, radii, closedCycle);
 	//
 	delete[] osPoints;
+	delete[] radii;
+	//save pathway's stuff
+	mPathwayPoints = pointList;
+	mPathwayRadii = radiusList;
+	mPathwaySingleRadius = singleRadius;
+	mPathwayClosedCycle = closedCycle;
 }
 
 /**
@@ -592,16 +612,18 @@ int OSSteerPlugIn::add_obstacle(NodePath& objectNP,
 		settings.set_height(height);
 		settings.set_depth(depth);
 		settings.set_radius(radius);
-		ref = unique_ref();
+		ref = OSSteerManager::get_global_ptr()->unique_ref();
 		settings.set_ref(ref);
 		settings.set_obstacle(obstacle);
 		//2: add OpenSteer obstacle's pointer to global list
 		globalObstacles.first().push_back(obstacle);
 		//3: add obstacle's attributes to global list
-		globalObstacles.second().push_back(
-				OSSteerManager::ObstacleAttributes(settings, objectNP));
+		OSSteerManager::ObstacleAttributes obstacleAttrs(settings, objectNP);
+		globalObstacles.second().push_back(obstacleAttrs);
 		//4: add OpenSteer obstacle's pointer to local list
-		mLocalObstacles.push_back(obstacle);
+		mLocalObstacles.first().push_back(obstacle);
+		//5: add obstacle's attributes to local list
+		mLocalObstacles.second().push_back(obstacleAttrs);
 	}
 	return ref;
 }
@@ -635,9 +657,10 @@ NodePath OSSteerPlugIn::remove_obstacle(int ref)
 
 	//remove only if OpenSteer obstacle is in the local list (ie has been
 	//added by this OSSteerPlugIn)
-	OpenSteer::ObstacleGroup::iterator iterLocal = find(mLocalObstacles.begin(),
-			mLocalObstacles.end(), (*iterA).first().get_obstacle());
-	if (iterLocal != mLocalObstacles.end())
+	OpenSteer::ObstacleGroup::iterator iterOL = find(
+			mLocalObstacles.first().begin(), mLocalObstacles.first().end(),
+			(*iterA).first().get_obstacle());
+	if (iterOL != mLocalObstacles.first().end())
 	{
 		//it is in the local list (ie added by this OSSteerPlugIn)
 		nassertr_always(
@@ -658,9 +681,20 @@ NodePath OSSteerPlugIn::remove_obstacle(int ref)
 		//2: remove the obstacle's attributes from the global list
 		globalObstacles.second().erase(iterA);
 		//3: deallocate the OpenSteer obstacle
-		delete *iterLocal;
+		delete *iterOL;
 		//4: remove the OpenSteer obstacle's pointer from the local list
-		mLocalObstacles.erase(iterLocal);
+		nassertr_always(
+				mLocalObstacles.first().size()
+						== mLocalObstacles.second().size(), NodePath::fail());
+
+		mLocalObstacles.first().erase(iterOL);
+		//5: remove the obstacle's attributes from the local list
+		//NOTE: the i-th obstacle has pointer and attributes placed into the
+		//i-th places of their respective lists.
+		unsigned int pointerIdx = iterOL - mLocalObstacles.first().begin();
+		pvector<OSSteerManager::ObstacleAttributes>::iterator iterAL =
+				mLocalObstacles.second().begin() + pointerIdx;
+		mLocalObstacles.second().erase(iterAL);
 	}
 	//
 	return resultNP;
@@ -883,37 +917,41 @@ void OSSteerPlugIn::write_datagram(BamWriter *manager, Datagram &dg)
 	///Name of this OSSteerPlugIn.
 	dg.add_string(get_name());
 
-	//XXX
-
-
-	///Current underlying AbstractPlugIn.
-//	OpenSteer::AbstractPlugIn* mPlugIn;
 	///The type of this OSSteerPlugIn.
 	dg.add_uint8((uint8_t) mPlugInType);
+
+	///Pathway stuff.
+	///@{
+	ValueList<LPoint3f> mPathwayPoints; //XXX
+	ValueList<float> mPathwayRadii; //XXX
+	bool mPathwaySingleRadius, mPathwayClosedCycle; //XXX
+	///@}
+
+	/// Pointers
 	///The reference node path.
-	NodePath mReferenceNP;
-	///The reference node path for debug drawing.
-//	NodePath mReferenceDebugNP, mReferenceDebug2DNP;
-	///Current time.
-//	float mCurrentTime;
-	///The SteerVehicle components handled by this OSSteerPlugIn.
-	pset<PT(OSSteerVehicle)> mSteerVehicles;
+	manager->write_pointer(dg, mReferenceNP.node());
+
+	///Steer vehicles.
+	dg.add_uint32(mSteerVehicles.size());
+	{
+		pvector<PT(OSSteerVehicle)>::iterator iter;
+		for (iter = mSteerVehicles.begin(); iter != mSteerVehicles.end(); ++iter)
+		{
+			manager->write_pointer(dg, (*iter));
+		}
+	}
+
 	///The "local" obstacles handled by this OSSteerPlugIn.
-	OpenSteer::ObstacleGroup mLocalObstacles;
-	///Unique ref.
-	int mRef;
-
-#ifdef OS_DEBUG
-	///OpenSteer debug node paths.
-	NodePath mDrawer3dNP, mDrawer2dNP;
-	///OpenSteer debug camera.
-	NodePath mDebugCamera;
-	///OpenSteer DebugDrawers.
-	ossup::DrawMeshDrawer *mDrawer3d, *mDrawer2d;
-	///Enable Debug Draw update.
-	bool mEnableDebugDrawUpdate;
-#endif
-
+	dg.add_uint32(mLocalObstacles.first().size());
+	{
+		pvector<OSSteerManager::ObstacleAttributes>::iterator iter;
+		for (iter = mLocalObstacles.second().begin();
+				iter != mLocalObstacles.second().end(); ++iter)
+		{
+			(*iter).first().write_datagram(dg);
+			manager->write_pointer(dg, (*iter).second().node());
+		}
+	}
 }
 
 /**
@@ -924,8 +962,30 @@ int OSSteerPlugIn::complete_pointers(TypedWritable **p_list, BamReader *manager)
 {
 	int pi = PandaNode::complete_pointers(p_list, manager);
 
-	//XXX
+	/// Pointers
+	///The reference node path.
+	PT(PandaNode)referenceNPPandaNode = DCAST(PandaNode, p_list[pi++]);
+	mReferenceNP = NodePath::any_path(referenceNPPandaNode);
 
+	///Steer vehicles.
+	{
+		pvector<PT(OSSteerVehicle)>::iterator iter;
+		for (iter = mSteerVehicles.begin(); iter != mSteerVehicles.end(); ++iter)
+		{
+			(*iter) = DCAST(OSSteerVehicle, p_list[pi++]);
+		}
+	}
+
+	///The "local" obstacles handled by this OSSteerPlugIn.
+	{
+		pvector<OSSteerManager::ObstacleAttributes>::iterator iter;
+		for (iter = mLocalObstacles.second().begin();
+				iter != mLocalObstacles.second().end(); ++iter)
+		{
+			PT(PandaNode)realPandaNode = DCAST(PandaNode, p_list[pi++]);
+			(*iter).second() = NodePath::any_path(realPandaNode);
+		}
+	}
 	return pi;
 }
 
@@ -987,7 +1047,36 @@ void OSSteerPlugIn::fillin(DatagramIterator &scan, BamReader *manager)
 	///Name of this OSSteerPlugIn.
 	set_name(scan.get_string());
 
-	//XXX
+	///The type of this OSSteerPlugIn.
+	mPlugInType = (OSSteerPlugInType) scan.get_uint8();
+
+	/// Pointers
+	///The reference node path.
+	manager->read_pointer(scan);
+
+	///Steer vehicles.
+	unsigned int size = scan.get_uint32();
+	mSteerVehicles.resize(size);
+	{
+		for (unsigned int i = 0; i < mSteerVehicles.size(); ++i)
+		{
+			manager->read_pointer(scan);
+		}
+	}
+
+	///The "local" obstacles handled by this OSSteerPlugIn.
+	//resize mLocalObstacles: will be restored in complete_pointers()
+	size = scan.get_uint32();
+	mLocalObstacles.first().resize(size);
+	mLocalObstacles.second().resize(size);
+	{
+		for (unsigned int i = 0; i < mLocalObstacles.first().size(); ++i)
+		{
+			mLocalObstacles.first()[i] = NULL;
+			mLocalObstacles.second()[i].first().read_datagram(scan);
+			manager->read_pointer(scan);
+		}
+	}
 }
 
 //TypedObject semantics: hardcoded

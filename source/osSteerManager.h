@@ -171,6 +171,9 @@ public:
 			pvector<ObstacleAttributes> >& get_global_obstacles();
 	///@}
 
+	///Unique ref producer.
+	inline int unique_ref();
+
 private:
 	///The reference node path.
 	NodePath mReferenceNP;
@@ -199,6 +202,9 @@ private:
 	PT(TaskInterface<OSSteerManager>::TaskData) mUpdateData;
 	PT(AsyncTask) mUpdateTask;
 	///@}
+
+	///Unique ref.
+	int mRef;
 
 	///Utilities.
 	NodePath mRoot;
