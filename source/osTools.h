@@ -338,8 +338,8 @@ PUBLISHED:
 	INLINE void set_side(const LVector3f& value);
 	INLINE LVector3f get_up() const;
 	INLINE void set_up(const LVector3f& value);
-	INLINE LVector3f get_position() const;
-	INLINE void set_position(const LVector3f& value);
+	INLINE LPoint3f get_position() const;
+	INLINE void set_position(const LPoint3f& value);
 private:
 	ossup::VehicleSettings _vehicleSettings;
 

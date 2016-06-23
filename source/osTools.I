@@ -280,11 +280,11 @@ INLINE void OSVehicleSettings::set_up(const LVector3f& value)
 {
 	_vehicleSettings.m_up = ossup::LVecBase3fToOpenSteerVec3(value);
 }
-INLINE LVector3f OSVehicleSettings::get_position() const
+INLINE LPoint3f OSVehicleSettings::get_position() const
 {
 	return ossup::OpenSteerVec3ToLVecBase3f(_vehicleSettings.m_position);
 }
-INLINE void OSVehicleSettings::set_position(const LVector3f& value)
+INLINE void OSVehicleSettings::set_position(const LPoint3f& value)
 {
 	_vehicleSettings.m_position = ossup::LVecBase3fToOpenSteerVec3(value);
 }
