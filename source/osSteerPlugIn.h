@@ -82,11 +82,11 @@ PUBLISHED:
 	///@{
 	int add_steer_vehicle(NodePath steerVehicleNP);
 	int remove_steer_vehicle(NodePath steerVehicleNP);
-	INLINE PT(OSSteerVehicle) get_steer_vehicle(int index) const; //XXX
-	INLINE int get_num_steer_vehicles() const; //XXX
-	MAKE_SEQ(get_steer_vehicles, get_num_steer_vehicles, get_steer_vehicle); //XXX
-	INLINE PT(OSSteerVehicle) operator [](int index) const; //XXX
-	INLINE int size() const; //XXX
+	INLINE PT(OSSteerVehicle) get_steer_vehicle(int index) const;
+	INLINE int get_num_steer_vehicles() const;
+	MAKE_SEQ(get_steer_vehicles, get_num_steer_vehicles, get_steer_vehicle);
+	INLINE PT(OSSteerVehicle) operator [](int index) const;
+	INLINE int size() const;
 	///@}
 
 	/**
@@ -95,17 +95,24 @@ PUBLISHED:
 	///@{
 	void set_pathway(const ValueList<LPoint3f>& pointList,
 			const ValueList<float>& radiusList, bool singleRadius, bool closedCycle);
+	INLINE ValueList<LPoint3f> get_pathway_points();
+	INLINE ValueList<float> get_pathway_radii();
+	INLINE bool get_pathway_single_radius();
+	INLINE bool get_pathway_closed_cycle();
 	///@}
 
 	/**
 	 * \name OBSTACLES
 	 */
 	///@{
-	int add_obstacle(NodePath& object,
-			const string& type, const string& seenFromState,
-			float width = 0.0, float height = 0.0, float depth = 0.0,
-			float radius = 0.0, const LVector3f& side = LVector3f::zero(),
-			const LVector3f& up = LVector3f::zero(), const LVector3f& = LVector3f::zero(),
+	int add_obstacle(NodePath& object, const string& type = string("box"),
+			const string& seenFromState = string("both"));
+	int add_obstacle(const string& type = string("box"),
+			const string& seenFromState = string("both"),
+			float width = 1.0, float height = 1.0, float depth = 1.0, float radius = 1.0,
+			const LVector3f& side = LVector3f::unit_x(),
+			const LVector3f& up = LVector3f::unit_z(),
+			const LVector3f& forward = LVector3f::unit_y(),
 			const LPoint3f& position = LPoint3f::zero());
 	NodePath remove_obstacle(int ref);
 	///@}
@@ -171,6 +178,9 @@ private:
 	bool mPathwaySingleRadius, mPathwayClosedCycle;
 	///@}
 
+	///Serialization flag.
+	bool mBuildFromBam;
+
 	inline void do_reset();
 	void do_initialize();
 	void do_finalize();
@@ -181,6 +191,11 @@ private:
 	///@{
 	void do_build_pathway(const string& pathwayParam);
 	void do_add_obstacles(const plist<string>& obstacleListParam);
+	int do_add_obstacle(const NodePath& objectNP,
+			const string& type, const string& seenFromState,
+			float width, float height,	float depth, float radius,
+			const LVector3f& side, const LVector3f& up,
+			const LVector3f& forward, const LPoint3f& position);
 	///@}
 
 #ifdef OS_DEBUG

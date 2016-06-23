@@ -376,7 +376,7 @@ int OSSteerPlugIn::add_steer_vehicle(NodePath steerVehicleNP)
 		LVecBase3f modelDims;
 		LVector3f modelDeltaCenter;
 		float modelRadius;
-//	if (!buildFromBam) XXX
+//	if (!mBuildFromBam) XXX
 //	{
 		//compute new agent dimensions
 		modelRadius = OSSteerManager::get_global_ptr()->get_bounding_dimensions(
@@ -491,34 +491,29 @@ void OSSteerPlugIn::set_pathway(const ValueList<LPoint3f>& pointList,
 }
 
 /**
- * Adds an obstacle.
- * A non empty NodePath (objectNP) will corresponds to the  underlying OpenSteer
- * obstacle, and is directly reparented to the reference node. In this case
- * parameters are extracted from the NodePath.
- * Otherwise (empty NodePath) it is only seen by the OpenSteer library, and all
- * parameters should be specified.\n
+ * Adds an obstacle given a non empty NodePath (objectNP), which will correspond
+ * to the underlying OpenSteer obstacle, and is directly reparented to the
+ * reference node. In this case parameters are extracted from the NodePath.
  * objectNP, type and seenFromState parameters must be always specified.\n
  * Returns the obstacle's unique reference (>0), or a negative number on error.
  */
 int OSSteerPlugIn::add_obstacle(NodePath& objectNP,
-		const string& type, const string& seenFromState,
-		float width, float height,	float depth,
-		float radius, const LVector3f& side, const LVector3f& up,
-		const LVector3f& forward, const LPoint3f& position)
+		const string& type, const string& seenFromState)
 {
-	LPoint3f newPos = position;
-	LVector3f newSide = side, newUp = up, newForw = forward;
-	if (!objectNP.is_empty())
-	{
-		//get obstacle dimensions
-		LVecBase3f modelDims;
-		LVector3f modelDeltaCenter;
-		float modelRadius;
+	CONTINUE_IF_ELSE_R(!objectNP.is_empty(), OS_ERROR)
+
+	LPoint3f position;
+	LVector3f side, up, forward;
+	float width, height, depth, radius;
+	//get obstacle dimensions
+	LVecBase3f modelDims;
+	LVector3f modelDeltaCenter;
+	float modelRadius;
 //		if (!buildFromBam) XXX
 //		{
-		//compute new obstacle dimensions
-		modelRadius = OSSteerManager::get_global_ptr()->get_bounding_dimensions(
-				objectNP, modelDims, modelDeltaCenter);
+	//compute new obstacle dimensions
+	modelRadius = OSSteerManager::get_global_ptr()->get_bounding_dimensions(
+			objectNP, modelDims, modelDeltaCenter);
 //		} XXX
 //		else
 //		{
@@ -526,20 +521,46 @@ int OSSteerPlugIn::add_obstacle(NodePath& objectNP,
 //			modelDims = mObstacles[index].first().get_dims();
 //		}
 
-		//the obstacle is reparented to the OSSteerPlugIn's reference node path
-		objectNP.wrt_reparent_to(mReferenceNP);
-		//correct obstacle's parameters
-		newPos = objectNP.get_pos();
-		newForw = mReferenceNP.get_relative_vector(objectNP,
-				LVector3f::forward());
-		newUp = mReferenceNP.get_relative_vector(objectNP, LVector3f::up());
-		newSide = mReferenceNP.get_relative_vector(objectNP,
-				LVector3f::right());
-		width = modelDims.get_x();
-		height = modelDims.get_z();
-		depth = modelDims.get_y();
-		radius = modelRadius;
-	}
+	//the obstacle is reparented to the OSSteerPlugIn's reference node path
+	objectNP.wrt_reparent_to(mReferenceNP);
+	//correct obstacle's parameters
+	position = objectNP.get_pos();
+	forward = mReferenceNP.get_relative_vector(objectNP, LVector3f::forward());
+	up = mReferenceNP.get_relative_vector(objectNP, LVector3f::up());
+	side = mReferenceNP.get_relative_vector(objectNP, LVector3f::right());
+	width = modelDims.get_x();
+	height = modelDims.get_z();
+	depth = modelDims.get_y();
+	radius = modelRadius;
+	//
+	return do_add_obstacle(objectNP, type, seenFromState, width, height, depth,
+			radius, side, up, forward, position);
+}
+
+/**
+ * Adds an obstacle (associated to an empty NodePath) that is only seen by the
+ * OpenSteer library.
+ * All parameters should be specified.\n
+ * Returns the obstacle's unique reference (>0), or a negative number on error.
+ */
+int OSSteerPlugIn::add_obstacle(const string& type, const string& seenFromState,
+		float width, float height,	float depth, float radius,
+		const LVector3f& side, const LVector3f& up,
+		const LVector3f& forward, const LPoint3f& position)
+{
+	return do_add_obstacle(NodePath(), type, seenFromState, width, height,
+			depth, radius, side, up, forward, position);
+}
+
+/**
+ * Adds actually the obstacle.
+ */
+int OSSteerPlugIn::do_add_obstacle(const NodePath& objectNP,
+		const string& type, const string& seenFromState,
+		float width, float height,	float depth, float radius,
+		const LVector3f& side, const LVector3f& up,
+		const LVector3f& forward, const LPoint3f& position)
+{
 	//set seen from state
 	OpenSteer::AbstractObstacle::seenFromState seenFS;
 	if (seenFromState == "outside")
@@ -561,33 +582,33 @@ int OSSteerPlugIn::add_obstacle(NodePath& objectNP,
 	{
 		ossup::BoxObstacle* box = new ossup::BoxObstacle(width, height, depth);
 		obstacle = box;
-		box->setSide(ossup::LVecBase3fToOpenSteerVec3(newSide).normalize());
-		box->setUp(ossup::LVecBase3fToOpenSteerVec3(newUp).normalize());
-		box->setForward(ossup::LVecBase3fToOpenSteerVec3(newForw).normalize());
-		box->setPosition(ossup::LVecBase3fToOpenSteerVec3(newPos));
+		box->setSide(ossup::LVecBase3fToOpenSteerVec3(side).normalize());
+		box->setUp(ossup::LVecBase3fToOpenSteerVec3(up).normalize());
+		box->setForward(ossup::LVecBase3fToOpenSteerVec3(forward).normalize());
+		box->setPosition(ossup::LVecBase3fToOpenSteerVec3(position));
 		obstacle->setSeenFrom(seenFS);
 	}
 	if (type == string("plane"))
 	{
 		obstacle = new ossup::PlaneObstacle(
-				ossup::LVecBase3fToOpenSteerVec3(newSide).normalize(),
-				ossup::LVecBase3fToOpenSteerVec3(newUp).normalize(),
-				ossup::LVecBase3fToOpenSteerVec3(newForw).normalize(),
-				ossup::LVecBase3fToOpenSteerVec3(newPos));
+				ossup::LVecBase3fToOpenSteerVec3(side).normalize(),
+				ossup::LVecBase3fToOpenSteerVec3(up).normalize(),
+				ossup::LVecBase3fToOpenSteerVec3(forward).normalize(),
+				ossup::LVecBase3fToOpenSteerVec3(position));
 		obstacle->setSeenFrom(seenFS);
 	}
 	if (type == string("rectangle"))
 	{
 		obstacle = new ossup::RectangleObstacle(width, height,
-				ossup::LVecBase3fToOpenSteerVec3(newSide).normalize(),
-				ossup::LVecBase3fToOpenSteerVec3(newUp).normalize(),
-				ossup::LVecBase3fToOpenSteerVec3(newForw).normalize(),
-				ossup::LVecBase3fToOpenSteerVec3(newPos), seenFS);
+				ossup::LVecBase3fToOpenSteerVec3(side).normalize(),
+				ossup::LVecBase3fToOpenSteerVec3(up).normalize(),
+				ossup::LVecBase3fToOpenSteerVec3(forward).normalize(),
+				ossup::LVecBase3fToOpenSteerVec3(position), seenFS);
 	}
 	if (type == string("sphere"))
 	{
 		obstacle = new ossup::SphereObstacle(radius,
-				ossup::LVecBase3fToOpenSteerVec3(newPos));
+				ossup::LVecBase3fToOpenSteerVec3(position));
 		obstacle->setSeenFrom(seenFS);
 	}
 	//store obstacle and all settings
@@ -604,10 +625,10 @@ int OSSteerPlugIn::add_obstacle(NodePath& objectNP,
 		OSObstacleSettings settings;
 		settings.set_type(type);
 		settings.set_seenFromState(seenFromState);
-		settings.set_position(newPos);
-		settings.set_forward(newForw);
-		settings.set_up(newUp);
-		settings.set_side(newSide);
+		settings.set_position(position);
+		settings.set_forward(forward);
+		settings.set_up(up);
+		settings.set_side(side);
 		settings.set_width(width);
 		settings.set_height(height);
 		settings.set_depth(depth);
@@ -922,9 +943,18 @@ void OSSteerPlugIn::write_datagram(BamWriter *manager, Datagram &dg)
 
 	///Pathway stuff.
 	///@{
-	ValueList<LPoint3f> mPathwayPoints; //XXX
-	ValueList<float> mPathwayRadii; //XXX
-	bool mPathwaySingleRadius, mPathwayClosedCycle; //XXX
+	dg.add_int32(mPathwayPoints.size());
+	for (int i = 0; i < mPathwayPoints.size(); ++i)
+	{
+		mPathwayPoints[i].write_datagram(dg);
+	}
+	dg.add_int32(mPathwayRadii.size());
+	for (int i = 0; i < mPathwayRadii.size(); ++i)
+	{
+		dg.add_stdfloat(mPathwayRadii[i]);
+	}
+	dg.add_bool(mPathwaySingleRadius);
+	dg.add_bool(mPathwayClosedCycle);
 	///@}
 
 	/// Pointers
@@ -949,7 +979,14 @@ void OSSteerPlugIn::write_datagram(BamWriter *manager, Datagram &dg)
 				iter != mLocalObstacles.second().end(); ++iter)
 		{
 			(*iter).first().write_datagram(dg);
-			manager->write_pointer(dg, (*iter).second().node());
+			if (!(*iter).second().is_empty())
+			{
+				manager->write_pointer(dg, (*iter).second().node());
+			}
+			else
+			{
+				manager->write_pointer(dg, (TypedWritable*) NULL);
+			}
 		}
 	}
 }
@@ -983,7 +1020,14 @@ int OSSteerPlugIn::complete_pointers(TypedWritable **p_list, BamReader *manager)
 				iter != mLocalObstacles.second().end(); ++iter)
 		{
 			PT(PandaNode)realPandaNode = DCAST(PandaNode, p_list[pi++]);
-			(*iter).second() = NodePath::any_path(realPandaNode);
+			if (!realPandaNode.is_null())
+			{
+				(*iter).second() = NodePath::any_path(realPandaNode);
+			}
+			else
+			{
+				(*iter).second() = NodePath();
+			}
 		}
 	}
 	return pi;
@@ -997,6 +1041,8 @@ int OSSteerPlugIn::complete_pointers(TypedWritable **p_list, BamReader *manager)
 void OSSteerPlugIn::finalize(BamReader *manager)
 {
 	//XXX
+	//add the OSSteerVehicles
+	//add obstacles
 }
 
 /**
@@ -1049,6 +1095,24 @@ void OSSteerPlugIn::fillin(DatagramIterator &scan, BamReader *manager)
 
 	///The type of this OSSteerPlugIn.
 	mPlugInType = (OSSteerPlugInType) scan.get_uint8();
+
+	///Pathway stuff.
+	///@{
+	int sizei = scan.get_int32();
+	for (int i = 0; i < sizei; ++i)
+	{
+		LPoint3f point;
+		point.read_datagram(scan);
+		mPathwayPoints.add_value(point);
+	}
+	sizei = scan.get_int32();
+	for (int i = 0; i < sizei; ++i)
+	{
+		mPathwayRadii.add_value(scan.get_stdfloat());
+	}
+	mPathwaySingleRadius = scan.get_bool();
+	mPathwayClosedCycle = scan.get_bool();
+	///@}
 
 	/// Pointers
 	///The reference node path.
