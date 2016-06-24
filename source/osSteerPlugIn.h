@@ -72,6 +72,7 @@ PUBLISHED:
 	 * \name PLUGIN
 	 */
 	///@{
+	void set_plug_in_type(OSSteerPlugInType type);
 	INLINE OSSteerPlugInType get_plug_in_type();
 	void update(float dt);
 	///@}
@@ -189,6 +190,7 @@ private:
 	 * \name Helpers variables/functions.
 	 */
 	///@{
+	void do_create_plug_in(OSSteerPlugInType type);
 	void do_build_pathway(const string& pathwayParam);
 	void do_add_obstacles(const plist<string>& obstacleListParam);
 	int do_add_obstacle(const NodePath& objectNP,

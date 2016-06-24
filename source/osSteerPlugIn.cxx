@@ -39,6 +39,38 @@ OSSteerPlugIn::~OSSteerPlugIn()
 }
 
 /**
+ * Sets the OSSteerPlugIn type.
+ * \note OSSteerPlugIn's type can only be changed if there are no attached
+ * OSSteerVehicle(s).
+ */
+void OSSteerPlugIn::set_plug_in_type(OSSteerPlugInType type)
+{
+	CONTINUE_IF_ELSE_V(mSteerVehicles.size() == 0)
+
+	if (mPlugIn)
+	{
+		//close the current plug in
+		mPlugIn->close();
+		//delete the current plug in
+		delete mPlugIn;
+		mPlugIn = NULL;
+	}
+	//create the plug in
+	do_create_plug_in(type);
+	//(re)set pathway
+	set_pathway(mPathwayPoints, mPathwayRadii, mPathwaySingleRadius,
+			mPathwayClosedCycle);
+	//(re)set the plugin local obstacles reference
+	static_cast<ossup::PlugIn*>(mPlugIn)->localObstacles =
+			&mLocalObstacles.first();
+	//(re)set the plugin global obstacles reference
+	static_cast<ossup::PlugIn*>(mPlugIn)->obstacles =
+			&OSSteerManager::get_global_ptr()->get_global_obstacles().first();
+	//open the plug in
+	mPlugIn->open();
+}
+
+/**
  * Initializes the OSSteerPlugIn with starting settings.
  * \note Internal use only.
  */
@@ -60,44 +92,36 @@ void OSSteerPlugIn::do_initialize()
 	//create the plug in
 	if (mPlugInTypeParam == string("pedestrian"))
 	{
-		mPlugIn = new ossup::PedestrianPlugIn<OSSteerVehicle>;
-		mPlugInType = PEDESTRIAN;
+		do_create_plug_in(PEDESTRIAN);
 	}
 	else if (mPlugInTypeParam == string("boid"))
 	{
-		mPlugIn = new ossup::BoidsPlugIn<OSSteerVehicle>;
-		mPlugInType = BOID;
+		do_create_plug_in(BOID);
 	}
 	else if (mPlugInTypeParam == string("multiple_pursuit"))
 	{
-		mPlugIn = new ossup::MpPlugIn<OSSteerVehicle>;
-		mPlugInType = MULTIPLE_PURSUIT;
+		do_create_plug_in(MULTIPLE_PURSUIT);
 	}
 	else if (mPlugInTypeParam == string("soccer"))
 	{
-		mPlugIn = new ossup::MicTestPlugIn<OSSteerVehicle>;
-		mPlugInType = SOCCER;
+		do_create_plug_in(SOCCER);
 	}
 	else if (mPlugInTypeParam == string("capture_the_flag"))
 	{
-		mPlugIn = new ossup::CtfPlugIn<OSSteerVehicle>;
-		mPlugInType = CAPTURE_THE_FLAG;
+		do_create_plug_in(CAPTURE_THE_FLAG);
 	}
 	else if (mPlugInTypeParam == string("low_speed_turn"))
 	{
-		mPlugIn = new ossup::LowSpeedTurnPlugIn<OSSteerVehicle>;
-		mPlugInType = LOW_SPEED_TURN;
+		do_create_plug_in(LOW_SPEED_TURN);
 	}
 	else if (mPlugInTypeParam == string("map_drive"))
 	{
-		mPlugIn = new ossup::MapDrivePlugIn<OSSteerVehicle>;
-		mPlugInType = MAP_DRIVE;
+		do_create_plug_in(MAP_DRIVE);
 	}
 	else
 	{
 		//default: "one_turning"
-		mPlugIn = new ossup::OneTurningPlugIn<OSSteerVehicle>;
-		mPlugInType = ONE_TURNING;
+		do_create_plug_in(ONE_TURNING);
 	}
 	//build pathway
 	do_build_pathway(mPathwayParam);
@@ -106,12 +130,52 @@ void OSSteerPlugIn::do_initialize()
 	//set the plugin global obstacles reference
 	static_cast<ossup::PlugIn*>(mPlugIn)->obstacles = &mTmpl->get_global_obstacles().first();
 	//add its own obstacles
-	if (! mReferenceNP.is_empty())
-	{
-		do_add_obstacles(mObstacleListParam);
-	}
+	do_add_obstacles(mObstacleListParam);
 	//open the plug in
 	mPlugIn->open();
+}
+
+/**
+ * Creates actually the plug-in.
+ */
+void OSSteerPlugIn::do_create_plug_in(OSSteerPlugInType type)
+{
+	//create the plug in
+	mPlugInType = type;
+	if (mPlugInType == PEDESTRIAN)
+	{
+		mPlugIn = new ossup::PedestrianPlugIn<OSSteerVehicle>;
+	}
+	else if (mPlugInType == BOID)
+	{
+		mPlugIn = new ossup::BoidsPlugIn<OSSteerVehicle>;
+	}
+	else if (mPlugInType == MULTIPLE_PURSUIT)
+	{
+		mPlugIn = new ossup::MpPlugIn<OSSteerVehicle>;
+	}
+	else if (mPlugInType == SOCCER)
+	{
+		mPlugIn = new ossup::MicTestPlugIn<OSSteerVehicle>;
+	}
+	else if (mPlugInType == CAPTURE_THE_FLAG)
+	{
+		mPlugIn = new ossup::CtfPlugIn<OSSteerVehicle>;
+	}
+	else if (mPlugInType == LOW_SPEED_TURN)
+	{
+		mPlugIn = new ossup::LowSpeedTurnPlugIn<OSSteerVehicle>;
+	}
+	else if (mPlugInType == MAP_DRIVE)
+	{
+		mPlugIn = new ossup::MapDrivePlugIn<OSSteerVehicle>;
+	}
+	else
+	{
+		//default: "one_turning"
+		mPlugIn = new ossup::OneTurningPlugIn<OSSteerVehicle>;
+		mPlugInType = ONE_TURNING;
+	}
 }
 
 /**
@@ -120,7 +184,8 @@ void OSSteerPlugIn::do_initialize()
  */
 void OSSteerPlugIn::do_build_pathway(const string& pathwayParam)
 {
-	//
+	CONTINUE_IF_ELSE_V(!pathwayParam.empty())
+
 	pvector<string> paramValues1Str, paramValues2Str, paramValues3Str;
 	unsigned int idx, valueNum;
 	//build pathway
@@ -171,6 +236,14 @@ void OSSteerPlugIn::do_build_pathway(const string& pathwayParam)
 		paramValues2Str.push_back(string("1.0"));
 	}
 	unsigned int numRadii = paramValues2Str.size();	//radii specified
+	//point list
+	ValueList<LPoint3f> pointList;
+	for(unsigned int i=0; i<numPoints;++i )
+	{
+		pointList.add_value(ossup::OpenSteerVec3ToLVecBase3f(points[i]));
+	}
+	//radius list
+	ValueList<float> radiusList;
 	if (numRadii == 1)
 	{
 		//single radius
@@ -184,8 +257,8 @@ void OSSteerPlugIn::do_build_pathway(const string& pathwayParam)
 			radius = 1.0;
 		}
 		//set pathway: single radius
-		static_cast<ossup::PlugIn*>(mPlugIn)->setPathway(numPoints, points, true,
-				&radius, closedCycle);
+		radiusList.add_value(radius);
+		set_pathway(pointList, radiusList, true, closedCycle);
 	}
 	else
 	{
@@ -216,8 +289,11 @@ void OSSteerPlugIn::do_build_pathway(const string& pathwayParam)
 			radii[idx] = value;
 		}
 		//set pathway: several radius
-		static_cast<ossup::PlugIn*>(mPlugIn)->setPathway(numPoints, points, false,
-				radii, closedCycle);
+		for(unsigned int i=0; i<numRadiiAllocated;++i )
+		{
+			radiusList.add_value(radii[i]);
+		}
+		set_pathway(pointList, radiusList, false, closedCycle);
 		delete[] radii;
 	}
 	delete[] points;
@@ -231,7 +307,8 @@ void OSSteerPlugIn::do_build_pathway(const string& pathwayParam)
  */
 void OSSteerPlugIn::do_add_obstacles(const plist<string>& obstacleListParam)
 {
-	//
+	CONTINUE_IF_ELSE_V(!obstacleListParam.empty())
+
 	pvector<string> paramValues1Str, paramValues2Str;
 	//add obstacles
 	plist<string>::const_iterator iterList;
@@ -376,7 +453,7 @@ int OSSteerPlugIn::add_steer_vehicle(NodePath steerVehicleNP)
 					OSSteerManager::get_global_ptr()->get_bounding_dimensions(
 							steerVehicleNP, modelDims, modelDeltaCenter);
 		}
-		else
+		else //XXX
 		{
 			//build from bam
 			//get the actual pos
