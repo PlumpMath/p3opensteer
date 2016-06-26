@@ -16,7 +16,7 @@ LDADD = -lp3framework -lpanda -lpandaexpress -lp3dtool -lp3dtoolconfig \
 
 noinst_HEADERS = common.h
 
-noinst_PROGRAMS = basic
+noinst_PROGRAMS = basic low_speed_turn
 
 BUILT_SOURCES = data.h
 
@@ -63,5 +63,11 @@ basic_SOURCES = \
 	basic.cpp
 
 nodist_basic_SOURCES = $(common_sources)
+
+#low_speed_turn
+low_speed_turn_SOURCES = \
+	low_speed_turn.cpp
+
+nodist_low_speed_turn_SOURCES = $(common_sources)
 
 CLEANFILES = data.h

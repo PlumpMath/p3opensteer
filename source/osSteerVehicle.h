@@ -56,7 +56,7 @@
  * param | type | default | note
  * ------|------|---------|-----
  * | *thrown_events*			|single| - | specified as "event1@[event_name1]@[frequency1][:...[:eventN@[event_nameN]@[frequencyN]]]" with eventX = move,steady,path_following,avoid_obstacle,avoid_close_neighbor,avoid_neighbor
- * | *type*						|single| *one_turning* | values: one_turning,pedestrian,boid,mp_wanderer,mp_pursuer,player,ball,ctf_seeker,ctf_enemy,low_speed_turn,map_driver
+ * | *vehicle_type*				|single| *one_turning* | values: one_turning,pedestrian,boid,mp_wanderer,mp_pursuer,player,ball,ctf_seeker,ctf_enemy,low_speed_turn,map_driver
  * | *mov_type*					|single| *opensteer* | values: opensteer,kinematic
  * | *add_to_plugin*			|single| - | -
  * | *mass*						|single| 1.0 | -

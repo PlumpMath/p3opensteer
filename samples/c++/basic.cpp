@@ -13,31 +13,9 @@ WindowFramework *window;
 
 int main(int argc, char *argv[])
 {
-	// Load your application's configuration
-	load_prc_file_data("", "model-path " + dataDir);
-	load_prc_file_data("", "win-size 1024 768");
-	load_prc_file_data("", "show-frame-rate-meter #t");
-	load_prc_file_data("", "sync-video #t");
-	// Setup your application
-	framework.open_framework(argc, argv);
-	framework.set_window_title("p3recastnavigation");
-	window = framework.open_window();
-	if (window != (WindowFramework *) NULL)
-	{
-		cout << "Opened the window successfully!\n";
-		window->enable_keyboard();
-		window->setup_trackball();
-	}
+	startFramework(argc, argv);
 
 	/// here is room for your own code
-
-	/// typed object init; not needed if you build inside panda source tree
-	OSSteerPlugIn::init_type();
-	OSSteerVehicle::init_type();
-	OSSteerManager::init_type();
-	OSSteerPlugIn::register_with_read_factory();
-	OSSteerVehicle::register_with_read_factory();
-	///
 
 	cout << "create a steer manager; set root and mask to manage 'kinematic' vehicles" << endl;
 	WPT(OSSteerManager)steerMgr = new OSSteerManager(window->get_render(), mask);

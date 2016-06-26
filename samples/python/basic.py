@@ -6,24 +6,17 @@ Created on Jun 18, 2016
 
 import panda3d.core
 from p3opensteer import OSSteerManager
-from panda3d.core import load_prc_file_data, LPoint3f
-from direct.showbase.ShowBase import ShowBase
+from panda3d.core import LPoint3f
 #
-from common import dataDir, getCollisionEntryFromCamera, loadTerrain, mask, \
-            loadPlane
+from common import startFramework, dataDir, getCollisionEntryFromCamera, \
+            loadTerrain, mask, loadPlane
             
 # global data
 app = None
 
 if __name__ == '__main__':
-    # Load your application's configuration
-    load_prc_file_data("", "model-path " + dataDir)
-    load_prc_file_data("", "win-size 1024 768")
-    load_prc_file_data("", "show-frame-rate-meter #t")
-    load_prc_file_data("", "sync-video #t")
-        
-    # Setup your application
-    app = ShowBase()
+
+    app = startFramework()
        
     # # here is room for your own code
     

@@ -365,7 +365,7 @@ void OSSteerManager::set_parameters_defaults(OSType type)
 		//sets the (mandatory) parameters to their default values:
 		//sets the (mandatory) parameters to their default values:
 		mSteerPlugInsParameterTable.insert(
-				ParameterNameValue("type", "one_turning"));
+				ParameterNameValue("plugin_type", "one_turning"));
 		mSteerPlugInsParameterTable.insert(
 				ParameterNameValue("pathway",
 						"0.0,0.0,0.0:1.0,1.0,1.0$1.0$false"));
@@ -376,7 +376,7 @@ void OSSteerManager::set_parameters_defaults(OSType type)
 		mSteerVehiclesParameterTable.clear();
 		//sets the (mandatory) parameters to their default values:
 		mSteerVehiclesParameterTable.insert(
-				ParameterNameValue("type", "one_turning"));
+				ParameterNameValue("vehicle_type", "one_turning"));
 		mSteerVehiclesParameterTable.insert(
 				ParameterNameValue("external_update", "false"));
 		mSteerVehiclesParameterTable.insert(

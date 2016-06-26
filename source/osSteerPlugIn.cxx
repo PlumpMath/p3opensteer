@@ -73,7 +73,7 @@ void OSSteerPlugIn::do_initialize()
 	//set OSSteerPlugIn parameters (store internally for future use)
 	//type
 	string mPlugInTypeParam = mTmpl->get_parameter_value(OSSteerManager::STEERPLUGIN,
-			string("type"));
+			string("plugin_type"));
 	//pathway (will be used on setup())
 	string mPathwayParam = mTmpl->get_parameter_value(OSSteerManager::STEERPLUGIN,
 			string("pathway"));

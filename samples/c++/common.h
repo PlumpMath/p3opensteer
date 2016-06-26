@@ -26,8 +26,11 @@ extern WindowFramework *window;
 extern CollideMask mask;
 
 ///functions' declarations
+void startFramework(int argc, char *argv[]);
 NodePath loadPlane();
 NodePath loadTerrain();
 PT(CollisionEntry)getCollisionEntryFromCamera();
+void printCreationParameters();
+void handleVehicleEvent(const Event*, void*);
 
 #endif /* COMMON_H_ */

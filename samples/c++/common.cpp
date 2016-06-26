@@ -15,6 +15,34 @@ static LPoint3f terrainRootNetPos;
 
 ///functions' definitions
 
+// start base framework
+void startFramework(int argc, char *argv[])
+{
+	// Load your application's configuration
+	load_prc_file_data("", "model-path " + dataDir);
+	load_prc_file_data("", "win-size 1024 768");
+	load_prc_file_data("", "show-frame-rate-meter #t");
+	load_prc_file_data("", "sync-video #t");
+	// Setup your application
+	framework.open_framework(argc, argv);
+	framework.set_window_title("p3opensteer");
+	window = framework.open_window();
+	if (window != (WindowFramework *) NULL)
+	{
+		cout << "Opened the window successfully!\n";
+		window->enable_keyboard();
+		window->setup_trackball();
+	}
+
+	/// typed object init; not needed if you build inside panda source tree
+	OSSteerPlugIn::init_type();
+	OSSteerVehicle::init_type();
+	OSSteerManager::init_type();
+	OSSteerPlugIn::register_with_read_factory();
+	OSSteerVehicle::register_with_read_factory();
+	///
+}
+
 // load plane stuff
 NodePath loadPlane()
 {
@@ -127,3 +155,36 @@ PT(CollisionEntry)getCollisionEntryFromCamera()
 	return nullptr;
 }
 
+// print creation parameters
+void printCreationParameters()
+{
+	OSSteerManager* steerMgr = OSSteerManager::get_global_ptr();
+	//
+	ValueList<string> valueList = steerMgr->get_parameter_name_list(
+			OSSteerManager::STEERPLUGIN);
+	cout << endl << "OSSteerPlugIn creation parameters:" << endl;
+	for (int i = 0; i < valueList.get_num_values(); ++i)
+	{
+		cout << "\t" << valueList[i] << " = "
+				<< steerMgr->get_parameter_value(OSSteerManager::STEERPLUGIN,
+						valueList[i]) << endl;
+	}
+	//
+	valueList = steerMgr->get_parameter_name_list(
+			OSSteerManager::STEERVEHICLE);
+	cout << endl << "OSSteerVehicle creation parameters:" << endl;
+	for (int i = 0; i < valueList.get_num_values(); ++i)
+	{
+		cout << "\t" << valueList[i] << " = "
+				<< steerMgr->get_parameter_value(OSSteerManager::STEERVEHICLE,
+						valueList[i]) << endl;
+	}
+}
+
+// handle vehicle's events
+void handleVehicleEvent(const Event* e, void* data)
+{
+	PT(OSSteerVehicle)vehicle = DCAST(OSSteerVehicle, e->get_parameter(0).get_ptr());
+	NodePath vehicleNP = NodePath::any_path(vehicle);
+	cout << "move-event - '" << vehicleNP.get_name() << "' - "<< vehicleNP.get_pos() << endl;
+}

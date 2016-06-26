@@ -6,8 +6,10 @@ Created on Jun 20, 2016
 
 import panda3d.core
 from p3opensteer import OSSteerManager
-from panda3d.core import GeoMipTerrain, PNMImage, Filename, TextureStage, \
-                TexturePool, BitMask32, CardMaker, NodePath
+from panda3d.core import load_prc_file_data, GeoMipTerrain, PNMImage, \
+                Filename, TextureStage, TexturePool, BitMask32, CardMaker, \
+                NodePath, WindowProperties
+from direct.showbase.ShowBase import ShowBase
 
 # global data
 dataDir = "../data"
@@ -15,6 +17,24 @@ mask = BitMask32(0x10);
 terrain = None
 terrainRootNetPos = None
 # # functions' declarations and definitions
+
+def startFramework():
+    """start base framework"""
+    
+    # Load your application's configuration
+    load_prc_file_data("", "model-path " + dataDir)
+    load_prc_file_data("", "win-size 1024 768")
+    load_prc_file_data("", "show-frame-rate-meter #t")
+    load_prc_file_data("", "sync-video #t")
+        
+    # Setup your application
+    app = ShowBase()
+    props = WindowProperties()
+    props.setTitle("p3opensteer")
+    app.win.requestProperties(props)
+    #
+    return app
+
 
 def loadPlane():
     """load plane stuff"""
@@ -116,3 +136,27 @@ def getCollisionEntryFromCamera():
                 steerMgr.get_collision_handler().sort_entries()
                 return steerMgr.get_collision_handler().get_entry(0)
     return None
+
+def printCreationParameters():
+    """print creation parameters"""
+    
+    steerMgr = OSSteerManager.get_global_ptr()
+    #
+    valueList = steerMgr.get_parameter_name_list(OSSteerManager.STEERPLUGIN)
+    print("\n" + "OSSteerPlugIn creation parameters:")
+    for name in valueList:
+        print ("\t" + name + " = " + 
+               steerMgr.get_parameter_value(OSSteerManager.STEERPLUGIN, name))
+    #
+    valueList = steerMgr.get_parameter_name_list(OSSteerManager.STEERVEHICLE)
+    print("\n" + "OSSteerVehicle creation parameters:")
+    for name in valueList:
+        print ("\t" + name + " = " + 
+               steerMgr.get_parameter_value(OSSteerManager.STEERVEHICLE, name))
+
+
+def handleVehicleEvent(vehicle):
+    """handle vehicle's events"""
+    
+    vehicleNP = NodePath.any_path(vehicle)
+    print ("move-event - '" + vehicleNP.get_name() + "' - " + str(vehicleNP.get_pos()))

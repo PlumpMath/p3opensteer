@@ -188,7 +188,7 @@ void OSSteerVehicle::do_initialize()
 			string("true") ? true : false);
 	//type
 	param = mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
-			string("type"));
+			string("vehicle_type"));
 	//create the vehicle
 	if (param == string("pedestrian"))
 	{
