@@ -34,77 +34,108 @@ OSSteerVehicle::~OSSteerVehicle()
 }
 
 /**
- * Initializes the OSSteerVehicle with starting settings.
- * \note Internal use only.
+ * Sets the OSSteerVehicle type.
+ * \note OSSteerVehicle's type can only be changed if it is not attached to any
+ * OSSteerPlugIn(s).
  */
-void OSSteerVehicle::do_initialize()
+void OSSteerVehicle::set_vehicle_type(OSSteerVehicleType type)
 {
-	WPT(OSSteerManager)mTmpl = OSSteerManager::get_global_ptr();
-	//set OSSteerVehicle parameters
-	string param;
-	float value;
-	//external update
-	mExternalUpdate = (mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
-					string("external_update")) ==
-			string("true") ? true : false);
-	//type
-	param = mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
-			string("type"));
-	if (param == string("pedestrian"))
+	CONTINUE_IF_ELSE_V(!mSteerPlugIn)
+
+	//create the new OpenSteer vehicle
+	do_create_vehicle(type);
+
+	//(re)set the new OpenSteer vehicle's settings
+	set_settings(mVehicleSettings);
+}
+
+/**
+ * Enables/disables OSSteerVehicle's external update.
+ * Returns the value actually set.
+ * \note OSSteerVehicle's external update can only be enabled/disabled if it
+ * is not attached to any OSSteerPlugIn(s).
+ */
+bool OSSteerVehicle::enable_external_update(bool enable)
+{
+	CONTINUE_IF_ELSE_R(!mSteerPlugIn, mExternalUpdate)
+
+	//set the external update
+	mExternalUpdate = enable;
+	//we need to re-create an OpenSteer vehicle with the same type
+	set_vehicle_type(mVehicleType);
+	//return the value set
+	return mExternalUpdate;
+}
+
+/**
+ * Creates actually the OpenSteer vehicle.
+ */
+void OSSteerVehicle::do_create_vehicle(OSSteerVehicleType type)
+{
+	//remove current vehicle if any
+	if (mVehicle)
+	{
+		//delete the current vehicle
+		delete mVehicle;
+		mVehicle = NULL;
+	}
+	//create the vehicle
+	mVehicleType = type;
+	if ( mVehicleType== PEDESTRIAN)
 	{
 		! mExternalUpdate ?
 		mVehicle = new ossup::Pedestrian<OSSteerVehicle> :
 		mVehicle = new ossup::ExternalPedestrian<OSSteerVehicle>;
 	}
-	else if (param == string("boid"))
+	else if (mVehicleType == BOID)
 	{
 		! mExternalUpdate ?
 		mVehicle = new ossup::Boid<OSSteerVehicle> :
 		mVehicle = new ossup::ExternalBoid<OSSteerVehicle>;
 	}
-	else if (param == string("mp_wanderer"))
+	else if (mVehicleType == MP_WANDERER)
 	{
 		! mExternalUpdate ?
 		mVehicle = new ossup::MpWanderer<OSSteerVehicle> :
 		mVehicle = new ossup::ExternalMpWanderer<OSSteerVehicle>;
 	}
-	else if (param == string("mp_pursuer"))
+	else if (mVehicleType == MP_PURSUER)
 	{
 		! mExternalUpdate ?
 		mVehicle = new ossup::MpPursuer<OSSteerVehicle> :
 		mVehicle = new ossup::ExternalMpPursuer<OSSteerVehicle>;
 	}
-	else if (param == string("player"))
+	else if (mVehicleType == PLAYER)
 	{
 		! mExternalUpdate ?
 		mVehicle = new ossup::Player<OSSteerVehicle> :
 		mVehicle = new ossup::ExternalPlayer<OSSteerVehicle>;
 	}
-	else if (param == string("ball"))
+	else if (mVehicleType == BALL)
 	{
 		! mExternalUpdate ?
 		mVehicle = new ossup::Ball<OSSteerVehicle> :
 		mVehicle = new ossup::ExternalBall<OSSteerVehicle>;
 	}
-	else if (param == string("ctf_seeker"))
+	else if (mVehicleType == CTF_SEEKER)
 	{
 		! mExternalUpdate ?
 		mVehicle = new ossup::CtfSeeker<OSSteerVehicle> :
 		mVehicle = new ossup::ExternalCtfSeeker<OSSteerVehicle>;
 	}
-	else if (param == string("ctf_enemy"))
+	else if (mVehicleType == CTF_ENEMY)
 	{
 		! mExternalUpdate ?
 		mVehicle = new ossup::CtfEnemy<OSSteerVehicle> :
 		mVehicle = new ossup::ExternalCtfEnemy<OSSteerVehicle>;
 	}
-	else if (param == string("low_speed_turn"))
+	else if (mVehicleType == LOW_SPEED_TURN)
 	{
 		! mExternalUpdate ?
 		mVehicle = new ossup::LowSpeedTurn<OSSteerVehicle> :
 		mVehicle = new ossup::ExternalLowSpeedTurn<OSSteerVehicle>;
 	}
-	else if (param == string("map_driver"))
+	else if (mVehicleType == MAP_DRIVER)
 	{
 		! mExternalUpdate ?
 		mVehicle = new ossup::MapDriver<OSSteerVehicle> :
@@ -116,11 +147,98 @@ void OSSteerVehicle::do_initialize()
 		! mExternalUpdate ?
 		mVehicle = new ossup::OneTurning<OSSteerVehicle> :
 		mVehicle = new ossup::ExternalOneTurning<OSSteerVehicle>;
+		mVehicleType = ONE_TURNING;
 	}
-	//register to SteerPlugIn objectId
-	string mSteerPlugInObjectId =
-	mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
-			string("add_to_plugin"));
+	//
+	//set entity
+	static_cast<VehicleAddOn*>(mVehicle)->setEntity(this);
+	//set entity's update method
+	! mExternalUpdate ?
+	static_cast<VehicleAddOn*>(mVehicle)->setEntityUpdateMethod(
+			&OSSteerVehicle::do_update_steer_vehicle) :
+	static_cast<VehicleAddOn*>(mVehicle)->setEntityUpdateMethod(
+			&OSSteerVehicle::do_external_update_steer_vehicle);
+	//set callbacks
+	//Path Following
+	static_cast<VehicleAddOn*>(mVehicle)->setEntityPathFollowingMethod(
+			&OSSteerVehicle::do_path_following);
+	//Avoid Obstacle
+	static_cast<VehicleAddOn*>(mVehicle)->setEntityAvoidObstacleMethod(
+			&OSSteerVehicle::do_avoid_obstacle);
+	//Avoid Close Neighbor
+	static_cast<VehicleAddOn*>(mVehicle)->setEntityAvoidCloseNeighborMethod(
+			&OSSteerVehicle::do_avoid_close_neighbor);
+	//Avoid Neighbor
+	static_cast<VehicleAddOn*>(mVehicle)->setEntityAvoidNeighborMethod(
+			&OSSteerVehicle::do_avoid_neighbor);
+}
+
+/**
+ * Initializes the OSSteerVehicle with starting settings.
+ * \note Internal use only.
+ */
+void OSSteerVehicle::do_initialize()
+{
+	WPT(OSSteerManager)mTmpl = OSSteerManager::get_global_ptr();
+	//set OSSteerVehicle parameters
+	string param;
+	//external update
+	mExternalUpdate = (mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
+					string("external_update")) ==
+			string("true") ? true : false);
+	//type
+	param = mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
+			string("type"));
+	//create the vehicle
+	if (param == string("pedestrian"))
+	{
+		do_create_vehicle(PEDESTRIAN);
+	}
+	else if (param == string("boid"))
+	{
+		do_create_vehicle(BOID);
+	}
+	else if (param == string("mp_wanderer"))
+	{
+		do_create_vehicle(MP_WANDERER);
+	}
+	else if (param == string("mp_pursuer"))
+	{
+		do_create_vehicle(MP_PURSUER);
+	}
+	else if (param == string("player"))
+	{
+		do_create_vehicle(PLAYER);
+	}
+	else if (param == string("ball"))
+	{
+		do_create_vehicle(BALL);
+	}
+	else if (param == string("ctf_seeker"))
+	{
+		do_create_vehicle(CTF_SEEKER);
+	}
+	else if (param == string("ctf_enemy"))
+	{
+		do_create_vehicle(CTF_ENEMY);
+	}
+	else if (param == string("low_speed_turn"))
+	{
+		do_create_vehicle(LOW_SPEED_TURN);
+	}
+	else if (param == string("map_driver"))
+	{
+		do_create_vehicle(MAP_DRIVER);
+	}
+	else
+	{
+		do_create_vehicle(ONE_TURNING);
+	}
+	///Configure this OSSteerVehicle and the underlying OpenSteer vehicle
+	float value;
+	OSVehicleSettings settings;
+	//get a NodePath for this
+	NodePath thisNP = NodePath::any_path(this);
 	//mov type
 	param = mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
 			string("mov_type"));
@@ -137,42 +255,47 @@ void OSSteerVehicle::do_initialize()
 			mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
 					string("up_axis_fixed")) ==
 			string("true") ? true : false);
-	//get settings
-	ossup::VehicleSettings settings;
+	//initialize settings with underlying OpenSteer vehicle's ones
+	settings = static_cast<VehicleAddOn*>(mVehicle)->getSettings();
 	//mass
 	value = STRTOF(mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
 					string("mass")).c_str(), NULL);
-	settings.m_mass = (value >= 0.0 ? value : 1.0);
+	settings.set_mass(value >= 0.0 ? value : 1.0);
 	//speed
 	value = STRTOF(mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
 					string("speed")).c_str(),
 			NULL);
-	settings.m_speed = (value >= 0.0 ? value : -value);
+	settings.set_speed(value >= 0.0 ? value : -value);
 	//max force
 	value = STRTOF(mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
 					string("max_force")).c_str(),
 			NULL);
-	settings.m_maxForce = (value >= 0.0 ? value : -value);
+	settings.set_maxForce(value >= 0.0 ? value : -value);
 	//max speed
 	value = STRTOF(mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
 					string("max_speed")).c_str(),
 			NULL);
-	settings.m_maxSpeed = (value >= 0.0 ? value : 1.0);
-	//set vehicle settings
-	static_cast<VehicleAddOn*>(mVehicle)->setSettings(settings);
+	settings.set_maxSpeed(value >= 0.0 ? value : 1.0);
+	//forward
+	LVector3f forward = mReferenceNP.get_relative_vector(
+			thisNP, -LVector3f::forward());
+	settings.set_forward(forward);
+	//up
+	LVector3f up = mReferenceNP.get_relative_vector(
+			thisNP, LVector3f::up());
+	settings.set_up(up);
+	//position
+	settings.set_position(thisNP.get_pos());
+	//set actually the OSSteerVehicle's and OpenSteer vehicle's settings
+	set_settings(settings);
+	//
+	// set the collide mask to avoid hit with the steer manager ray
+	thisNP.set_collide_mask(~mTmpl->get_collide_mask() &
+			thisNP.get_collide_mask());
+	//
 	//thrown events
-	mThrownEventsParam = mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
+	string mThrownEventsParam = mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
 			string("thrown_events"));
-	//
-	//set entity and its related update method
-	static_cast<VehicleAddOn*>(mVehicle)->setEntity(this);
-	//
-	! mExternalUpdate ?
-	static_cast<VehicleAddOn*>(mVehicle)->setEntityUpdateMethod(
-			&OSSteerVehicle::do_update_steer_vehicle) :
-	static_cast<VehicleAddOn*>(mVehicle)->setEntityUpdateMethod(
-			&OSSteerVehicle::do_external_update_steer_vehicle);
-
 	//set thrown events if any
 	unsigned int idx1, valueNum1;
 	pvector<string> paramValuesStr1, paramValuesStr2;
@@ -277,39 +400,11 @@ void OSSteerVehicle::do_initialize()
 			}
 		}
 	}
-	//set the callbacks
-	//Path Following
-	static_cast<VehicleAddOn*>(mVehicle)->setEntityPathFollowingMethod(
-			&OSSteerVehicle::do_path_following);
-	//Avoid Obstacle
-	static_cast<VehicleAddOn*>(mVehicle)->setEntityAvoidObstacleMethod(
-			&OSSteerVehicle::do_avoid_obstacle);
-	//Avoid Close Neighbor
-	static_cast<VehicleAddOn*>(mVehicle)->setEntityAvoidCloseNeighborMethod(
-			&OSSteerVehicle::do_avoid_close_neighbor);
-	//Avoid Neighbor
-	static_cast<VehicleAddOn*>(mVehicle)->setEntityAvoidNeighborMethod(
-			&OSSteerVehicle::do_avoid_neighbor);
-	//clear all no more needed "Param" variables
-	mThrownEventsParam.clear();
-	// set this NodePath
-	NodePath thisNP = NodePath::any_path(this);
-	//set initial vehicle's forward,( side,) up and position
-	settings = static_cast<VehicleAddOn*>(mVehicle)->getSettings();
-	settings.m_forward =
-	ossup::LVecBase3fToOpenSteerVec3(
-			mReferenceNP.get_relative_vector(
-					thisNP, -LVector3f::forward())).normalize();
-	settings.m_up = ossup::LVecBase3fToOpenSteerVec3(
-			mReferenceNP.get_relative_vector(
-					thisNP, LVector3f::up())).normalize();
-	settings.m_position = ossup::LVecBase3fToOpenSteerVec3(
-			thisNP.get_pos());
-	static_cast<VehicleAddOn*>(mVehicle)->setSettings(settings);
-	// set the collide mask to avoid hit with the steer manager ray
-	thisNP.set_collide_mask(~mTmpl->get_collide_mask() &
-			thisNP.get_collide_mask());
-	//add to SteerPlugIn, if requested
+	//
+	//add to OSSteerPlugIn if requested
+	string mSteerPlugInObjectId =
+	mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
+			string("add_to_plugin"));
 	PT(OSSteerPlugIn) plugIn = NULL;
 	for (int index = 0;
 			index < OSSteerManager::get_global_ptr()->get_num_steer_plug_ins();
@@ -672,7 +767,42 @@ void OSSteerVehicle::write_datagram(BamWriter *manager, Datagram &dg)
 	///Name of this RNCrowdAgent.
 	dg.add_string(get_name());
 
-	//XXX
+	///The type of this OSSteerPlugIn.
+	dg.add_uint8((uint8_t) mVehicleType);
+
+	///The movement type of this OSSteerPlugIn.
+	dg.add_uint8((uint8_t) mMovType);
+
+	///OSSteerVehicle settings.
+	mVehicleSettings.write_datagram(dg);
+
+	///Height correction for kinematic OSSteerVehicle(s).
+	mHeigthCorrection.write_datagram(dg);
+
+	///Flag for up axis fixed (z).
+	dg.add_bool(mUpAxisFixed);
+
+	///External update.
+	dg.add_bool(mExternalUpdate);
+
+	/**
+	 * \name Throwing OSSteerVehicle events.
+	 */
+	///@{
+	dg.add_bool(mPFCallbackCalled);
+	dg.add_bool(mAOCallbackCalled);
+	dg.add_bool(mACNCallbackCalled);
+	dg.add_bool(mANCallbackCalled);
+	mMove.write_datagram(dg);
+	mSteady.write_datagram(dg);
+	mPathFollowing.write_datagram(dg);
+	mAvoidObstacle.write_datagram(dg);
+	mAvoidCloseNeighbor.write_datagram(dg);
+	mAvoidNeighbor.write_datagram(dg);
+	///@}
+
+	///The OSSteerPlugIn this OSSteerVehicle is added to.
+	manager->write_pointer(dg, mSteerPlugIn);
 
 	///The reference node path.
 	manager->write_pointer(dg, mReferenceNP.node());
@@ -686,9 +816,30 @@ int OSSteerVehicle::complete_pointers(TypedWritable **p_list, BamReader *manager
 {
 	int pi = PandaNode::complete_pointers(p_list, manager);
 
-	//XXX
+	///The OSSteerPlugIn this OSSteerVehicle is added to.
+	mSteerPlugIn = DCAST(OSSteerPlugIn, p_list[pi++]);
+
+	///The reference node path.
+	PT(PandaNode)referenceNPPandaNode = DCAST(PandaNode, p_list[pi++]);
+	mReferenceNP = NodePath::any_path(referenceNPPandaNode);
 
 	return pi;
+}
+
+/**
+ * Called by the BamReader to perform any final actions needed for setting up
+ * the object after all objects have been read and all pointers have been
+ * completed.
+ */
+void OSSteerVehicle::finalize(BamReader *manager)
+{
+	//1: (re)set type
+	//temporarily reset OSSteerPlugIn (if any)
+	PT(OSSteerPlugIn) currentPlugIn = mSteerPlugIn;
+	mSteerPlugIn.clear();
+	set_vehicle_type(mVehicleType);
+	//restore OSSteerPlugIn (if any)
+	mSteerPlugIn = currentPlugIn;
 }
 
 /**
@@ -713,6 +864,7 @@ TypedWritable *OSSteerVehicle::make_from_bam(const FactoryParams &params)
 
 	parse_params(params, scan, manager);
 	node->fillin(scan, manager);
+	manager->register_finalize(node);
 
 	return node;
 }
@@ -725,10 +877,48 @@ void OSSteerVehicle::fillin(DatagramIterator &scan, BamReader *manager)
 {
 	PandaNode::fillin(scan, manager);
 
-	///Name of this OSSteerVehicle. string mName;
+	///Name of this RNCrowdAgent.
 	set_name(scan.get_string());
 
-	//XXX
+	///The type of this OSSteerPlugIn.
+	mVehicleType = (OSSteerVehicleType)scan.get_uint8();
+
+	///The movement type of this OSSteerPlugIn.
+	mMovType = (OSSteerVehicleMovType)scan.get_uint8();
+
+	///OSSteerVehicle settings.
+	mVehicleSettings.read_datagram(scan);
+
+	///Height correction for kinematic OSSteerVehicle(s).
+	mHeigthCorrection.read_datagram(scan);
+
+	///Flag for up axis fixed (z).
+	mUpAxisFixed = scan.get_bool();
+
+	///External update.
+	mExternalUpdate = scan.get_bool();
+
+	/**
+	 * \name Throwing OSSteerVehicle events.
+	 */
+	///@{
+	mPFCallbackCalled = scan.get_bool();
+	mAOCallbackCalled = scan.get_bool();
+	mACNCallbackCalled = scan.get_bool();
+	mANCallbackCalled = scan.get_bool();
+	mMove.read_datagram(scan);
+	mSteady.read_datagram(scan);
+	mPathFollowing.read_datagram(scan);
+	mAvoidObstacle.read_datagram(scan);
+	mAvoidCloseNeighbor.read_datagram(scan);
+	mAvoidNeighbor.read_datagram(scan);
+	///@}
+
+	///The OSSteerPlugIn this OSSteerVehicle is added to.
+	manager->read_pointer(scan);
+
+	///The reference node path.
+	manager->read_pointer(scan);
 }
 
 //TypedObject semantics: hardcoded

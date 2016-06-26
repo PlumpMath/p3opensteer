@@ -23,7 +23,7 @@
  *
  * \see http://opensteer.sourceforge.net
  *
- * This PandaNode should be added to an OSSteerPlugIn, to perform a "steering
+ * This PandaNode should be added to an OSSteerPlugIn, to perform its "steering
  * behavior".\n
  * A model could be reparented to this OSSteerVehicle.\n
  * An OSSteerVehicle could be of type:
@@ -57,20 +57,39 @@
  * ------|------|---------|-----
  * | *thrown_events*			|single| - | specified as "event1@[event_name1]@[frequency1][:...[:eventN@[event_nameN]@[frequencyN]]]" with eventX = move,steady,path_following,avoid_obstacle,avoid_close_neighbor,avoid_neighbor
  * | *type*						|single| *one_turning* | values: one_turning,pedestrian,boid,mp_wanderer,mp_pursuer,player,ball,ctf_seeker,ctf_enemy,low_speed_turn,map_driver
- * | *external_update*			|single| *false* | -
- * | *add_to_plugin*			|single| - | -
  * | *mov_type*					|single| *opensteer* | values: opensteer,kinematic
- * | *up_axis_fixed*			|single| *false* | -
+ * | *add_to_plugin*			|single| - | -
  * | *mass*						|single| 1.0 | -
  * | *speed*					|single| 0.0 | -
  * | *max_force*				|single| 0.1 | -
  * | *max_speed*				|single| 1.0 | -
+ * | *up_axis_fixed*			|single| *false* | -
+ * | *external_update*			|single| *false* | -
  *
  * \note parts inside [] are optional.\n
  */
 class EXPORT_CLASS OSSteerVehicle: public PandaNode
 {
 PUBLISHED:
+	/**
+	 * Steer Vehicle type.
+	 */
+	enum OSSteerVehicleType
+	{
+		ONE_TURNING = 0,
+		PEDESTRIAN,
+		BOID,
+		MP_WANDERER,
+		MP_PURSUER,
+		PLAYER,
+		BALL,
+		CTF_SEEKER,
+		CTF_ENEMY,
+		LOW_SPEED_TURN,
+		MAP_DRIVER,
+		NONE_VEHICLE
+	};
+
 	/**
 	 * OSSteerVehicle movement type.
 	 */
@@ -97,13 +116,23 @@ PUBLISHED:
 	virtual ~OSSteerVehicle();
 
 	/**
+	 * \name VEHICLE
+	 */
+	///@{
+	void set_vehicle_type(OSSteerVehicleType type);
+	INLINE OSSteerVehicleType get_vehicle_type();
+	INLINE void set_mov_type(OSSteerVehicleMovType movType);
+	INLINE OSSteerVehicleMovType get_mov_type();
+	///@}
+
+	/**
 	 * \name CONFIGURATION SETTINGS
 	 */
 	///@{
 	INLINE void set_settings(const OSVehicleSettings& settings);
 	INLINE OSVehicleSettings get_settings();
-	INLINE void set_mov_type(OSSteerVehicleMovType movType);
-	INLINE OSSteerVehicleMovType get_mov_type();
+	bool enable_external_update(bool enable);
+	INLINE bool enable_up_axis_fixed(bool enable);
 	INLINE PT(OSSteerPlugIn) get_steer_plug_in() const;
 	///@}
 
@@ -138,26 +167,35 @@ protected:
 	OSSteerVehicle(const string& name);
 
 private:
-	///The SteerPlugIn this OSSteerVehicle is added to.
-	PT(OSSteerPlugIn) mSteerPlugIn;
 	///Current underlying OpenSteer Vehicle.
 	OpenSteer::AbstractVehicle* mVehicle;
+	///The type of this OSSteerPlugIn.
+	OSSteerVehicleType mVehicleType;
+	///The movement type of this OSSteerPlugIn.
+	OSSteerVehicleMovType mMovType;
+	///The OSSteerPlugIn this OSSteerVehicle is added to.
+	PT(OSSteerPlugIn) mSteerPlugIn;
 	///The reference node path.
 	NodePath mReferenceNP;
-	///The movement type.
-	OSSteerVehicleMovType mMovType;
-	///Flag for up axis fixed (z).
-	bool mUpAxisFixed;
+	///OSSteerVehicle settings.
+	OSVehicleSettings mVehicleSettings;
 	///Height correction for kinematic OSSteerVehicle(s).
 	LVector3f mHeigthCorrection;
+	///Flag for up axis fixed (z).
+	bool mUpAxisFixed;
 
 	inline void do_reset();
 	void do_initialize();
 	void do_finalize();
 
+	/**
+	 * \name Helpers variables/functions.
+	 */
 	///@{
+	void do_create_vehicle(OSSteerVehicleType type);
 	void do_update_steer_vehicle(const float currentTime, const float elapsedTime);
 	void do_external_update_steer_vehicle(const float currentTime, const float elapsedTime);
+	///External update.
 	bool mExternalUpdate;
 	///@}
 
@@ -184,7 +222,6 @@ private:
 	void do_enable_steer_vehicle_event(OSEventThrown event, ThrowEventData eventData);
 	void do_throw_event(ThrowEventData& eventData);
 	void do_handle_steer_library_event(ThrowEventData& eventData, bool callbackCalled);
-	string mThrownEventsParam;
 	///@}
 
 	// Explicitly disabled copy constructor and copy assignment operator.
@@ -199,6 +236,7 @@ public:
 	static void register_with_read_factory();
 	virtual void write_datagram(BamWriter *manager, Datagram &dg) override;
 	virtual int complete_pointers(TypedWritable **plist, BamReader *manager) override;
+	virtual void finalize(BamReader *manager);
 	///@}
 
 protected:

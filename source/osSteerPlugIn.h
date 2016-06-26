@@ -50,8 +50,6 @@ public:
 //	typedef Pair<OpenSteer::ObstacleGroup, pvector<ObstacleAttributes> > GlobalObstacles;
 
 PUBLISHED:
-	virtual ~OSSteerPlugIn();
-
 	/**
 	 * Steer Plug-In type.
 	 */
@@ -67,6 +65,8 @@ PUBLISHED:
 		MAP_DRIVE,
 		NONE_PLUGIN
 	};
+
+	virtual ~OSSteerPlugIn();
 
 	/**
 	 * \name PLUGIN
@@ -108,7 +108,7 @@ PUBLISHED:
 	///@{
 	int add_obstacle(NodePath& object, const string& type = string("box"),
 			const string& seenFromState = string("both"));
-	int add_obstacle(const string& type = string("box"),
+	INLINE int add_obstacle(const string& type = string("box"),
 			const string& seenFromState = string("both"),
 			float width = 1.0, float height = 1.0, float depth = 1.0, float radius = 1.0,
 			const LVector3f& side = LVector3f::unit_x(),
@@ -116,10 +116,13 @@ PUBLISHED:
 			const LVector3f& forward = LVector3f::unit_y(),
 			const LPoint3f& position = LPoint3f::zero());
 	NodePath remove_obstacle(int ref);
+	INLINE int get_obstacle(int index) const;
+	INLINE int get_num_obstacles() const;
+	MAKE_SEQ(get_obstacles, get_num_obstacles, get_obstacle);
 	///@}
 
 	/**
-	 * \name LOW SPEED TURN SETTINGS.
+	 * \name LOW SPEED TURN SPECIFIC SETTINGS.
 	 */
 	///@{
 	void set_steering_speed(float steeringSpeed);
@@ -179,9 +182,6 @@ private:
 	bool mPathwaySingleRadius, mPathwayClosedCycle;
 	///@}
 
-	///Serialization flag.
-	bool mBuildFromBam;
-
 	inline void do_reset();
 	void do_initialize();
 	void do_finalize();
@@ -230,8 +230,6 @@ public:
 protected:
 	static TypedWritable *make_from_bam(const FactoryParams &params);
 	virtual void fillin(DatagramIterator &scan, BamReader *manager) override;
-	void write_plug_in_datagram(OSSteerPlugInType type, Datagram &dg) const;
-	void read_plug_in_datagram(OSSteerPlugInType type, DatagramIterator &scan);
 
 public:
 	/**

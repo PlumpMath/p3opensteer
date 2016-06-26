@@ -101,6 +101,7 @@ public:
 			NULL), m_entityAvoidNeighborMethod(NULL)
 	{
 	}
+	virtual ~VehicleAddOnMixin(){}
 
 	typedef Entity* ENTITY;
 	typedef void (Entity::*ENTITYUPDATEMETHOD)(const float, const float);
@@ -202,7 +203,7 @@ public:
 	void setSettings(const VehicleSettings& settings)
 	{
 		m_settings = settings;
-		//set vehicle settings effectivossup
+		//set vehicle settings effectively
 		reset();
 	}
 

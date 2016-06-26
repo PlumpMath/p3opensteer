@@ -86,6 +86,43 @@ INLINE bool OSSteerPlugIn::get_pathway_closed_cycle()
 }
 
 /**
+ * Adds an obstacle (associated to an empty NodePath) that is only seen by the
+ * OpenSteer library.
+ * All parameters should be specified.\n
+ * Returns the obstacle's unique reference (>0), or a negative number on error.
+ */
+INLINE int OSSteerPlugIn::add_obstacle(const string& type, const string& seenFromState,
+		float width, float height,	float depth, float radius,
+		const LVector3f& side, const LVector3f& up,
+		const LVector3f& forward, const LPoint3f& position)
+{
+	return do_add_obstacle(NodePath(), type, seenFromState, width, height,
+			depth, radius, side, up, forward, position);
+}
+
+/**
+ * Returns the obstacle's unique reference (>0) given its index into the list of
+ * obstacles added by this OSSteerPlugIn, or a negative number on error.
+ */
+INLINE int OSSteerPlugIn::get_obstacle(int index) const
+{
+	pvector<OSSteerManager::ObstacleAttributes> obstacleAttrs =
+			mLocalObstacles.get_second();
+	CONTINUE_IF_ELSE_R((index >= 0) && (index < (int) obstacleAttrs.size()),
+			OS_ERROR)
+
+	return obstacleAttrs[index].get_first().get_ref();
+}
+
+/**
+ * Returns the number of obstacles added by this OSSteerPlugIn.
+ */
+INLINE int OSSteerPlugIn::get_num_obstacles() const
+{
+	 return (int) mLocalObstacles.get_second().size();
+}
+
+/**
  * Resets the OSSteerPlugIn.
  * \note Internal use only.
  */
@@ -104,7 +141,6 @@ inline void OSSteerPlugIn::do_reset()
 	mPathwayPoints.clear();
 	mPathwayRadii.clear();
 	mPathwaySingleRadius = mPathwayClosedCycle = false;
-	mBuildFromBam = false;
 #ifdef OS_DEBUG
 	mDrawer3dNP.clear();
 	mDrawer2dNP.clear();

@@ -47,26 +47,18 @@ void OSSteerPlugIn::set_plug_in_type(OSSteerPlugInType type)
 {
 	CONTINUE_IF_ELSE_V(mSteerVehicles.size() == 0)
 
-	if (mPlugIn)
-	{
-		//close the current plug in
-		mPlugIn->close();
-		//delete the current plug in
-		delete mPlugIn;
-		mPlugIn = NULL;
-	}
-	//create the plug in
+	//create the new OpenSteer plug-in
 	do_create_plug_in(type);
-	//(re)set pathway
+	//(re)set pathway for the new OpenSteer plug-in
 	set_pathway(mPathwayPoints, mPathwayRadii, mPathwaySingleRadius,
 			mPathwayClosedCycle);
-	//(re)set the plugin local obstacles reference
+	//(re)set the new OpenSteer plug-in's local obstacles reference
 	static_cast<ossup::PlugIn*>(mPlugIn)->localObstacles =
 			&mLocalObstacles.first();
-	//(re)set the plugin global obstacles reference
+	//(re)set the new OpenSteer plug-in's global obstacles reference
 	static_cast<ossup::PlugIn*>(mPlugIn)->obstacles =
 			&OSSteerManager::get_global_ptr()->get_global_obstacles().first();
-	//open the plug in
+	//open the new OpenSteer plug-in
 	mPlugIn->open();
 }
 
@@ -137,9 +129,19 @@ void OSSteerPlugIn::do_initialize()
 
 /**
  * Creates actually the plug-in.
+ * \note Internal use only.
  */
 void OSSteerPlugIn::do_create_plug_in(OSSteerPlugInType type)
 {
+	//remove current plug-in if any
+	if (mPlugIn)
+	{
+		//close the current plug in
+		mPlugIn->close();
+		//delete the current plug in
+		delete mPlugIn;
+		mPlugIn = NULL;
+	}
 	//create the plug in
 	mPlugInType = type;
 	if (mPlugInType == PEDESTRIAN)
@@ -390,7 +392,7 @@ void OSSteerPlugIn::do_finalize()
 		//3: deallocate the OpenSteer obstacle
 		delete *iterLocal;
 	}
-	//remove all handled SteerVehicles (if any) from update
+	//remove all added OSSteerVehicle(s) (if any) from update
 	PTA(PT(OSSteerVehicle))::const_iterator iter;
 	for (iter = mSteerVehicles.begin(); iter != mSteerVehicles.end(); ++iter)
 	{
@@ -439,62 +441,36 @@ int OSSteerPlugIn::add_steer_vehicle(NodePath steerVehicleNP)
 		LVector3f modelDeltaCenter;
 		float modelRadius;
 
-		if (!mBuildFromBam)
-		{
-			//OSSteerVehicle needs to be added
-			//get the actual pos
-			pos = steerVehicleNP.get_pos();
-			forward = mReferenceNP.get_relative_vector(steerVehicleNP,
-					LVector3f::forward());
-			up = mReferenceNP.get_relative_vector(steerVehicleNP,
-					LVector3f::up());
-			//get steerVehicle dimensions
-			modelRadius =
-					OSSteerManager::get_global_ptr()->get_bounding_dimensions(
-							steerVehicleNP, modelDims, modelDeltaCenter);
-		}
-		else //XXX
-		{
-			//build from bam
-			//get the actual pos
-			pos = steerVehicle->get_settings().get_position();
-			forward = steerVehicle->get_settings().get_forward();
-			up = steerVehicle->get_settings().get_up();
-			//get steerVehicle dimensions
-			modelRadius = steerVehicle->get_settings().get_radius();
-			modelDims.set_x(0.0);
-			modelDims.set_y(0.0);
-//			modelDims.set_z(steerVehicle->get_settings().get_height()); XXX
-
-		}
+		//OSSteerVehicle needs to be added
+		//get the actual pos
+		pos = steerVehicleNP.get_pos();
+		forward = mReferenceNP.get_relative_vector(steerVehicleNP,
+				LVector3f::forward());
+		up = mReferenceNP.get_relative_vector(steerVehicleNP, LVector3f::up());
+		//get steerVehicle dimensions
+		modelRadius = OSSteerManager::get_global_ptr()->get_bounding_dimensions(
+				steerVehicleNP, modelDims, modelDeltaCenter);
 		//set orientation
 		steerVehicleNP.heads_up(pos + forward, up);
 		//set height correction
 		steerVehicle->mHeigthCorrection = LVector3f(0.0, 0.0,
 				modelDims.get_z());
-		//update OpenSteer vehicle's settings //XXX
-		ossup::VehicleSettings settings =
-				static_cast<VehicleAddOn*>(steerVehicle->mVehicle)->getSettings();
-		settings.m_forward =
-				ossup::LVecBase3fToOpenSteerVec3(forward).normalize();
-		settings.m_up = ossup::LVecBase3fToOpenSteerVec3(up).normalize();
-		settings.m_position = ossup::LVecBase3fToOpenSteerVec3(pos);
+		//update OpenSteer vehicle's settings
+		OSVehicleSettings settings = steerVehicle->get_settings();
+		settings.set_forward(forward);
+		settings.set_up(up);
+		settings.set_position(pos);
 		//update radius
-		settings.m_radius = modelRadius;
+		settings.set_radius(modelRadius);
 		//set actually OpenSteer vehicle's settings
-		static_cast<VehicleAddOn*>(steerVehicle->mVehicle)->setSettings(
-				settings);
+		steerVehicle->set_settings(settings);
+		//set steerVehicle reference to this plug-in
+		steerVehicle->mSteerPlugIn = this;
+		//add to the list of SteerVehicles
+		mSteerVehicles.push_back(steerVehicle);
 		//do add to real update list
 		static_cast<ossup::PlugIn*>(mPlugIn)->addVehicle(
 				&steerVehicle->get_abstract_vehicle());
-		//set steerVehicle reference to this plugin
-		steerVehicle->mSteerPlugIn = this;
-		//
-		if (!mBuildFromBam)
-		{
-			//add to the list of SteerVehicles
-			mSteerVehicles.push_back(steerVehicle);
-		}
 		//
 		result = true;
 	}
@@ -558,7 +534,7 @@ void OSSteerPlugIn::set_pathway(const ValueList<LPoint3f>& pointList,
 	for (unsigned int idx = 0; idx < numOfPoints; ++idx)
 	{
 		osPoints[idx] = ossup::LVecBase3fToOpenSteerVec3(pointList[idx]);
-		if (numOfRadii < (int)(idx + 1))
+		if (numOfRadii < (int) (idx + 1))
 		{
 			radii[idx] = lastRadius;
 		}
@@ -600,18 +576,9 @@ int OSSteerPlugIn::add_obstacle(NodePath& objectNP,
 	LVecBase3f modelDims;
 	LVector3f modelDeltaCenter;
 	float modelRadius;
-//		if (!buildFromBam) XXX
-//		{
 	//compute new obstacle dimensions
 	modelRadius = OSSteerManager::get_global_ptr()->get_bounding_dimensions(
 			objectNP, modelDims, modelDeltaCenter);
-//		} XXX
-//		else
-//		{
-//			modelRadius = mObstacles[index].first().get_radius();
-//			modelDims = mObstacles[index].first().get_dims();
-//		}
-
 	//the obstacle is reparented to the OSSteerPlugIn's reference node path
 	objectNP.wrt_reparent_to(mReferenceNP);
 	//correct obstacle's parameters
@@ -629,22 +596,8 @@ int OSSteerPlugIn::add_obstacle(NodePath& objectNP,
 }
 
 /**
- * Adds an obstacle (associated to an empty NodePath) that is only seen by the
- * OpenSteer library.
- * All parameters should be specified.\n
- * Returns the obstacle's unique reference (>0), or a negative number on error.
- */
-int OSSteerPlugIn::add_obstacle(const string& type, const string& seenFromState,
-		float width, float height,	float depth, float radius,
-		const LVector3f& side, const LVector3f& up,
-		const LVector3f& forward, const LPoint3f& position)
-{
-	return do_add_obstacle(NodePath(), type, seenFromState, width, height,
-			depth, radius, side, up, forward, position);
-}
-
-/**
  * Adds actually the obstacle.
+ * \note Internal use only.
  */
 int OSSteerPlugIn::do_add_obstacle(const NodePath& objectNP,
 		const string& type, const string& seenFromState,
@@ -1070,14 +1023,7 @@ void OSSteerPlugIn::write_datagram(BamWriter *manager, Datagram &dg)
 				iter != mLocalObstacles.second().end(); ++iter)
 		{
 			(*iter).first().write_datagram(dg);
-			if (!(*iter).second().is_empty())
-			{
-				manager->write_pointer(dg, (*iter).second().node());
-			}
-			else
-			{
-				manager->write_pointer(dg, (TypedWritable*) NULL);
-			}
+			manager->write_pointer(dg, (*iter).second().node());
 		}
 	}
 }
@@ -1111,14 +1057,7 @@ int OSSteerPlugIn::complete_pointers(TypedWritable **p_list, BamReader *manager)
 				iter != mLocalObstacles.second().end(); ++iter)
 		{
 			PT(PandaNode)realPandaNode = DCAST(PandaNode, p_list[pi++]);
-			if (!realPandaNode.is_null())
-			{
-				(*iter).second() = NodePath::any_path(realPandaNode);
-			}
-			else
-			{
-				(*iter).second() = NodePath();
-			}
+			(*iter).second() = NodePath::any_path(realPandaNode);
 		}
 	}
 	return pi;
@@ -1131,18 +1070,49 @@ int OSSteerPlugIn::complete_pointers(TypedWritable **p_list, BamReader *manager)
  */
 void OSSteerPlugIn::finalize(BamReader *manager)
 {
-	mBuildFromBam = true;
-	//XXX
-	//add the OSSteerVehicles
-	pvector<PT(OSSteerVehicle)>::iterator iter;
-	for (iter = mSteerVehicles.begin(); iter != mSteerVehicles.end(); ++iter)
+	//1: (re)set plug-in type (will (re)set pathway too)
+	//temporarily remove all OSSteerVehicle(s) (if any)
+	pvector<PT(OSSteerVehicle)> currentVehicles = mSteerVehicles;
+	mSteerVehicles.clear();
+	set_plug_in_type(mPlugInType);
+	//(re)add the OSSteerVehicle(s) (if any)
 	{
-		add_steer_vehicle(NodePath::any_path(*iter));
+		pvector<PT(OSSteerVehicle)>::iterator iter;
+		for (iter = currentVehicles.begin(); iter != currentVehicles.end(); ++iter)
+		{
+			add_steer_vehicle(NodePath::any_path(*iter));
+		}
 	}
-
-
-	//add obstacles
-	mBuildFromBam = false;
+	//2: (re)add obstacles
+	//temporarily remove all ObstacleAttributes (if any)
+	pvector<OSSteerManager::ObstacleAttributes> currentObstacleAttrs =
+			mLocalObstacles.second();
+	mLocalObstacles.first().clear();
+	mLocalObstacles.second().clear();
+	{
+		pvector<OSSteerManager::ObstacleAttributes>::iterator iter;
+		for (iter = currentObstacleAttrs.begin(); iter != currentObstacleAttrs.end(); ++iter)
+		{
+			if (!(*iter).second().is_empty())
+			{
+				add_obstacle((*iter).second(), (*iter).first().get_type(),
+						(*iter).first().get_seenFromState());
+			}
+			else
+			{
+				add_obstacle((*iter).first().get_type(),
+						(*iter).first().get_seenFromState(),
+						(*iter).first().get_width(),
+						(*iter).first().get_height(),
+						(*iter).first().get_depth(),
+						(*iter).first().get_radius(),
+						(*iter).first().get_side(),
+						(*iter).first().get_up(),
+						(*iter).first().get_forward(),
+						(*iter).first().get_position());
+			}
+		}
+	}
 }
 
 /**

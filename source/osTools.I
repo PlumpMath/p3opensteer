@@ -262,7 +262,8 @@ INLINE LVector3f OSVehicleSettings::get_forward() const
 }
 INLINE void OSVehicleSettings::set_forward(const LVector3f& value)
 {
-	_vehicleSettings.m_forward = ossup::LVecBase3fToOpenSteerVec3(value);
+	_vehicleSettings.m_forward =
+			ossup::LVecBase3fToOpenSteerVec3(value).normalize();
 }
 INLINE LVector3f OSVehicleSettings::get_side() const
 {
@@ -270,7 +271,8 @@ INLINE LVector3f OSVehicleSettings::get_side() const
 }
 INLINE void OSVehicleSettings::set_side(const LVector3f& value)
 {
-	_vehicleSettings.m_side = ossup::LVecBase3fToOpenSteerVec3(value);
+	_vehicleSettings.m_side =
+			ossup::LVecBase3fToOpenSteerVec3(value).normalize();
 }
 INLINE LVector3f OSVehicleSettings::get_up() const
 {
@@ -278,7 +280,7 @@ INLINE LVector3f OSVehicleSettings::get_up() const
 }
 INLINE void OSVehicleSettings::set_up(const LVector3f& value)
 {
-	_vehicleSettings.m_up = ossup::LVecBase3fToOpenSteerVec3(value);
+	_vehicleSettings.m_up = ossup::LVecBase3fToOpenSteerVec3(value).normalize();
 }
 INLINE LPoint3f OSVehicleSettings::get_position() const
 {

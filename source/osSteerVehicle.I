@@ -11,12 +11,21 @@
 ///OSSteerVehicle inline definitions
 
 /**
- * Enables/disables the OSSteerVehicle's events to be thrown.
+ * Returns the OSSteerVehicle type.
  */
-INLINE void OSSteerVehicle::enable_steer_vehicle_event(OSEventThrown event,
-		ThrowEventData eventData)
+INLINE OSSteerVehicle::OSSteerVehicleType OSSteerVehicle::get_vehicle_type()
 {
-	do_enable_steer_vehicle_event(event, eventData);
+	return mVehicleType;
+}
+
+/**
+ * Enables/disables OSSteerVehicle's up axis fixed.
+ * Returns the value actually set.
+ */
+INLINE bool OSSteerVehicle::enable_up_axis_fixed(bool enable)
+{
+	mUpAxisFixed = enable;
+	return mUpAxisFixed;
 }
 
 /**
@@ -24,8 +33,10 @@ INLINE void OSSteerVehicle::enable_steer_vehicle_event(OSEventThrown event,
  */
 INLINE void OSSteerVehicle::set_settings(const OSVehicleSettings& settings)
 {
-	//set vehicle settings
-	static_cast<VehicleAddOn*>(mVehicle)->setSettings(settings);
+	//save a copy
+	mVehicleSettings = settings;
+	//set OpenSteer vehicle settings
+	static_cast<VehicleAddOn*>(mVehicle)->setSettings(mVehicleSettings);
 }
 
 /**
@@ -34,7 +45,7 @@ INLINE void OSSteerVehicle::set_settings(const OSVehicleSettings& settings)
 INLINE OSVehicleSettings OSSteerVehicle::get_settings()
 {
 	//get vehicle settings
-	return static_cast<VehicleAddOn*>(mVehicle)->getSettings();
+	return mVehicleSettings;
 }
 
 /**
@@ -64,6 +75,15 @@ INLINE PT(OSSteerPlugIn) OSSteerVehicle::get_steer_plug_in() const
 }
 
 /**
+ * Enables/disables the OSSteerVehicle's events to be thrown.
+ */
+INLINE void OSSteerVehicle::enable_steer_vehicle_event(OSEventThrown event,
+		ThrowEventData eventData)
+{
+	do_enable_steer_vehicle_event(event, eventData);
+}
+
+/**
  * Resets OSSteerVehicle.
  * \note Internal use only.
  */
@@ -71,16 +91,18 @@ inline void OSSteerVehicle::do_reset()
 {
 	//
 	mVehicle = NULL;
-	mSteerPlugIn.clear();
+	mVehicleType = ONE_TURNING;
 	mMovType = OPENSTEER;
-	mUpAxisFixed = false;
+	mSteerPlugIn.clear();
+	mReferenceNP.clear();
+	mVehicleSettings = OSVehicleSettings();
 	mHeigthCorrection = LVector3f::zero();
+	mUpAxisFixed = false;
 	mExternalUpdate = false;
 	mPFCallbackCalled = mAOCallbackCalled = mACNCallbackCalled =
 			mANCallbackCalled = false;
 	mMove = mSteady = mPathFollowing = mAvoidObstacle = mAvoidCloseNeighbor =
 			mAvoidNeighbor = ThrowEventData();
-	mThrownEventsParam.clear();
 }
 
 /**
