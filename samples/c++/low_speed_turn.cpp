@@ -14,6 +14,7 @@ PT(OSSteerPlugIn)plugIn;
 //
 void setParametersBeforeCreation();
 void toggleDebugDraw(const Event*, void*);
+void toggleSteeringSpeed(const Event*, void*);
 
 int main(int argc, char *argv[])
 {
@@ -25,11 +26,7 @@ int main(int argc, char *argv[])
 	text = new TextNode("Help");
 	text->set_text(
 			"- press \"d\" to toggle debug drawing\n"
-			"- press \"s\" to toggle setup cleanup\n"
-			"- press \"p\" to place agents randomly\n"
-			"- press \"t\", \"y\" to set agents' targets under mouse cursor\n"
-			"- press \"o\" to add obstacle under mouse cursor\n"
-			"- press \"shift-o\" to remove obstacle under mouse cursor\n");
+			"- press \"s\" to toggle steering speed\n");
 	NodePath textNodePath = window->get_aspect_2d().attach_new_node(text);
 	textNodePath.set_pos(-1.25, 0.0, 0.9);
 	textNodePath.set_scale(0.035);
@@ -94,6 +91,10 @@ int main(int argc, char *argv[])
 	framework.define_key("move-event", "handleVehicleEvent",
 			&handleVehicleEvent, nullptr);
 
+	// toggle steering speed
+	framework.define_key("s", "toggleSteeringSpeed",
+			&toggleSteeringSpeed, nullptr);
+
 	// place camera trackball (local coordinate)
 	PT(Trackball)trackball = DCAST(Trackball, window->get_mouse().find("**/+Trackball").node());
 	trackball->set_pos(0.0, 30.0, 0.0);
@@ -137,4 +138,17 @@ void toggleDebugDraw(const Event* e, void* data)
 	bool* toggleDebugFlag = reinterpret_cast<bool*>(data);
 	*toggleDebugFlag = not *toggleDebugFlag;
 	plugIn->toggle_debug_drawing(*toggleDebugFlag);
+}
+
+// toggle steering speed
+void toggleSteeringSpeed(const Event*, void*)
+{
+	if (plugIn->get_steering_speed() < 4.9)
+	{
+		plugIn->set_steering_speed(5.0);
+	}
+	else
+	{
+		plugIn->set_steering_speed(1.0);
+	}
 }

@@ -47,6 +47,13 @@ def toggleDebugDraw():
     toggleDebugFlag = not toggleDebugFlag
     plugIn.toggle_debug_drawing(toggleDebugFlag)
 
+def toggleSteeringSpeed():
+    """toggle steering speed"""
+    if plugIn.get_steering_speed() < 4.9:
+        plugIn.set_steering_speed(5.0)
+    else:
+        plugIn.set_steering_speed(1.0)
+
 if __name__ == '__main__':
 
     app = startFramework()
@@ -56,11 +63,7 @@ if __name__ == '__main__':
     text = TextNode("Help")
     text.set_text(
             "- press \"d\" to toggle debug drawing\n"
-            "- press \"s\" to toggle setup cleanup\n"
-            "- press \"p\" to place agents randomly\n"
-            "- press \"t\", \"y\" to set agents' targets under mouse cursor\n"
-            "- press \"o\" to add obstacle under mouse cursor\n"
-            "- press \"shift-o\" to remove obstacle under mouse cursor\n");
+            "- press \"s\" to toggle steering speed\n")
     textNodePath = app.aspect2d.attach_new_node(text)
     textNodePath.set_pos(-1.25, 0.0, 0.9)
     textNodePath.set_scale(0.035)
@@ -121,6 +124,9 @@ if __name__ == '__main__':
 
     # handle OSSteerVehicle(s)' events
     app.accept("move-event", handleVehicleEvent)
+
+    # toggle steering speed
+    app.accept("s", toggleSteeringSpeed)
     
     # place camera
     trackball = app.trackball.node()

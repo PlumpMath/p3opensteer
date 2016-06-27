@@ -78,13 +78,19 @@ void DrawMeshDrawer::clear()
 	m_prevTextNodeIdx = -1;
 	m_textNodesSize = 0;
 	//clear internal storage
-	for (unsigned int i; i < m_generators.size(); ++i)
 	{
-		delete m_generators[i];
+		std::vector<MeshDrawer*>::iterator iter;
+		for (iter = m_generators.begin(); iter != m_generators.end(); ++iter)
+		{
+			delete (*iter);
+		}
 	}
-	for (unsigned int i; i < m_generators.size(); ++i)
 	{
-		m_textNodes[i].remove_node();
+		std::vector<NodePath>::iterator iter;
+		for (iter = m_textNodes.begin(); iter != m_textNodes.end(); ++iter)
+		{
+			m_textNodes[iter - m_textNodes.begin()].remove_node();
+		}
 	}
 	m_generators.clear();
 	m_textNodes.clear();

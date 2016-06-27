@@ -125,7 +125,7 @@ PUBLISHED:
 	 * \name LOW SPEED TURN SPECIFIC SETTINGS.
 	 */
 	///@{
-	void set_steering_speed(float steeringSpeed);
+	void set_steering_speed(float steeringSpeed = 1.0);
 	float get_steering_speed();
 	///@}
 
