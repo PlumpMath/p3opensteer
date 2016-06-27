@@ -782,7 +782,7 @@ void OSSteerPlugIn::update(float dt)
 	{
 		if (mEnableDebugDrawUpdate && mDrawer3d && mDrawer2d)
 		{
-			//unset enableAnnotation
+			//set enableAnnotation
 			ossup::enableAnnotation = true;
 
 			//drawers' initializations
@@ -805,7 +805,7 @@ void OSSteerPlugIn::update(float dt)
 		}
 		else
 		{
-			//unset enableAnnotation
+			//clear enableAnnotation
 			ossup::enableAnnotation = false;
 #endif //OS_DEBUG
 
