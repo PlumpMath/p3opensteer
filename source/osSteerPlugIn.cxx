@@ -937,11 +937,8 @@ int OSSteerPlugIn::toggle_debug_drawing(bool enable)
 	{
 		if (mDrawer3dNP.is_hidden())
 		{
-			if (mDrawer3d)
-			{
-				//clear drawer
-				mDrawer3d->clear();
-			}
+			//clear drawer
+			mDrawer3d->clear();
 			mDrawer3dNP.show();
 			//set Debug Draw Update
 			mEnableDebugDrawUpdate = true;
@@ -950,11 +947,8 @@ int OSSteerPlugIn::toggle_debug_drawing(bool enable)
 		}
 		if (mDrawer2dNP.is_hidden())
 		{
-			if (mDrawer2d)
-			{
-				//clear drawer
-				mDrawer2d->clear();
-			}
+			//clear drawer
+			mDrawer2d->clear();
 			mDrawer2dNP.show();
 			//set Debug Draw Update
 			mEnableDebugDrawUpdate = true;
@@ -966,11 +960,8 @@ int OSSteerPlugIn::toggle_debug_drawing(bool enable)
 	{
 		if (!mDrawer3dNP.is_hidden())
 		{
-			if (mDrawer3d)
-			{
-				//clear drawer
-				mDrawer3d->clear();
-			}
+			//clear drawer
+			mDrawer3d->clear();
 			mDrawer3dNP.hide();
 			//set Debug Draw Update
 			mEnableDebugDrawUpdate = false;
@@ -979,11 +970,8 @@ int OSSteerPlugIn::toggle_debug_drawing(bool enable)
 		}
 		if (!mDrawer2dNP.is_hidden())
 		{
-			if (mDrawer2d)
-			{
-				//clear drawer
-				mDrawer2d->clear();
-			}
+			//clear drawer
+			mDrawer2d->clear();
 			mDrawer2dNP.hide();
 			//set Debug Draw Update
 			mEnableDebugDrawUpdate = false;
