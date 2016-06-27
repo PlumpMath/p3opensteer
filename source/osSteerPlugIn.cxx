@@ -785,20 +785,21 @@ void OSSteerPlugIn::update(float dt)
 			//unset enableAnnotation
 			ossup::enableAnnotation = true;
 
-			//set drawers
-			gDrawer3d = mDrawer3d;
-			gDrawer2d = mDrawer2d;
+			//drawers' initializations
 			mDrawer3d->initialize();
 			mDrawer2d->initialize();
 
-			// invoke PlugIn's Update method
+			/// invoke PlugIn's Update method
 			mPlugIn->update(mCurrentTime, dt);
 
 			// invoke selected PlugIn's Redraw method
 			mPlugIn->redraw(mCurrentTime, dt);
+
 			// draw any annotation queued up during selected PlugIn's Update method
 			OpenSteer::drawAllDeferredLines();
 			OpenSteer::drawAllDeferredCirclesOrDisks();
+
+			//drawers' finalizations
 			mDrawer3d->finalize();
 			mDrawer2d->finalize();
 		}
@@ -808,7 +809,7 @@ void OSSteerPlugIn::update(float dt)
 			ossup::enableAnnotation = false;
 #endif //OS_DEBUG
 
-			// invoke PlugIn's Update method
+			/// invoke PlugIn's Update method
 			mPlugIn->update(mCurrentTime, dt);
 
 #ifdef OS_DEBUG
@@ -944,6 +945,8 @@ int OSSteerPlugIn::toggle_debug_drawing(bool enable)
 			mDrawer3dNP.show();
 			//set Debug Draw Update
 			mEnableDebugDrawUpdate = true;
+			//set drawer
+			gDrawer3d = mDrawer3d;
 		}
 		if (mDrawer2dNP.is_hidden())
 		{
@@ -955,6 +958,8 @@ int OSSteerPlugIn::toggle_debug_drawing(bool enable)
 			mDrawer2dNP.show();
 			//set Debug Draw Update
 			mEnableDebugDrawUpdate = true;
+			//set drawer
+			gDrawer2d = mDrawer2d;
 		}
 	}
 	else
@@ -969,6 +974,8 @@ int OSSteerPlugIn::toggle_debug_drawing(bool enable)
 			mDrawer3dNP.hide();
 			//set Debug Draw Update
 			mEnableDebugDrawUpdate = false;
+			//set drawer
+			gDrawer3d = NULL;
 		}
 		if (!mDrawer2dNP.is_hidden())
 		{
@@ -980,7 +987,8 @@ int OSSteerPlugIn::toggle_debug_drawing(bool enable)
 			mDrawer2dNP.hide();
 			//set Debug Draw Update
 			mEnableDebugDrawUpdate = false;
-
+			//set drawer
+			gDrawer2d = NULL;
 		}
 	}
 	//
