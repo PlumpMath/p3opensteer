@@ -786,10 +786,10 @@ void OSSteerPlugIn::update(float dt)
 			ossup::enableAnnotation = true;
 
 			//set drawers
-			mDrawer3d->initialize();
-			mDrawer2d->initialize();
 			gDrawer3d = mDrawer3d;
 			gDrawer2d = mDrawer2d;
+			mDrawer3d->initialize();
+			mDrawer2d->initialize();
 
 			// invoke PlugIn's Update method
 			mPlugIn->update(mCurrentTime, dt);
@@ -927,38 +927,64 @@ int OSSteerPlugIn::toggle_debug_drawing(bool enable)
 {
 #ifdef OS_DEBUG
 	//continue if mDrawer3dNP and mDrawer2dNP are not empty
-	CONTINUE_IF_ELSE_R((!mDrawer3dNP.is_empty()) && (!mDrawer2dNP.is_empty()),
+	CONTINUE_IF_ELSE_R(
+			(!mDebugCamera.is_empty())
+					&& ((!mDrawer3dNP.is_empty()) && (!mDrawer2dNP.is_empty())),
 			OS_ERROR)
 
 	if (enable)
 	{
 		if (mDrawer3dNP.is_hidden())
 		{
+			if (mDrawer3d)
+			{
+				//clear drawer
+				mDrawer3d->clear();
+			}
 			mDrawer3dNP.show();
+			//set Debug Draw Update
+			mEnableDebugDrawUpdate = true;
 		}
 		if (mDrawer2dNP.is_hidden())
 		{
+			if (mDrawer2d)
+			{
+				//clear drawer
+				mDrawer2d->clear();
+			}
 			mDrawer2dNP.show();
+			//set Debug Draw Update
+			mEnableDebugDrawUpdate = true;
 		}
 	}
 	else
 	{
-		if (! mDrawer3dNP.is_hidden())
+		if (!mDrawer3dNP.is_hidden())
 		{
+			if (mDrawer3d)
+			{
+				//clear drawer
+				mDrawer3d->clear();
+			}
 			mDrawer3dNP.hide();
+			//set Debug Draw Update
+			mEnableDebugDrawUpdate = false;
 		}
-		if (! mDrawer2dNP.is_hidden())
+		if (!mDrawer2dNP.is_hidden())
 		{
+			if (mDrawer2d)
+			{
+				//clear drawer
+				mDrawer2d->clear();
+			}
 			mDrawer2dNP.hide();
+			//set Debug Draw Update
+			mEnableDebugDrawUpdate = false;
+
 		}
 	}
-	//set Debug Draw Update
-	mEnableDebugDrawUpdate = enable;
-	//clear drawers
-	mDrawer3d->clear();
-	mDrawer2d->clear();
 	//
-#endif
+#endif //OS_DEBUG
 	return OS_SUCCESS;
 }
 

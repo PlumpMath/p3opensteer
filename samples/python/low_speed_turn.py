@@ -86,7 +86,7 @@ if __name__ == '__main__':
     # set sceneNP's collide mask
     sceneNP.set_collide_mask(mask)
     
-    # create the default plug-in (attached to the reference node): 'one turning'
+    # create the default plug-in (attached to the reference node)
     plugInNP = steerMgr.create_steer_plug_in()
     plugIn = plugInNP.node()
     
@@ -97,12 +97,12 @@ if __name__ == '__main__':
     # create the steer vehicle (it is attached to the reference node) and set its position
     vehicleNP = steerMgr.create_steer_vehicle("vehicle")
     vehicle = vehicleNP.node()
-    vehicleNP.set_pos(5.0, -8.0, 0.1)
+    vehicleNP.set_pos(-5.0, -8.0, 0.1)
     
     # attach the model to steer vehicle
     modelNP.reparent_to(vehicleNP)
     
-    # attach the steer vehicle to the plug-in
+    # add the steer vehicle to the plug-in
     plugIn.add_steer_vehicle(vehicleNP)
 
     # start the default update task for all plug-ins

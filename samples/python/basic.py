@@ -49,7 +49,7 @@ if __name__ == '__main__':
     print("attach the model to steer vehicle")
     modelNP.reparent_to(vehicleNP)
     
-    print("attach the steer vehicle to the plug-in")
+    print("add the steer vehicle to the plug-in")
     plugIn.add_steer_vehicle(vehicleNP)
 
     print("start the default update task for all plug-ins")

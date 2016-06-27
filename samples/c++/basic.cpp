@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
 	cout << "attach the model to steer vehicle" << endl;
 	modelNP.reparent_to(vehicleNP);
 
-	cout << "attach the steer vehicle to the plug-in" << endl;
+	cout << "add the steer vehicle to the plug-in" << endl;
 	plugIn->add_steer_vehicle(vehicleNP);
 
 	cout << "start the default update task for all plug-ins" << endl;
