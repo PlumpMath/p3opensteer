@@ -81,7 +81,7 @@ void OSSteerPlugIn::do_initialize()
 	plist<string> mObstacleListParam = mTmpl->get_parameter_values(OSSteerManager::STEERPLUGIN,
 			string("obstacles"));
 	//
-	//create the plug in
+	//create the steer plug in
 	if (mPlugInTypeParam == string("pedestrian"))
 	{
 		do_create_plug_in(PEDESTRIAN);
@@ -123,26 +123,26 @@ void OSSteerPlugIn::do_initialize()
 	static_cast<ossup::PlugIn*>(mPlugIn)->obstacles = &mTmpl->get_global_obstacles().first();
 	//add its own obstacles
 	do_add_obstacles(mObstacleListParam);
-	//open the plug in
+	//open the steer plug in
 	mPlugIn->open();
 }
 
 /**
- * Creates actually the plug-in.
+ * Creates actually the steer plug-in.
  * \note Internal use only.
  */
 void OSSteerPlugIn::do_create_plug_in(OSSteerPlugInType type)
 {
-	//remove current plug-in if any
+	//remove current steer plug-in if any
 	if (mPlugIn)
 	{
-		//close the current plug in
+		//close the current steer plug in
 		mPlugIn->close();
-		//delete the current plug in
+		//delete the current steer plug in
 		delete mPlugIn;
 		mPlugIn = NULL;
 	}
-	//create the plug in
+	//create the steer plug in
 	mPlugInType = type;
 	if (mPlugInType == PEDESTRIAN)
 	{
@@ -402,9 +402,9 @@ void OSSteerPlugIn::do_finalize()
 		static_cast<ossup::PlugIn*>(mPlugIn)->removeVehicle(
 				&(*iter)->get_abstract_vehicle());
 	}
-	//close the plug in
+	//close the steer plug in
 	mPlugIn->close();
-	//delete the plug in
+	//delete the steer plug in
 	delete mPlugIn;
 	do_reset();
 }
@@ -425,7 +425,7 @@ int OSSteerPlugIn::add_steer_vehicle(NodePath steerVehicleNP)
 
 	PT(OSSteerVehicle)steerVehicle = DCAST(OSSteerVehicle, steerVehicleNP.node());
 
-	// continue if steerVehicle doesn't belong to any plug-in
+	// continue if steerVehicle doesn't belong to any steer plug-in
 	CONTINUE_IF_ELSE_R(!steerVehicle->mSteerPlugIn, OS_ERROR)
 
 	bool result = false;
@@ -464,7 +464,7 @@ int OSSteerPlugIn::add_steer_vehicle(NodePath steerVehicleNP)
 		settings.set_radius(modelRadius);
 		//set actually OpenSteer vehicle's settings
 		steerVehicle->set_settings(settings);
-		//set steerVehicle reference to this plug-in
+		//set steerVehicle reference to this steer plug-in
 		steerVehicle->mSteerPlugIn = this;
 		//add to the list of SteerVehicles
 		mSteerVehicles.push_back(steerVehicle);
@@ -492,7 +492,7 @@ int OSSteerPlugIn::remove_steer_vehicle(NodePath steerVehicleNP)
 
 	PT(OSSteerVehicle)steerVehicle = DCAST(OSSteerVehicle, steerVehicleNP.node());
 
-	// continue if steerVehicle belongs to this plug-in
+	// continue if steerVehicle belongs to this steer plug-in
 	CONTINUE_IF_ELSE_R(steerVehicle->mSteerPlugIn == this, OS_ERROR)
 
 	bool result = false;
@@ -599,7 +599,7 @@ int OSSteerPlugIn::add_obstacle(NodePath& objectNP,
  * Adds actually the obstacle.
  * \note Internal use only.
  */
-int OSSteerPlugIn::do_add_obstacle(const NodePath& objectNP,
+int OSSteerPlugIn::do_add_obstacle(NodePath objectNP,
 		const string& type, const string& seenFromState,
 		float width, float height,	float depth, float radius,
 		const LVector3f& side, const LVector3f& up,
@@ -689,6 +689,11 @@ int OSSteerPlugIn::do_add_obstacle(const NodePath& objectNP,
 		mLocalObstacles.first().push_back(obstacle);
 		//5: add obstacle's attributes to local list
 		mLocalObstacles.second().push_back(obstacleAttrs);
+		//6: reparent to reference node if objectNP is not empty
+		if (!objectNP.is_empty())
+		{
+			objectNP.reparent_to(mReferenceNP);
+		}
 	}
 	return ref;
 }
@@ -766,7 +771,7 @@ NodePath OSSteerPlugIn::remove_obstacle(int ref)
 }
 
 /**
- * Updates the OpenSteer underlying plug-in.
+ * Updates the underlying OpenSteer plug-in.
  * It allows the added OSSteerVehicle(s) to perform their "steering behaviors".
  */
 void OSSteerPlugIn::update(float dt)
@@ -850,7 +855,7 @@ void OSSteerPlugIn::output(ostream &out) const
 }
 
 /**
- * Enables the debug drawing, only if nav mesh has been already setup.
+ * Enables the debug drawing.
  * A camera node path should be passed as argument.
  */
 void OSSteerPlugIn::enable_debug_drawing(NodePath debugCamera)
@@ -900,9 +905,9 @@ void OSSteerPlugIn::disable_debug_drawing()
 #ifdef OS_DEBUG
 	if (! mDebugCamera.is_empty())
 	{
-		//set the recast debug camera to empty node path
+		//set the opensteer debug camera to empty node path
 		mDebugCamera = NodePath();
-		//remove the recast debug node paths
+		//remove the opensteer debug node paths
 		mDrawer3dNP.remove_node();
 		mDrawer2dNP.remove_node();
 		//reset the DebugDrawers
@@ -1092,47 +1097,51 @@ int OSSteerPlugIn::complete_pointers(TypedWritable **p_list, BamReader *manager)
  */
 void OSSteerPlugIn::finalize(BamReader *manager)
 {
-	//1: (re)set plug-in type (will (re)set pathway too)
-	//temporarily remove all OSSteerVehicle(s) (if any)
-	pvector<PT(OSSteerVehicle)> currentVehicles = mSteerVehicles;
-	mSteerVehicles.clear();
-	set_plug_in_type(mPlugInType);
-	//(re)add the OSSteerVehicle(s) (if any)
+	//1: (re)set OpenSteer plug-in type
+	//create the new OpenSteer plug-in
+	do_create_plug_in(mPlugInType);
+	//set pathway for the new OpenSteer plug-in
+	set_pathway(mPathwayPoints, mPathwayRadii, mPathwaySingleRadius,
+			mPathwayClosedCycle);
+	//set the new OpenSteer plug-in's local obstacles reference
+	static_cast<ossup::PlugIn*>(mPlugIn)->localObstacles =
+			&mLocalObstacles.first();
+	//set the new OpenSteer plug-in's global obstacles reference
+	static_cast<ossup::PlugIn*>(mPlugIn)->obstacles =
+			&OSSteerManager::get_global_ptr()->get_global_obstacles().first();
+	//open the new OpenSteer plug-in
+	mPlugIn->open();
+	//2: add OpenSteer vehicles to the new OpenSteer plug-in's real update list
 	{
 		pvector<PT(OSSteerVehicle)>::iterator iter;
-		for (iter = currentVehicles.begin(); iter != currentVehicles.end(); ++iter)
+		for (iter = mSteerVehicles.begin(); iter != mSteerVehicles.end(); ++iter)
 		{
-			add_steer_vehicle(NodePath::any_path(*iter));
+			//do add to real update list
+			static_cast<ossup::PlugIn*>(mPlugIn)->addVehicle(
+					&(*iter)->get_abstract_vehicle());
 		}
 	}
-	//2: (re)add obstacles
+	//3: (re)add obstacles
 	//temporarily remove all ObstacleAttributes (if any)
 	pvector<OSSteerManager::ObstacleAttributes> currentObstacleAttrs =
-			mLocalObstacles.second();
+	mLocalObstacles.second();
 	mLocalObstacles.first().clear();
 	mLocalObstacles.second().clear();
 	{
 		pvector<OSSteerManager::ObstacleAttributes>::iterator iter;
 		for (iter = currentObstacleAttrs.begin(); iter != currentObstacleAttrs.end(); ++iter)
 		{
-			if (!(*iter).second().is_empty())
-			{
-				add_obstacle((*iter).second(), (*iter).first().get_type(),
-						(*iter).first().get_seenFromState());
-			}
-			else
-			{
-				add_obstacle((*iter).first().get_type(),
-						(*iter).first().get_seenFromState(),
-						(*iter).first().get_width(),
-						(*iter).first().get_height(),
-						(*iter).first().get_depth(),
-						(*iter).first().get_radius(),
-						(*iter).first().get_side(),
-						(*iter).first().get_up(),
-						(*iter).first().get_forward(),
-						(*iter).first().get_position());
-			}
+			do_add_obstacle((*iter).second(),
+					(*iter).first().get_type(),
+					(*iter).first().get_seenFromState(),
+					(*iter).first().get_width(),
+					(*iter).first().get_height(),
+					(*iter).first().get_depth(),
+					(*iter).first().get_radius(),
+					(*iter).first().get_side(),
+					(*iter).first().get_up(),
+					(*iter).first().get_forward(),
+					(*iter).first().get_position());
 		}
 	}
 }

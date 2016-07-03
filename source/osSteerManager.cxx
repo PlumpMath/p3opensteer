@@ -67,25 +67,25 @@ OSSteerManager::~OSSteerManager()
 
 	//stop any default update
 	stop_default_update();
-	//destroy all RNCrowdAgents
+	//destroy all OSSteerVehicles
 	PTA(PT(OSSteerVehicle))::iterator iterC = mSteerVehicles.begin();
 	while (iterC != mSteerVehicles.end())
 	{
 		//\see http://stackoverflow.com/questions/596162/can-you-remove-elements-from-a-stdlist-while-iterating-through-it
-		//give a chance to RNCrowdAgent to cleanup itself before being destroyed.
+		//give a chance to OSSteerVehicle to cleanup itself before being destroyed.
 		(*iterC)->do_finalize();
-		//remove the RNCrowdAgents from the inner list (and from the update task)
+		//remove the OSSteerVehicles from the inner list (and from the update task)
 		mSteerVehicles.erase(iterC);
 	}
 
-	//destroy all RNNavMeshes
+	//destroy all OSSteerPlugIns
 	PTA(PT(OSSteerPlugIn))::iterator iterN = mSteerPlugIns.begin();
 	while (iterN != mSteerPlugIns.end())
 	{
 		//\see http://stackoverflow.com/questions/596162/can-you-remove-elements-from-a-stdlist-while-iterating-through-it
-		//give a chance to RNCrowdAgent to cleanup itself before being destroyed.
+		//give a chance to OSSteerVehicle to cleanup itself before being destroyed.
 		(*iterN)->do_finalize();
-		//remove the RNCrowdAgents from the inner list (and from the update task)
+		//remove the OSSteerVehicles from the inner list (and from the update task)
 		mSteerPlugIns.erase(iterN);
 	}
 
@@ -139,15 +139,15 @@ bool OSSteerManager::destroy_steer_plug_in(NodePath steerPlugInNP)
 			steerPlugInNP.node()->is_of_type(OSSteerPlugIn::get_class_type()),
 			false)
 
-	PT(OSSteerPlugIn)navMesh = DCAST(OSSteerPlugIn, steerPlugInNP.node());
+	PT(OSSteerPlugIn)steerPlugIn = DCAST(OSSteerPlugIn, steerPlugInNP.node());
 	SteerPlugInList::iterator iter = find(mSteerPlugIns.begin(),
-			mSteerPlugIns.end(), navMesh);
+			mSteerPlugIns.end(), steerPlugIn);
 	CONTINUE_IF_ELSE_R(iter != mSteerPlugIns.end(), false)
 
-	//give a chance to SteerPlugIn to cleanup itself before being destroyed.
-	navMesh->do_finalize();
+	//give a chance to OSSteerPlugIn to cleanup itself before being destroyed.
+	steerPlugIn->do_finalize();
 
-	//remove the SteerPlugIn from the inner list (and from the update task)
+	//remove the OSSteerPlugIn from the inner list (and from the update task)
 	mSteerPlugIns.erase(iter);
 	//
 	return true;
@@ -200,14 +200,14 @@ bool OSSteerManager::destroy_steer_vehicle(NodePath steerVehicleNP)
 			steerVehicleNP.node()->is_of_type(OSSteerVehicle::get_class_type()),
 			false)
 
-	PT(OSSteerVehicle)crowdAgent = DCAST(OSSteerVehicle, steerVehicleNP.node());
+	PT(OSSteerVehicle)steerVehicle = DCAST(OSSteerVehicle, steerVehicleNP.node());
 	SteerVehicleList::iterator iter = find(mSteerVehicles.begin(),
-			mSteerVehicles.end(), crowdAgent);
+			mSteerVehicles.end(), steerVehicle);
 	CONTINUE_IF_ELSE_R(iter != mSteerVehicles.end(), false)
 
-	//give a chance to SteerVehicle to cleanup itself before being destroyed.
-	crowdAgent->do_finalize();
-	//remove the SteerVehicle from the inner list (and from the update task)
+	//give a chance to OSSteerVehicle to cleanup itself before being destroyed.
+	steerVehicle->do_finalize();
+	//remove the OSSteerVehicle from the inner list (and from the update task)
 	mSteerVehicles.erase(iter);
 	//
 	return true;
@@ -360,7 +360,7 @@ void OSSteerManager::set_parameters_defaults(OSType type)
 {
 	if (type == STEERPLUGIN)
 	{
-		///mNavMeshesParameterTable must be the first cleared
+		///mSteerPlugInsParameterTable must be the first cleared
 		mSteerPlugInsParameterTable.clear();
 		//sets the (mandatory) parameters to their default values:
 		//sets the (mandatory) parameters to their default values:
@@ -372,7 +372,7 @@ void OSSteerManager::set_parameters_defaults(OSType type)
 	}
 	else if (type == STEERVEHICLE)
 	{
-		///mCrowdAgentsParameterTable must be the first cleared
+		///mSteerVehiclesParameterTable must be the first cleared
 		mSteerVehiclesParameterTable.clear();
 		//sets the (mandatory) parameters to their default values:
 		mSteerVehiclesParameterTable.insert(
@@ -395,7 +395,7 @@ void OSSteerManager::set_parameters_defaults(OSType type)
 }
 
 /**
- * Updates OSSteerPlugIns and their RNCrowdAgents.
+ * Updates OSSteerPlugIns and their OSSteerVehicles.
  *
  * Will be called automatically in a task.
  */
@@ -418,7 +418,7 @@ AsyncTask::DoneStatus OSSteerManager::update(GenericAsyncTask* task)
 }
 
 /**
- * Adds a task to repeatedly call RNNavMeshes' updates.
+ * Adds a task to repeatedly call OSSteerPlugIns' updates.
  */
 void OSSteerManager::start_default_update()
 {
@@ -433,7 +433,7 @@ void OSSteerManager::start_default_update()
 }
 
 /**
- * Removes a task to repeatedly call RNNavMeshes' updates.
+ * Removes a task to repeatedly call OSSteerPlugIns' updates.
  */
 void OSSteerManager::stop_default_update()
 {
@@ -592,7 +592,7 @@ void OSSteerManager::debug_draw_reset()
 }
 
 /**
- * Writes to a bam file the entire collections of nav meshes, crowd agents
+ * Writes to a bam file the entire collections of steer plug-ins, steer vehicles
  * and related geometries (i.e. models' NodePaths)
  */
 bool OSSteerManager::write_to_bam_file(const string& fileName)
@@ -622,7 +622,7 @@ bool OSSteerManager::write_to_bam_file(const string& fileName)
 	if (errorReport.empty())
 	{
 		cout
-				<< "SUCCESS: all nav mesh and crowd agent collections were written to "
+				<< "SUCCESS: all steer plug-in and steer vehicle collections were written to "
 				<< fileName << endl;
 	}
 	else
@@ -633,7 +633,7 @@ bool OSSteerManager::write_to_bam_file(const string& fileName)
 }
 
 /**
- * Reads from a bam file the entire hierarchy of nav meshes, crowd agents
+ * Reads from a bam file the entire hierarchy of steer plug-ins, steer vehicles
  * and related geometries (i.e. models' NodePaths)
  */
 bool OSSteerManager::read_from_bam_file(const string& fileName)
@@ -675,7 +675,7 @@ bool OSSteerManager::read_from_bam_file(const string& fileName)
 	//check
 	if (errorReport.empty())
 	{
-		cout << "SUCCESS: all nav meshes and crowd agents were read from "
+		cout << "SUCCESS: all steer plug-ins and steer vehicles were read from "
 				<< fileName << endl;
 	}
 	else

@@ -19,17 +19,17 @@
 #endif //CPPPARSER
 
 /**
- * This class represents a "vehicle" of the RecastNavigation library.
+ * This class represents a "vehicle" of the OpenSteer library.
  *
  * \see http://opensteer.sourceforge.net
  *
- * This PandaNode should be added to an OSSteerPlugIn, to perform its "steering
- * behavior".\n
+ * This PandaNode will create a "steer vehicle"and should be added to an
+ * OSSteerPlugIn, to perform its "steering behavior".\n
  * A model could be reparented to this OSSteerVehicle.\n
  * An OSSteerVehicle could be of type:
- * - **opensteer** (the default): its movement/orientation follows strictly the
- * path as updated by OpenSteer library
- * - **kinematic**: its movement/orientation is corrected to stand on floor.\n
+ * - **opensteer** (the default): its movement follows strictly the path as
+ *   updated by OpenSteer library
+ * - **kinematic**: its movement is corrected to stand on floor.\n
  * If enabled, this object can throw these events:
  * - on moving (default event name: NODENAME_SteerVehiclet_Move)
  * - on being steady (default event name: NODENAME_SteerVehicle_Steady)
@@ -131,9 +131,35 @@ PUBLISHED:
 	///@{
 	INLINE void set_settings(const OSVehicleSettings& settings);
 	INLINE OSVehicleSettings get_settings();
+	INLINE void set_mass(float mass);
+	INLINE float get_mass();
+	INLINE void set_radius(float radius);
+	INLINE float get_radius();
+	INLINE void set_speed(float speed);
+	INLINE float get_speed();
+	INLINE void set_max_force(float max_force);
+	INLINE float get_max_force();
+	INLINE void set_max_speed(float max_speed);
+	INLINE float get_max_speed();
+	INLINE LVector3f get_forward() const;
+	INLINE void set_forward(const LVector3f& forward);
+	INLINE LVector3f get_side() const;
+	INLINE void set_side(const LVector3f& side);
+	INLINE LVector3f get_up() const;
+	INLINE void set_up(const LVector3f& up);
+	INLINE LPoint3f get_position() const;
+	INLINE void set_position(const LPoint3f& position);
 	bool enable_external_update(bool enable);
 	INLINE bool enable_up_axis_fixed(bool enable);
 	INLINE PT(OSSteerPlugIn) get_steer_plug_in() const;
+	///@}
+
+	/**
+	 * \name LOW SPEED TURN SPECIFIC SETTINGS.
+	 */
+	///@{
+	void set_steering_speed(float steeringSpeed = 1.0);
+	float get_steering_speed();
 	///@}
 
 	/**
@@ -273,7 +299,7 @@ private:
 
 };
 
-INLINE ostream &operator << (ostream &out, const OSSteerVehicle & crowdAgent);
+INLINE ostream &operator << (ostream &out, const OSSteerVehicle & steerVehicle);
 
 //VehicleAddOn typedef.
 typedef ossup::VehicleAddOnMixin<ossup::SimpleVehicle, OSSteerVehicle> VehicleAddOn;

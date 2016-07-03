@@ -8,15 +8,12 @@ import panda3d.core
 from p3opensteer import OSSteerManager
 from panda3d.core import LPoint3f
 #
-from common import startFramework, dataDir, getCollisionEntryFromCamera, \
+from common import app, startFramework, dataDir, getCollisionEntryFromCamera, \
             loadTerrain, mask, loadPlane
             
-# global data
-app = None
-
 if __name__ == '__main__':
 
-    app = startFramework()
+    startFramework()
        
     # # here is room for your own code
     

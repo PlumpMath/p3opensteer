@@ -197,6 +197,16 @@ public:
 
     VehicleSettings& getSettings()
 	{
+		m_settings.m_mass = Super::mass();
+		m_settings.m_radius = Super::radius();
+		m_settings.m_speed = Super::speed(); // speed along Forward direction.
+		m_settings.m_maxForce = Super::maxForce(); // steering force is clipped to this magnitude
+		m_settings.m_maxSpeed = Super::maxSpeed(); // velocity is clipped to this magnitude
+		m_settings.m_forward = Super::forward();
+		m_settings.m_side = Super::side();
+		m_settings.m_up = Super::up();
+		m_settings.m_position = Super::position();
+		m_start = Super::position();
 		return m_settings;
 	}
 

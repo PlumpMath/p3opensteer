@@ -7,10 +7,6 @@
 
 #include "common.h"
 
-///global data definition
-PandaFramework framework;
-WindowFramework *window;
-
 int main(int argc, char *argv[])
 {
 	startFramework(argc, argv);

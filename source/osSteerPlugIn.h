@@ -25,7 +25,7 @@ class OSSteerVehicle;
  *
  * \see http://opensteer.sourceforge.net
  *
- * This PandaNode will create a "plug-in".\n
+ * This PandaNode will create a "steer plug-in".\n
  * Each OSSteerPlugIn object could handle a single pathway and several
  * obstacles.\n
  * An "update" task should call this OSSteerPlugIn's update() method to allow
@@ -193,7 +193,7 @@ private:
 	void do_create_plug_in(OSSteerPlugInType type);
 	void do_build_pathway(const string& pathwayParam);
 	void do_add_obstacles(const plist<string>& obstacleListParam);
-	int do_add_obstacle(const NodePath& objectNP,
+	int do_add_obstacle(NodePath objectNP,
 			const string& type, const string& seenFromState,
 			float width, float height,	float depth, float radius,
 			const LVector3f& side, const LVector3f& up,

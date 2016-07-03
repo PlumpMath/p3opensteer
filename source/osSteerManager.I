@@ -47,7 +47,7 @@ INLINE NodePath OSSteerManager::get_reference_node_path_debug_2d() const
 }
 
 /**
- * Returns the number of RNNavMeshes.
+ * Returns the number of OSSteerPlugIns.
  */
 INLINE int OSSteerManager::get_num_steer_plug_ins() const
 {
@@ -55,7 +55,7 @@ INLINE int OSSteerManager::get_num_steer_plug_ins() const
 }
 
 /**
- * Returns the number of RNCrowdAgents.
+ * Returns the number of OSSteerVehicles.
  */
 INLINE int OSSteerManager::get_num_steer_vehicles() const
 {

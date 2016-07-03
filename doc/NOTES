@@ -1,19 +1,17 @@
 USAGE NOTES
 ***********
-p3opensteer is an attempt to make available the OpenSteer library 
-facilities to the Panda3d engine. 
+p3opensteer is an attempt to make available the OpenSteer library facilities to 
+the Panda3d engine. 
 
-XXX
-It is not a "one-to-one" export/porting of the RecastNavigation functionalities,
-but a synthesis of objects and methods which exploit the library to exhibit 
-features that deal with general concepts such as points, paths, areas, links, 
-walking abilities etc., trying to avoid references to specific elements of 
-the library, such as polygons, corridors, filters, queries, nodes etc..
-In summary, p3Recastnavigation would like to make available to any programmer, 
-functionalities of path finding without the need (to a certain extent) to learn 
-the peculiar concepts of the underlying RecastNavigation library.
-To achieve this, it followed the approach used by the comprehensive RecastDemo
-application, exploiting much of its code and adapting it to the Panda3D world.
+OpenSteer is a library that allows the construction of "steering behaviors", by 
+providing "basic" behaviors (and other elements), in such a way that they can 
+be combined in many different ways, so as to synthesize any steering behavior 
+imaginable. At the same time, OpenSteer also provides a methodology to build 
+steering behaviors based on a "plug-ins" framework. 
+
+What p3opensteer does is to make available for Panda3d programs, the plug-ins 
+which are released together with the library itself. Of course, nothing prevents 
+you to write new plug-ins and integrate them with p3opensteer.
 
 In addition to reading this document, please also refer to the API 
 documentation (c++ only) that can be generated with doxygen:
@@ -21,45 +19,39 @@ documentation (c++ only) that can be generated with doxygen:
   doxygen Doxyfile 
 
 Moreover, it would help to refer to the original documentation and forums of 
-RecastNavigation (https://github.com/RecastNavigation/RecastNavigation):
-- Discuss Recast & Detour: http://groups.google.com/group/RecastNavigation
-- Development blog: http://digestingduck.blogspot.com/
-- API documentation that can be generated with doxygen using the "Doxygen" file 
-  located in the root of the source code:
-  
-   doxygen Doxyfile
-   
+OpenSteer (http://opensteer.sourceforge.net/):
+- Documentation: http://opensteer.sourceforge.net/doc.html
+- Open Discussion forum: http://sourceforge.net/forum/forum.php?forum_id=264792
+- "Steering Behaviors For Autonomous Characters" paper on which OpenSteer 
+  library is based (http://www.red3d.com/cwr/papers/1999/gdc99steer.html) 
+
 Finally, and very importantly, it is highly recommended to play with the 
-comprehensive RecastDemo application for experimenting and becoming familiar 
-with the concepts of RecastNavigation.
+comprehensive OpenSteerDemo application for experimenting and becoming familiar 
+with the concepts of OpenSteer.
 
 Framework
 ---------
-p3Recastnavigation distinguishes various objects and elements to work with:
+p3opensteer distinguishes various objects and elements to work with:
 
-- RNNavMeshManager: this is a unique object (singleton) whose main task is to 
-create/destroy RNNavMeshes and RNCrowdAgents
+- OSSteerManager: this is a unique object (singleton) whose main task is to 
+create/destroy OSSteerPlugIn(s) and OSSteerVehicle(s)
 
-- RNNavMesh: is a PandNode representing the navigation mesh on which they move 
-the RNCrowdAgents
+- OSSteerPlugIn: it is a PandaNode representing a plug-in that defines a 
+particular steering behavior for the corresponding OSSteerVehicle(s).
+OSSteerPlugIn(s) have common shared features and can define specific ones 
+depending on the type of plug-in.
 
-- Owner Object: is a NodePath representing a Panda3D model (static) for which 
-a navigation mesh is created; an owner object can "own" several RNNavMeshes
+- OSSteerVehicle: is a PandNode representing a (steering) vehicle that must be
+added to its corresponding OSSteerPlugIn to perform its steering behavior; 
+NodePaths of 3d models are usually attached to a OSSteerVehicle. 
+OSSteerVehicle(s) have common shared features and can define specific ones 
+depending on the type of vehicle
 
-- RNCrowdAgent: is a PandNode representing a crowd agent that moves along the 
-owner object to reach the target by following the paths tracked down thanks to 
-the navigation mesh; NodePaths of 3d models are usually attached to a 
-RNCrowdAgent
+- Obstacles: some plug-ins handle the presence of (static) obstacles that may be 
+associated with 3d models (visible obstacles) or only be defined at the 
+OpenSteer level (invisible obstacles)
 
-- Convex Volumes: these represents specific areas of a navigation mesh that 
-could have distinct properties from the rest of the mesh
-
-- Off mesh connections: represent one-dimensional links between disjointed 
-regions of the navigation mesh, possibly having also distinct properties
-
-- Area types, flags and costs: these are the elements that allow you to set the 
-properties of convex volumes and off mesh connections, affecting even 
-dynamically, the choice of paths that agents make to go towards their targets
+- Pathway: some plug-ins handle the presence of a path-way
 
 Placement of objects in the scene
 ---------------------------------
@@ -69,32 +61,32 @@ model of placement of the various elements in the scene:
 
 - Reference NodePath: this node is the root under which objects are attached 
   and with respect to which points, distances and movements  are computed; the 
-  RNNavMeshManager provides a default reference node;
+  OSSteerManager provides a default reference node;
   
-- placement of RNNavMesh, RNCrowdAgent: at the time of creation, they are 
+- placement of OSSteerPlugIn, OSSteerVehicle: at the time of creation, they are 
   automatically attached to the default reference NodePath (and to which they 
-  have an internal reference); to the RNCrowdAgent(s) can be subsequently 
-  attached 3d models;
+  have an internal reference); 3d models can be subsequently attached to the 
+  OSSteerVehicle(s);
 
-- placement of Owner Object: this object should be attached manually to the 
-  reference node too, especially to allow you to manage various transformations: 
-  translation, rotation (along the axis z - heading), (uniform) scaling.
+- placement of obstacles and pathway: both obstacles' and pathway's points are 
+  computed wrt reference node; a 3d model's NodePath associated with an 
+  obstacle, is automatically reparented to the reference node when added.
 
-Once attached objects to the reference NodePath, just reparent this to the scene
-(usually under the "render" node).
+Once objects are attached to the reference NodePath, just reparent it to the 
+scene (usually under the "render" node).
 
-NOTE: Except for the owner object, no transform should be applied to the other 
-objects (except the identity one of course).
+NOTE: no transform should be applied to the other objects (except the identity 
+one of course).
 
 Other positioning schemes may work but they have not been tested. 
-NOTE: if you change the reference NodePath don't forget to set RNNavMeshes' and
-RNCrowdAgents' internal reference and to reparent them to it. 
+NOTE: if you change the reference NodePath don't forget to set OSSteerPlugIn(s)' 
+and OSSteerVehicle(s)' internal references to it and to reparent them to it. 
 
-RNNavMeshManager
-----------------
+OSSteerManager
+--------------
 The manager is a singleton that can be retrieved through get_global_ptr() method
 (static in c++). 
-It manages the creation and destruction of any RNNavMesh and RNCrowdAgent, 
+It manages the creation and destruction of any OSSteerPlugIn and OSSteerVehicle, 
 maintaining lists of all these created objects, so they can be retrieved at any 
 time.
 
@@ -102,9 +94,9 @@ The manager also has the task to set the many parameters to default values
 during these objects' creation. 
 In this regard, a method has been made available for specifying these parameters
 in textual mode, the syntax of which is specified in the doxygen documentation 
-of RNNavMesh and RNCrowdAgent classes. This was done to ease the creation of 
-objects in a "data driven" way, that is, for example, by reading parameters from
-an xml configuration file. 
+of OSSteerPlugIn and OSSteerVehicle classes. This was done to ease the creation 
+of objects in a "data driven" way, that is, for example, by reading parameters 
+from an xml configuration file. 
 For this purpose various methods are provided, that is, those with names like 
 "set_parameter*()" or "get_parameter*()".
 
@@ -112,96 +104,127 @@ In addition, the manager is provided with some other utilities:
 - to find the dimensions of the used models (get_bounding_dimensions()) 
 - to manage the collisions with the models (get_collision_traverser(), 
   get_collision_ray() etc...); these are used internally, for example for 
-  kinematic RNCrowdAgents, but can be used for general purposes toot(see 
+  kinematic OSSteerVehicle(s), but can be used for general purposes too (see 
   samples).
 - to perform a default update (start/stop_default_update()), that is a task 
-  which calls all of the RNNavMeshes' update methods, with no possibility of 
+  which calls all of the OSSteerPlugIn(s)' update methods, with no possibility of 
   interaction (usually it is used for test purposes).
 - to write/read to/from "bam" files the objects of (part of) a scene having its 
   root as the default reference NodePath (write_to/read_from_bam_file()).
   
-RNNavMesh
----------
-This object embodies the capabilities of the underlying RecastNavigation 
-navigation mesh.
+OSSteerPlugIn
+-------------
+This object embodies the capabilities of the underlying OpenSteer plug-in.
 
-A RNNavMesh can only be used after it is initially associated with an "owner 
-object" (a 3D model consisting of triangle mesh) through set_owner_node_path() 
-method, and then assembled by calling the setup() method.
+p3opensteer defines different types of OSSteerPlugIn, currently corresponding to 
+the plug-ins which are distributed with OpenSteer library.  
+OSSteerPlugIn's types are:
 
-A RNNavMesh can be either of type "SOLO" or "TILE" or "OBSTACLE" (see 
-RNNavMeshTypeEnum).
+- "one turning"
+- "pedestrian"
+- "boid"
+- "multiple pursuit"
+- "soccer"
+- "capture the flag"
+- "low speed turn"
+- "map drive"
 
-To change some structural settings/elements (including owner object, type, 
-convex volumes and off mesh connections), an RNNavMesh must be in a "un-setup" 
-or "clean" state. To apply these structural characteristics it is necessary to 
-call the setup() method that brings the RNNavMesh in a "setup" state. 
-Then, to allow further changes several times during the RNNavMesh's life time,  
-the method cleanup() should be called to return in the "un-setup" state. 
+The main task of a OSSteerPlugIn is to allow any OSSteerVehicle added to it, to 
+express its steering behavior: to accomplish this, you must create a task that 
+at every tick of the game loop (frame), calls the update() method of the 
+OSSteerPlugIn.
 
-Note that an RNNavMesh "remembers" structural characteristics along with the 
-added RNCrowdAgent(s) and obstacles (in case of OBSTACLE type).
+Each type of OSSteerPlugIn match one or more types of OSSteerVehicle(s) that can 
+be added to it: adding a wrong type is not in itself a mistake, simply does not 
+work.
 
-An RNNavMesh is generally associated with a crowd of RNCrowdAgent(s), which share
-many features like flags and crossing-costs of the area types, and 
-include/exclude flags for the same area types (see RNNavMeshPolyAreasEnum, 
-RNNavMeshPolyFlagsEnum). 
-To allow RNCrowdAgent(s) to find the paths and go to their targets, you must 
-create a task that at every tick of the game loop (frame), calls the update() 
-method of the RNNavMesh.
+Some OpenSteer's plug-ins, handle obstacles and pathways, so p2opensteer allows 
+a OSSteerPlugIn to add obstacles of various shapes and to define a (unique) 
+pathway. 
 
-For a complete overview of the methods (ie member functions) that can be used 
-with a RNNavMesh, see the API documentation generated from doxygen, where these 
-have been grouped by similar functionality.
+Obstacles may correspond to 3d models (specified as NodePaths), or only be 
+defined at OpenSteer level and in this case, they correspond to hidden objects 
+for Panda3d. Moreover, obstacles added by any plugins are visible to all other 
+active plugins even if they can be removed only by the plugin that added them. 
 
-NOTE: Once you create a NavMesh, its methods can be always called: they always 
-return, where applicable, a valid value without emitting exceptions (except core
-ones as "out of memory" etc) but note that some of them take effect only if 
-called "before" the setup, others only if called "after" the setup, and still 
-others may be called before but their effect will only be visible to the next 
-setup (see documentation for details).
+On the contrary, the pathway defined by a plugin is handled, and visible, only 
+by that plugin.
 
-NOTE: The underlying navigation mesh has as construction parameters, among 
-others, also the size (and the "climb" and "slope" capacity) of the crowd 
-agents, so strictly speaking, one RNNavMesh is only suitable for agents of a 
-given size; but in p3recastnavigation (such as in RecastDemo) this requirement 
-is relaxed, and agents of different sizes are allowed for the same mesh, but it 
-is advised to use agents with slightly different dimensions. If you want to 
-follow strictly the requirement, it is necessary to add to the owner object more
-RNNavMesh(es), one for each size.
+OSSteerPlugIn's type can be changed both before creation (see OSSteerManager) 
+and dynamically, as long as there are no OSSteerVehicle(s) added to it.
 
-RNCrowdAgent
-------------
-This object embodies the capabilities of the underlying RecastNavigation crowd 
-agent.
+All OSSteerPlugIn types share common methods, while some of them define a few 
+specific for their type. For a complete overview of the methods (ie member 
+functions) that can be used with a OSSteerPlugIn, see the API documentation 
+generated from doxygen, where these have been grouped by similar functionality.
 
-An RNCrowdAgent can live alone doing nothing, or be "added" to an RNNavMesh in 
-order to accomplish his goal of reaching its target following the path found 
-thanks to that RNNavMesh.
+OSSteerVehicle
+--------------
+This object embodies the capabilities of the underlying OpenSteer vehicle.
 
-An RNCrowdAgent can be of two types:
-- "recast" its position closely follows the path defined on the underlying 
-navigation mesh,
-- "kinematic": the position is adjusted (within a certain extent) in such a way 
-that it is always on the surface of the 3d model of the owner object.
-This feature has been introduced since the surfaces of the navigation mesh and 
-the 3d model generally, differ slightly (this difference is higher in the case 
-of RNNavMesh of type OBSTACLE).
+An OSSteerVehicle can live alone doing nothing, or be "added" to an 
+OSSteerPlugIn in order to accomplish its steering behavior.
 
-RNCrowdAgent(s), if properly enabled, can throw events, for which it can be 
-established a firing frequency. Currently, there are only defined 2 events 
-- "move": when the RNCrowdAgent moves, it is continuously issued
-- "steady": thrown as soon as the RNCrowdAgent stops.
+p3opensteer defines different types of OSSteerVehicle, currently corresponding 
+to the vehicles that are distributed with OpenSteer library. the OSSteerVehicle 
+than one type should only be added to the corresponding type OSSteerPlugIn.
+OSSteerVehicle's types are:
 
-For each RNCrowdAgent you can set/get the configuration and motion parameters 
+- "one turning" -> "one turning" plug-in
+- "pedestrian" -> "pedestrian" plug-in
+- "boid" -> "boid" plug-in
+- "mp wanderer" -> "multiple pursuit" plug-in
+- "mp pursuer" -> "multiple pursuit" plug-in
+- "player" -> "soccer" plug-in
+- "ball" -> "soccer" plug-in
+- "ctf seeker" -> "capture the flag" plug-in
+- "ctf enemy" -> "capture the flag" plug-in
+- "low speed turn" -> "low speed turn" plug-in
+- "map driver" -> "map drive" plug-in
+
+An OSSteerVehicle can have one of two types of movement:
+- "opensteer": its movement follows strictly the path as updated by OpenSteer 
+  library
+- "kinematic": its movement is adjusted (within a certain extent) in such a way 
+  that it is always on the surface of a 3d model.
+
+Certain types of OSSteerVehicle are suitable for both movement types other for 
+only one.
+
+OSSteerVehicle(s), if properly enabled, can throw events, for which it can be 
+established a firing frequency. 
+Currently, there are defined these events: 
+- "move": when the OSSteerVehicle moves, it is continuously issued
+- "steady": thrown as soon as the OSSteerVehicle stops.
+- "path following": thrown when steering is required to follow a path
+- "avoid obstacle": thrown when steering is required to avoid an obstacle
+- "avoid close neighbor": thrown when steering is required to avoid a close 
+  neighbor (i.e. when there is a collision)
+- "avoid neighbor": thrown when steering is required to avoid a neighbor (i.e. 
+  when there is a potential collision)
+
+NOTE: some of these events only make sense for certain types combination of 
+OSSteerPlugIn/OSSteerVehicle(s)
+
+<XXX TODO
+A OSSteerVehicle can be driven "externally" to a OSSteerPlugIn, that is, its 
+motion is governed not by the OSSteerPlugIn but by another engine, and at the 
+same time it is "recognized" by other OSSteerVehicle(s) with respect to 
+collisions, neighbor avoidance etc. A typical example is given by the Player 
+(whose movement is determined by the human player) and the NPC agents: ...
+TODO XXX>
+
+For each OSSteerVehicle you can set/get the configuration and motion parameters 
 and retrieve its current movement state.
 
-For a complete overview of the methods (ie member functions) that can be used 
-with a RNNavMesh, see the API documentation generated from doxygen, where these 
-have been grouped by similar functionality.
+All OSSteerVehicle types share common methods, while some of them define a few 
+specific for their type. For a complete overview of the methods (ie member 
+functions) that can be used with a OSSteerPlugIn, see the API documentation 
+generated from doxygen, where these have been grouped by similar functionality.
 
-Convex Volumes and Off Mesh Connections
----------------------------------------
+XXX
+Obstacles
+---------
 Convex volumes are used to demarcate areas of the navigation mesh. 
 Off Mesh Connections instead, allow to go from one point to another, also placed
 into disjoint zones, as in a teleport, with the limitation (imposed by 
@@ -210,8 +233,8 @@ RecastNavigation) that they must be located in adjacent tiles.
 Both convex volumes and off mesh connections define areas (off mesh connections
 are considered one-dimensional areas) with generally different characteristics 
 from the rest of the navigation mesh. Them can be added/deleted only before the
-RNNavMesh setup, while their characteristics can also be modified at run time. 
-In this regard, see the related methods of RNNavMesh.
+OSSteerPlugIn setup, while their characteristics can also be modified at run time. 
+In this regard, see the related methods of OSSteerPlugIn.
 
 Area, flags, cost
 -----------------
@@ -219,10 +242,10 @@ The "area" types are used to distinguish the features of different kind of zones
 (definable through convex volumes and off mesh connections), while the 
 "flags" and the "cost" are used to define the capabilities and the effort, 
 respectively, of walking on these types of area. These elements along with 
-the include/exclude flags of the RNCrowdAgent(s), are used by 
-RecastNavigation to find the best path used by RNCrowdAgent(s) to go towards 
+the include/exclude flags of the OSSteerVehicle(s), are used by 
+RecastNavigation to find the best path used by OSSteerVehicle(s) to go towards 
 their targets.
-For example an RNCrowdAgent that has include flags of "walk" and "swim" and 
+For example an OSSteerVehicle that has include flags of "walk" and "swim" and 
 exclude flag of "door" can walk on area  of type "ground" and "water" but not 
 cross "door"s, and also it prefers the paths with the lower walking total cost.
 
@@ -239,25 +262,25 @@ The debug drawing is available by enabling its support when p3recastnavigation
 module is built, that is by setting the value of "optimize" equal to 1 or 2 
 (debug build) in the file "config.ini".
 
-The RNNavMeshManager provides a "reference NodePath for debug", which can be 
+The OSSteerManager provides a "reference NodePath for debug", which can be 
 retrieved with a call to get_reference_node_path_debug(). To enable debug 
 drawing in the code, you need to make it sibling of the reference NodePath (that
 is attached to the same parent), and then utilize the debugging methods of 
-RNNavMesh (see API documentation).
+OSSteerPlugIn (see API documentation).
 
-NOTE: RNNavMeshManager also provides methods to draw low-level primitives: 
+NOTE: OSSteerManager also provides methods to draw low-level primitives: 
 points, lines, triangles and quads, and this can be useful during development 
 and testing.
 
 Samples
 -------
-To become familiar with p3Recastnavigation programming, see also th code of the 
+To become familiar with p3opensteer programming, see also th code of the 
 samples (both in python and c++) in the 'samples' folder:
 
-- "basic" it is a minimum example of p3Recastnavigation usage.
+- "basic" it is a minimum example of p3opensteer usage.
 - "test1" shows ways on how to define convex volumes and off mesh connections, 
   to change their characteristics (changing the flags to enable/disable in this 
-  case) and to cycle between setup()/cleanup() of a RNNavMesh. 
+  case) and to cycle between setup()/cleanup() of a OSSteerPlugIn. 
 - "test2" shows the use of features: setting of creation parameters, 
   integration with Panda3d objects, custom update, management of obstacles, 
   event throwing, serialization (that is read/write to/from BAM files).

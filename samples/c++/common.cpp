@@ -9,12 +9,33 @@
 
 ///global data
 #include "data.h"
+PandaFramework framework;
+WindowFramework *window;
 CollideMask mask = BitMask32(0x10);
+AsyncTask* updateTask;
+bool toggleDebugFlag = false;
 static GeoMipTerrain* terrain;
 static LPoint3f terrainRootNetPos;
+#define DEFAULT_MAXVALUE 1.0
+static float maxSpeedValue = DEFAULT_MAXVALUE;
+static float maxForceValue = DEFAULT_MAXVALUE / 10.0;
+//models and animations
+string vehicleFile[2] =
+{ "eve.egg", "ralph.egg" };
+string vehicleAnimFiles[2][2] =
+{
+{ "eve-walk.egg", "eve-run.egg" },
+{ "ralph-walk.egg", "ralph-run.egg" } };
+const float rateFactor[2] =
+{ 1.20, 2.40 };
+//obstacle model
+string obstacleFile("plants2.egg");
+//bame file
+string bamFileName("plugin.boo");
+//support
+random_device rd;
 
 ///functions' definitions
-
 // start base framework
 void startFramework(int argc, char *argv[])
 {
@@ -121,7 +142,7 @@ NodePath loadTerrain()
 // throws a ray and returns the first collision entry or nullptr
 PT(CollisionEntry)getCollisionEntryFromCamera()
 {
-	// get nav mesh manager
+	// get steer manager
 	OSSteerManager* steerMgr = OSSteerManager::get_global_ptr();
 	// get the mouse watcher
 	PT(MouseWatcher)mwatcher = DCAST(MouseWatcher, window->get_mouse().node());
@@ -170,8 +191,7 @@ void printCreationParameters()
 						valueList[i]) << endl;
 	}
 	//
-	valueList = steerMgr->get_parameter_name_list(
-			OSSteerManager::STEERVEHICLE);
+	valueList = steerMgr->get_parameter_name_list(OSSteerManager::STEERVEHICLE);
 	cout << endl << "OSSteerVehicle creation parameters:" << endl;
 	for (int i = 0; i < valueList.get_num_values(); ++i)
 	{
@@ -187,4 +207,170 @@ void handleVehicleEvent(const Event* e, void* data)
 	PT(OSSteerVehicle)vehicle = DCAST(OSSteerVehicle, e->get_parameter(0).get_ptr());
 	NodePath vehicleNP = NodePath::any_path(vehicle);
 	cout << "move-event - '" << vehicleNP.get_name() << "' - "<< vehicleNP.get_pos() << endl;
+}
+
+// toggle debug draw
+void toggleDebugDraw(const Event* e, void* data)
+{
+	PT(OSSteerPlugIn)plugIn = reinterpret_cast<OSSteerPlugIn*>(data);
+	if(! plugIn)
+	{
+		return;
+	}
+
+	toggleDebugFlag = not toggleDebugFlag;
+	plugIn->toggle_debug_drawing(toggleDebugFlag);
+}
+
+// change vehicle's max speed
+void changeVehicleMaxSpeed(const Event* e, void* data)
+{
+	PT(OSSteerVehicle)vehicle = reinterpret_cast<OSSteerVehicle*>(data);
+	if(! vehicle)
+	{
+		return;
+	}
+	if (e->get_name().substr(0, 6) == string("shift-"))
+	{
+		maxSpeedValue = maxSpeedValue - 1;
+		if (maxSpeedValue < DEFAULT_MAXVALUE)
+		{
+			maxSpeedValue = DEFAULT_MAXVALUE;
+		}
+	}
+	else
+	{
+		maxSpeedValue = maxSpeedValue + 1;
+	}
+
+	vehicle->set_max_speed(maxSpeedValue);
+	cout << *vehicle << "'s max speed is " << vehicle->get_max_speed() << endl;
+}
+
+// change vehicle's max force
+void changeVehicleMaxForce(const Event* e, void* data)
+{
+	PT(OSSteerVehicle)vehicle = reinterpret_cast<OSSteerVehicle*>(data);
+	if(! vehicle)
+	{
+		return;
+	}
+
+	if (e->get_name().substr(0, 6) == string("shift-"))
+	{
+		maxForceValue = maxForceValue - 0.1;
+		if (maxForceValue < DEFAULT_MAXVALUE / 10.0)
+		{
+			maxForceValue = DEFAULT_MAXVALUE / 10.0;
+		}
+	}
+	else
+	{
+		maxForceValue = maxForceValue + 0.1;
+	}
+
+	vehicle->set_max_force(maxForceValue);
+	cout << *vehicle << "'s max force is " << vehicle->get_max_force() << endl;
+}
+
+// return a random point on the facing upwards surface of the model
+LPoint3f getRandomPos(NodePath modelNP)
+{
+	// collisions are made wrt render
+	OSSteerManager* steerMgr = OSSteerManager::get_global_ptr();
+	// get the bounding box of scene
+	LVecBase3f modelDims;
+	LVector3f modelDeltaCenter;
+	// modelRadius not used
+	steerMgr->get_bounding_dimensions(modelNP, modelDims, modelDeltaCenter);
+	// throw a ray downward from a point with z = double scene's height
+	// and x,y randomly within the scene's (x,y) plane
+	float x, y = 0.0;
+	Pair<bool, float> gotCollisionZ;
+	// set the ray origin at double of maximum height of the model
+	float zOrig = ((-modelDeltaCenter.get_z() + modelDims.get_z() / 2.0)
+			+ modelNP.get_z()) * 2.0;
+	do
+	{
+		x = modelDims.get_x() * ((float) rd() / (float) rd.max() - 0.5)
+				- modelDeltaCenter.get_x() + modelNP.get_x();
+		y = modelDims.get_y() * ((float) rd() / (float) rd.max() - 0.5)
+				- modelDeltaCenter.get_y() + modelNP.get_y();
+		gotCollisionZ = steerMgr->get_collision_height(LPoint3f(x, y, zOrig));
+
+	} while (not gotCollisionZ.get_first());
+	return LPoint3f(x, y, gotCollisionZ.get_second());
+}
+
+// get vehicles, models and animations
+void getVehiclesModelsAnims(int NUMVEHICLES, const NodePath& sceneNP,
+		NodePath vehicleNP[2], PT(OSSteerPlugIn)steerPlugIn,
+PT(OSSteerVehicle)steerVehicle[2], PT(AnimControl)vehicleAnimCtls[2][2])
+{
+	for (int i = 0; i < min(NUMVEHICLES, 2); ++i)
+	{
+		// get some models, with animations, to attach to vehicles
+		// get the model
+		vehicleNP[i] = window->load_model(framework.get_models(),
+		vehicleFile[i]);
+		// set random scale (0.35 - 0.45)
+		float scale = 0.35 + 0.1 * ((float) rd() / (float) rd.max());
+		vehicleNP[i].set_scale(scale);
+		// associate an anim with a given anim control
+		AnimControlCollection tmpAnims;
+		NodePath vehicleAnimNP[2];
+		// first anim -> modelAnimCtls[i][0]
+		vehicleAnimNP[0] = window->load_model(vehicleNP[i], vehicleAnimFiles[i][0]);
+		auto_bind(vehicleNP[i].node(), tmpAnims);
+		vehicleAnimCtls[i][0] = tmpAnims.get_anim(0);
+		tmpAnims.clear_anims();
+		vehicleAnimNP[0].detach_node();
+		// second anim -> modelAnimCtls[i][1]
+		vehicleAnimNP[1] = window->load_model(vehicleNP[i], vehicleAnimFiles[i][1]);
+		auto_bind(vehicleNP[i].node(), tmpAnims);
+		vehicleAnimCtls[i][1] = tmpAnims.get_anim(0);
+		tmpAnims.clear_anims();
+		vehicleAnimNP[1].detach_node();
+		// reparent all node paths
+		vehicleAnimNP[0].reparent_to(vehicleNP[i]);
+		vehicleAnimNP[1].reparent_to(vehicleNP[i]);
+		// set parameter for vehicle's type (OPENSTEER or OPENSTEER_KINEMATIC)
+		string vehicleType;
+		(i % 2) == 0 ? vehicleType = "opensteer" : vehicleType = "kinematic";
+		WPT(OSSteerManager) steerMgr = OSSteerManager::get_global_ptr();
+		steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "mov_type",
+		vehicleType);
+		// create the steer vehicle (attached to the reference node)
+		NodePath steerVehicleNP = steerMgr->create_steer_vehicle(
+		"vehicle" + str(i));
+		steerVehicle[i] = DCAST(OSSteerVehicle, steerVehicleNP.node());
+		// set the position randomly
+		LPoint3f randPos = getRandomPos(sceneNP);
+		steerVehicleNP.set_pos(randPos);
+		// attach some geometry (a model) to steer vehicle
+		vehicleNP[i].reparent_to(steerVehicleNP);
+		// add the steer vehicle to the plug-in
+		steerPlugIn->add_steer_vehicle(steerVehicleNP);
+	}
+}
+
+// read scene from a file
+bool readFromBamFile(string fileName)
+{
+	return OSSteerManager::get_global_ptr()->read_from_bam_file(fileName);
+}
+
+// write scene to a file (and exit)
+void writeToBamFileAndExit(const Event* e, void* data)
+{
+	string fileName = *reinterpret_cast<string*>(data);
+	OSSteerManager::get_global_ptr()->write_to_bam_file(fileName);
+	/// second option: remove custom update updateTask
+	framework.get_task_mgr().remove(updateTask);
+	// delete steer manager
+	delete OSSteerManager::get_global_ptr();
+	// close the window framework
+	framework.close_framework();
+	//
+	exit(0);
 }

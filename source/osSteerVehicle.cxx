@@ -42,6 +42,9 @@ void OSSteerVehicle::set_vehicle_type(OSSteerVehicleType type)
 {
 	CONTINUE_IF_ELSE_V(!mSteerPlugIn)
 
+	//save current OpenSteer vehicle's settings
+	mVehicleSettings = get_settings();
+
 	//create the new OpenSteer vehicle
 	do_create_vehicle(type);
 
@@ -72,14 +75,14 @@ bool OSSteerVehicle::enable_external_update(bool enable)
  */
 void OSSteerVehicle::do_create_vehicle(OSSteerVehicleType type)
 {
-	//remove current vehicle if any
+	//remove current steer vehicle if any
 	if (mVehicle)
 	{
-		//delete the current vehicle
+		//delete the current steer vehicle
 		delete mVehicle;
 		mVehicle = NULL;
 	}
-	//create the vehicle
+	//create the steer vehicle
 	mVehicleType = type;
 	if ( mVehicleType== PEDESTRIAN)
 	{
@@ -189,7 +192,7 @@ void OSSteerVehicle::do_initialize()
 	//type
 	param = mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
 			string("vehicle_type"));
-	//create the vehicle
+	//create the steer vehicle
 	if (param == string("pedestrian"))
 	{
 		do_create_vehicle(PEDESTRIAN);
@@ -439,6 +442,29 @@ void OSSteerVehicle::do_finalize()
 }
 
 /**
+ * Sets steering speed (LOW SPEED TURN).
+ * \note OSSteerVehicle should be not externally updated.
+ */
+void OSSteerVehicle::set_steering_speed(float steeringSpeed)
+{
+	if (mVehicleType == LOW_SPEED_TURN)
+	{
+		static_cast<ossup::LowSpeedTurn<OSSteerVehicle>*>(mVehicle)->steeringSpeed =
+				steeringSpeed;
+	}
+}
+
+/**
+ * Returns steering speed (LOW SPEED TURN).
+ */
+float OSSteerVehicle::get_steering_speed()
+{
+	return mVehicleType == LOW_SPEED_TURN ?
+			static_cast<ossup::LowSpeedTurn<OSSteerVehicle>*>(mVehicle)->steeringSpeed :
+			0.0;
+}
+
+/**
  * Writes a sensible description of the OSSteerVehicle to the indicated output
  * stream.
  */
@@ -474,7 +500,6 @@ void OSSteerVehicle::do_update_steer_vehicle(const float currentTime,
 			//updatedPos.z needs correction
 			updatedPos.set_z(gotCollisionZ.get_second());
 		}
-
 	}
 	thisNP.set_pos(updatedPos);
 
@@ -541,7 +566,7 @@ void OSSteerVehicle::do_external_update_steer_vehicle(const float currentTime,
 {
 	NodePath thisNP = NodePath::any_path(this);
 	OpenSteer::Vec3 oldPos = mVehicle->position();
-	//update vehicle's
+	//update steer vehicle's
 	//position,
 	mVehicle->setPosition(
 			ossup::LVecBase3fToOpenSteerVec3(
@@ -764,7 +789,7 @@ void OSSteerVehicle::write_datagram(BamWriter *manager, Datagram &dg)
 {
 	PandaNode::write_datagram(manager, dg);
 
-	///Name of this RNCrowdAgent.
+	///Name of this OSSteerVehicle.
 	dg.add_string(get_name());
 
 	///The type of this OSSteerPlugIn.
@@ -774,6 +799,7 @@ void OSSteerVehicle::write_datagram(BamWriter *manager, Datagram &dg)
 	dg.add_uint8((uint8_t) mMovType);
 
 	///OSSteerVehicle settings.
+	mVehicleSettings = get_settings();
 	mVehicleSettings.write_datagram(dg);
 
 	///Height correction for kinematic OSSteerVehicle(s).
@@ -833,13 +859,23 @@ int OSSteerVehicle::complete_pointers(TypedWritable **p_list, BamReader *manager
  */
 void OSSteerVehicle::finalize(BamReader *manager)
 {
-	//1: (re)set type
-	//temporarily reset OSSteerPlugIn (if any)
-	PT(OSSteerPlugIn) currentPlugIn = mSteerPlugIn;
-	mSteerPlugIn.clear();
-	set_vehicle_type(mVehicleType);
-	//restore OSSteerPlugIn (if any)
-	mSteerPlugIn = currentPlugIn;
+	//1: remove the old OpenSteer vehicle from real update list (if needed)
+	if (mSteerPlugIn)
+	{
+		static_cast<ossup::PlugIn*>(&mSteerPlugIn->get_abstract_plug_in())->removeVehicle(
+				mVehicle);
+	}
+	//2: (re)set type
+	//create the new OpenSteer vehicle
+	do_create_vehicle(mVehicleType);
+	//set the new OpenSteer vehicle's settings
+	set_settings(mVehicleSettings);
+	//3: add the new OpenSteer vehicle to real update list (if needed)
+	if (mSteerPlugIn)
+	{
+		static_cast<ossup::PlugIn*>(&mSteerPlugIn->get_abstract_plug_in())->addVehicle(
+				mVehicle);
+	}
 }
 
 /**
@@ -871,13 +907,13 @@ TypedWritable *OSSteerVehicle::make_from_bam(const FactoryParams &params)
 
 /**
  * This internal function is called by make_from_bam to read in all of the
- * relevant data from the BamFile for the new RNCrowdAgent.
+ * relevant data from the BamFile for the new OSSteerVehicle.
  */
 void OSSteerVehicle::fillin(DatagramIterator &scan, BamReader *manager)
 {
 	PandaNode::fillin(scan, manager);
 
-	///Name of this RNCrowdAgent.
+	///Name of this OSSteerVehicle.
 	set_name(scan.get_string());
 
 	///The type of this OSSteerPlugIn.
