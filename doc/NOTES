@@ -68,10 +68,6 @@ model of placement of the various elements in the scene:
   have an internal reference); 3d models can be subsequently attached to the 
   OSSteerVehicle(s);
 
-- placement of obstacles and pathway: both obstacles' and pathway's points are 
-  computed wrt reference node; a 3d model's NodePath associated with an 
-  obstacle, is automatically reparented to the reference node when added.
-
 Once objects are attached to the reference NodePath, just reparent it to the 
 scene (usually under the "render" node).
 
@@ -138,18 +134,6 @@ Each type of OSSteerPlugIn match one or more types of OSSteerVehicle(s) that can
 be added to it: adding a wrong type is not in itself a mistake, simply does not 
 work.
 
-Some OpenSteer's plug-ins, handle obstacles and pathways, so p2opensteer allows 
-a OSSteerPlugIn to add obstacles of various shapes and to define a (unique) 
-pathway. 
-
-Obstacles may correspond to 3d models (specified as NodePaths), or only be 
-defined at OpenSteer level and in this case, they correspond to hidden objects 
-for Panda3d. Moreover, obstacles added by any plugins are visible to all other 
-active plugins even if they can be removed only by the plugin that added them. 
-
-On the contrary, the pathway defined by a plugin is handled, and visible, only 
-by that plugin.
-
 OSSteerPlugIn's type can be changed both before creation (see OSSteerManager) 
 and dynamically, as long as there are no OSSteerVehicle(s) added to it.
 
@@ -206,13 +190,16 @@ Currently, there are defined these events:
 NOTE: some of these events only make sense for certain types combination of 
 OSSteerPlugIn/OSSteerVehicle(s)
 
-<XXX TODO
 A OSSteerVehicle can be driven "externally" to a OSSteerPlugIn, that is, its 
-motion is governed not by the OSSteerPlugIn but by another engine, and at the 
+motion is governed not by the OSSteerPlugIn but by another "engine", and at the 
 same time it is "recognized" by other OSSteerVehicle(s) with respect to 
-collisions, neighbor avoidance etc. A typical example is given by the Player 
-(whose movement is determined by the human player) and the NPC agents: ...
-TODO XXX>
+collisions, neighbor avoidance etc. A typical example is given by the player 
+model whose movement is determined by a HID, and so it can drive an 
+OSSteerVehicle so it can be recognized by the other OSSteerVehicle(s) (NPC 
+agents). In this case, for correct operation, the 3d model should be reparented 
+to the reference node and the OSSteerVehicle reattached to it (the 
+OSSteerVehicle's reference node remains unchanged and therefore it need not be 
+reset).
 
 For each OSSteerVehicle you can set/get the configuration and motion parameters 
 and retrieve its current movement state.
@@ -222,50 +209,34 @@ specific for their type. For a complete overview of the methods (ie member
 functions) that can be used with a OSSteerPlugIn, see the API documentation 
 generated from doxygen, where these have been grouped by similar functionality.
 
-XXX
-Obstacles
----------
-Convex volumes are used to demarcate areas of the navigation mesh. 
-Off Mesh Connections instead, allow to go from one point to another, also placed
-into disjoint zones, as in a teleport, with the limitation (imposed by 
-RecastNavigation) that they must be located in adjacent tiles.
+Obstacles and pathway
+---------------------
+Some OpenSteer's plug-ins, handle obstacles and pathways, so p2opensteer allows 
+a OSSteerPlugIn to add obstacles of various shapes and to define a (unique) 
+pathway per OSSteerPlugIn. 
 
-Both convex volumes and off mesh connections define areas (off mesh connections
-are considered one-dimensional areas) with generally different characteristics 
-from the rest of the navigation mesh. Them can be added/deleted only before the
-OSSteerPlugIn setup, while their characteristics can also be modified at run time. 
-In this regard, see the related methods of OSSteerPlugIn.
+Obstacles may correspond to 3d models (specified as NodePaths), or only be 
+defined at OpenSteer level and in this case, they correspond to hidden objects 
+for Panda3d. Moreover, obstacles added by any plugins are visible to all other 
+active plugins even if they can be removed only by the plugin that added them. 
 
-Area, flags, cost
------------------
-The "area" types are used to distinguish the features of different kind of zones
-(definable through convex volumes and off mesh connections), while the 
-"flags" and the "cost" are used to define the capabilities and the effort, 
-respectively, of walking on these types of area. These elements along with 
-the include/exclude flags of the OSSteerVehicle(s), are used by 
-RecastNavigation to find the best path used by OSSteerVehicle(s) to go towards 
-their targets.
-For example an OSSteerVehicle that has include flags of "walk" and "swim" and 
-exclude flag of "door" can walk on area  of type "ground" and "water" but not 
-cross "door"s, and also it prefers the paths with the lower walking total cost.
+On the contrary, the pathway defined by a plugin is handled, and visible, only 
+by that plugin.
 
-NOTE: the exclude flag takes precedence on include flag.
-
-NOTE: p3recastnavigation defines by default, the same area types and flags of 
-RecastDemo, but allows you to define more in addition to the previous (it is 
-not advisable to redefine the defaults because some of these values ​​are hard 
-coded in the support code).
+Both obstacles' and pathway's points are computed wrt reference node, so a 3d 
+model's NodePath associated with an obstacle, is automatically reparented to the
+reference node when added by a OSSteerPlugIn.
 
 Debug Drawing
 -------------
-The debug drawing is available by enabling its support when p3recastnavigation 
-module is built, that is by setting the value of "optimize" equal to 1 or 2 
-(debug build) in the file "config.ini".
+The debug drawing is available by enabling its support when p3opensteer module 
+is built, that is by setting the value of "optimize" equal to 1 or 2 (debug 
+build) in the file "config.ini".
 
-The OSSteerManager provides a "reference NodePath for debug", which can be 
-retrieved with a call to get_reference_node_path_debug(). To enable debug 
-drawing in the code, you need to make it sibling of the reference NodePath (that
-is attached to the same parent), and then utilize the debugging methods of 
+The OSSteerManager provides 2 "reference NodePaths for debug", which can be 
+retrieved with a call to get_reference_node_path_debug()/_2d(). To enable debug 
+drawing in the code, you need to make them sibling of the reference NodePath 
+(that is attached to the same parent), and then utilize the debugging methods of 
 OSSteerPlugIn (see API documentation).
 
 NOTE: OSSteerManager also provides methods to draw low-level primitives: 
@@ -274,13 +245,16 @@ and testing.
 
 Samples
 -------
-To become familiar with p3opensteer programming, see also th code of the 
+To become familiar with p3opensteer programming, see also the code of the 
 samples (both in python and c++) in the 'samples' folder:
 
-- "basic" it is a minimum example of p3opensteer usage.
-- "test1" shows ways on how to define convex volumes and off mesh connections, 
-  to change their characteristics (changing the flags to enable/disable in this 
-  case) and to cycle between setup()/cleanup() of a OSSteerPlugIn. 
-- "test2" shows the use of features: setting of creation parameters, 
-  integration with Panda3d objects, custom update, management of obstacles, 
-  event throwing, serialization (that is read/write to/from BAM files).
+- "basic" it is a minimum example of p3opensteer usage ("one turning" plug-in).
+- "low_speed_turn" shows example usage for "low_speed_turn" plug-in. 
+- "pedestrian" shows example usage for "pedestrian" plug-in. 
+- "pedestrian_external" shows example usage for "pedestrian" plug-in with an 
+  OSSteerVehicle externally updated. 
+- "boid" shows example usage for "boid" plug-in. 
+- "multiple_pursuit" shows example usage for "multiple pursuit" plug-in. 
+- "soccer" shows example usage for "soccer" plug-in. 
+- "capture_the_flag" shows example usage for "capture the flag" plug-in. 
+- "map_drive" shows example usage for "map drive" plug-in. 

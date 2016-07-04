@@ -27,7 +27,7 @@ maxForceValue = DEFAULT_MAXVALUE / 10.0
 vehicleFile = ["eve.egg", "ralph.egg"]
 vehicleAnimFiles = [["eve-walk.egg", "eve-run.egg"],
                   ["ralph-walk.egg", "ralph-run.egg"]]
-rateFactor = [1.20, 2.40]
+rateFactor = [1.20, 3.40]
 # obstacle model
 obstacleFile = "plants2.egg"
 # bame file
