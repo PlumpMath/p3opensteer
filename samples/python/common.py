@@ -35,7 +35,7 @@ bamFileName = "plug_in.boo"
 
 # # functions' declarations and definitions
 
-def startFramework():
+def startFramework(msg):
     """start base framework"""
 
     global app   
@@ -48,7 +48,7 @@ def startFramework():
     # Setup your application
     app = ShowBase()
     props = WindowProperties()
-    props.setTitle("p3opensteer")
+    props.setTitle("p3opensteer: " + msg)
     app.win.requestProperties(props)
     #
     return app

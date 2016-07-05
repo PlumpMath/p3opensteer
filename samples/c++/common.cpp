@@ -37,7 +37,7 @@ random_device rd;
 
 ///functions' definitions
 // start base framework
-void startFramework(int argc, char *argv[])
+void startFramework(int argc, char *argv[], const string& msg)
 {
 	// Load your application's configuration
 	load_prc_file_data("", "model-path " + dataDir);
@@ -46,7 +46,7 @@ void startFramework(int argc, char *argv[])
 	load_prc_file_data("", "sync-video #t");
 	// Setup your application
 	framework.open_framework(argc, argv);
-	framework.set_window_title("p3opensteer");
+	framework.set_window_title("p3opensteer: " + msg);
 	window = framework.open_window();
 	if (window != (WindowFramework *) NULL)
 	{

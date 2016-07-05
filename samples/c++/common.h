@@ -39,7 +39,7 @@ extern string bamFileName;
 extern random_device rd;
 
 ///functions' declarations
-void startFramework(int argc, char *argv[]);
+void startFramework(int argc, char *argv[], const string&);
 NodePath loadPlane();
 NodePath loadTerrain();
 PT(CollisionEntry)getCollisionEntryFromCamera();

@@ -13,7 +13,7 @@ from common import app, startFramework, dataDir, getCollisionEntryFromCamera, \
             
 if __name__ == '__main__':
 
-    startFramework()
+    app = startFramework("'one turning'")
        
     # # here is room for your own code
     

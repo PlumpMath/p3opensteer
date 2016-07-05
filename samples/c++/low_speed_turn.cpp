@@ -20,13 +20,15 @@ AsyncTask::DoneStatus updatePlugIn(GenericAsyncTask*, void*);
 
 int main(int argc, char *argv[])
 {
-	startFramework(argc, argv);
+	string msg("'low speed turn'");
+	startFramework(argc, argv, msg);
 
 	/// here is room for your own code
 	// print some help to screen
 	PT(TextNode)text;
 	text = new TextNode("Help");
 	text->set_text(
+			msg + "\n\n"
 			"- press \"d\" to toggle debug drawing\n"
             "- press \"s\"/\"shift-s\" to increase/decrease vehicle's max speed\n"
             "- press \"f\"/\"shift-f\" to increase/decrease vehicle's max force\n"

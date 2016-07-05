@@ -9,7 +9,7 @@
 
 int main(int argc, char *argv[])
 {
-	startFramework(argc, argv);
+	startFramework(argc, argv, "'one turning'");
 
 	/// here is room for your own code
 
