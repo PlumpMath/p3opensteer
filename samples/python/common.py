@@ -21,8 +21,6 @@ toggleDebugFlag = False
 terrain = None
 terrainRootNetPos = None
 DEFAULT_MAXVALUE = 1.0
-maxSpeedValue = DEFAULT_MAXVALUE
-maxForceValue = DEFAULT_MAXVALUE / 10.0
 # models and animations
 vehicleFile = ["eve.egg", "ralph.egg"]
 vehicleAnimFiles = [["eve-walk.egg", "eve-run.egg"],
@@ -44,16 +42,20 @@ def startFramework(msg):
     load_prc_file_data("", "win-size 1024 768")
     load_prc_file_data("", "show-frame-rate-meter #t")
     load_prc_file_data("", "sync-video #t")
+#     load_prc_file_data("", "want-directtools #t")
+#     load_prc_file_data("", "want-tk #t")
         
     # Setup your application
     app = ShowBase()
     props = WindowProperties()
     props.setTitle("p3opensteer: " + msg)
     app.win.requestProperties(props)
+ 
+    #common callbacks     
     #
     return app
 
-def loadPlane():
+def loadPlane(name):
     """load plane stuff"""
     
     cm = CardMaker("plane")
@@ -62,9 +64,11 @@ def loadPlane():
     plane.set_p(-90.0)
     plane.set_z(0.0)
     plane.set_color(0.15, 0.35, 0.35)
+    plane.set_collide_mask(mask)
+    plane.set_name(name)
     return plane
 
-def loadTerrain():
+def loadTerrain(name):
     """load terrain stuff"""
 
     global app, terrain, terrainRootNetPos
@@ -75,7 +79,7 @@ def loadTerrain():
     heightField = PNMImage(Filename(dataDir + "/heightfield.png"))
     terrain.set_heightfield(heightField)
     # sizing
-    widthScale, heightScale = (3.0, 100.0)
+    widthScale, heightScale = (0.5, 10.0)
     environmentWidthX = (heightField.get_x_size() - 1) * widthScale
     environmentWidthY = (heightField.get_y_size() - 1) * widthScale
     environmentWidth = (environmentWidthX + environmentWidthY) / 2.0
@@ -99,6 +103,8 @@ def loadTerrain():
     terrain.get_root().set_texture(textureStage0, textureImage, 1)
     # reparent this Terrain node path to the object node path
     terrain.get_root().reparent_to(steerMgr.get_reference_node_path())
+    terrain.get_root().set_collide_mask(mask)
+    terrain.get_root().set_name(name)
     # brute force generation
     bruteForce = True
     terrain.set_bruteforce(bruteForce)
@@ -171,29 +177,30 @@ def printCreationParameters():
         print ("\t" + name + " = " + 
                steerMgr.get_parameter_value(OSSteerManager.STEERVEHICLE, name))
 
-def handleVehicleEvent(vehicle):
+def handleVehicleEvent(name, vehicle):
     """handle vehicle's events"""
     
     vehicleNP = NodePath.any_path(vehicle)
-    print ("move-event - '" + vehicleNP.get_name() + "' - " + str(vehicleNP.get_pos()))
+    print ("got " + name + " event from '"+ vehicleNP.get_name() + "' at " + str(vehicleNP.get_pos()))
 
-def toggleDebugDraw(plugIn):
+def toggleDebugDraw(plugIn = None):
     """toggle debug draw"""
     
     global toggleDebugFlag
-    if not plugIn:
+    if plugIn == None:
         return
 
     toggleDebugFlag = not toggleDebugFlag
     plugIn.toggle_debug_drawing(toggleDebugFlag)
 
-def changeVehicleMaxSpeed(e, vehicle):
+def changeVehicleMaxSpeed(e, vehicles = None):
     """change vehicle's max speed"""
     
-    global maxSpeedValue, DEFAULT_MAXVALUE
-    if not vehicle:
+    global DEFAULT_MAXVALUE
+    if (vehicles == None) or (len(vehicles) == 0):
         return
 
+    maxSpeedValue = vehicles[-1].get_max_speed()
     if e[:6] == "shift-":
         maxSpeedValue = maxSpeedValue - 1
         if maxSpeedValue < DEFAULT_MAXVALUE:
@@ -201,16 +208,17 @@ def changeVehicleMaxSpeed(e, vehicle):
     else:
         maxSpeedValue = maxSpeedValue + 1
 
-    vehicle.set_max_speed(maxSpeedValue)
-    print(str(vehicle) + "'s max speed is " + str(vehicle.get_max_speed()))  
+    vehicles[-1].set_max_speed(maxSpeedValue)
+    print(str(vehicles[-1]) + "'s max speed is " + str(vehicles[-1].get_max_speed()))  
 
-def changeVehicleMaxForce(e, vehicle):
+def changeVehicleMaxForce(e, vehicles = None):
     """change vehicle's max force"""
     
-    global maxForceValue, DEFAULT_MAXVALUE
-    if not vehicle:
+    global DEFAULT_MAXVALUE
+    if (vehicles == None) or (len(vehicles) == 0):
         return
 
+    maxForceValue = vehicles[-1].get_max_force()
     if e[:6] == "shift-":
         maxForceValue = maxForceValue - 0.1
         if maxForceValue < DEFAULT_MAXVALUE / 10.0:
@@ -218,8 +226,8 @@ def changeVehicleMaxForce(e, vehicle):
     else:
         maxForceValue = maxForceValue + 0.1
 
-    vehicle.set_max_force(maxForceValue)
-    print(str(vehicle) + "'s max force is " + str(vehicle.get_max_force()))  
+    vehicles[-1].set_max_force(maxForceValue)
+    print(str(vehicles[-1]) + "'s max force is " + str(vehicles[-1].get_max_force()))  
 
 def getRandomPos(modelNP):
     """return a random point on the facing upwards surface of the model"""
@@ -242,57 +250,102 @@ def getRandomPos(modelNP):
             break
     return LPoint3f(x, y, gotCollisionZ.get_second())
 
-def getVehiclesModelsAnims(NUMVEHICLES, sceneNP, vehicleNP, steerPlugIn, 
-                           steerVehicle, vehicleAnimCtls):
-    """get vehicles, models and animations"""
+class HandleVehicleData:
+    """ data passed to vehicle's handling callback"""
+    
+    def __init__(self, meanScale, vehicleFileIdx, moveType, sceneNP, 
+                 steerPlugIn, steerVehicles, vehicleAnimCtls):
+        self.meanScale = meanScale
+        self.vehicleFileIdx = vehicleFileIdx
+        self.moveType = moveType
+        self.sceneNP = sceneNP
+        self.steerPlugIn = steerPlugIn
+        self.steerVehicles = steerVehicles
+        self.vehicleAnimCtls = vehicleAnimCtls
+        
+def handleVehicles(data = None):
+    """handle add/remove obstacles""" 
+    
+    global app
+    if data == None:
+        return
+    
+    # get the collision entry, if any
+    entry0 = getCollisionEntryFromCamera()
+    if entry0:
+        # get the hit object
+        hitObject = entry0.get_into_node_path()
+        print("hit " + str(hitObject) + " object")
+        
+        vehicleData = data
+        sceneNP = vehicleData.sceneNP
+        # check if sceneNP is the hitObject or an ancestor thereof
+        if (sceneNP == hitObject) or sceneNP.is_ancestor_of(hitObject):
+            # the hit object is the scene: add an vehicle to the scene
+            meanScale = vehicleData.meanScale
+            vehicleFileIdx = vehicleData.vehicleFileIdx
+            moveType = vehicleData.moveType
+            steerPlugIn = vehicleData.steerPlugIn
+            steerVehicles = vehicleData.steerVehicles
+            vehicleAnimCtls = vehicleData.vehicleAnimCtls            
+            # add vehicle
+            pos = entry0.get_surface_point(NodePath())
+            getVehicleModelAnims(meanScale, vehicleFileIdx, moveType, sceneNP, 
+                                 steerPlugIn, steerVehicles, 
+                                 vehicleAnimCtls, pos)
+            # show the added vehicles
+            print("Vehicles added to plug-in so far:")
+            for vehicle in steerPlugIn:
+                print("\t- " + str(vehicle))
+
+def getVehicleModelAnims(meanScale, vehicleFileIdx, moveType, sceneNP, steerPlugIn, 
+                           steerVehicles, vehicleAnimCtls, pos = None):
+    """get a vehicle, model and animations"""
     
     global app, vehicleAnimFiles
-    for i in range(min(NUMVEHICLES, 2)):
-        # get some models, with animations, to attach to vehicles
-        # get the model
-        vehicleNP[i] = app.loader.load_model(vehicleFile[i])
-        # set random scale (0.35 - 0.45)
-        scale = 0.35 + 0.1 * random.uniform(0.0, 1.0)
-        vehicleNP[i].set_scale(scale)
-        # associate an anim with a given anim control
-        tmpAnims = AnimControlCollection()
-        vehicleAnimNP = [None, None]
-        # first anim -> modelAnimCtls[i][0]
-        vehicleAnimNP[0] = app.loader.load_model(vehicleAnimFiles[i][0])
-        vehicleAnimNP[0].reparent_to(vehicleNP[i])
-        auto_bind(vehicleNP[i].node(), tmpAnims)
-        vehicleAnimCtls[i][0] = tmpAnims.get_anim(0)
-        tmpAnims.clear_anims()
-        vehicleAnimNP[0].detach_node()
-        # second anim -> modelAnimCtls[i][1]
-        vehicleAnimNP[1] = app.loader.load_model(vehicleAnimFiles[i][1])
-        vehicleAnimNP[1].reparent_to(vehicleNP[i])
-        auto_bind(vehicleNP[i].node(), tmpAnims)
-        vehicleAnimCtls[i][1] = tmpAnims.get_anim(0)
-        tmpAnims.clear_anims()
-        vehicleAnimNP[1].detach_node()
-        # reparent all node paths
-        vehicleAnimNP[0].reparent_to(vehicleNP[i])
-        vehicleAnimNP[1].reparent_to(vehicleNP[i])
-        # set parameter for vehicle's type (OPENSTEER or OPENSTEER_KINEMATIC)
-        if i % 2 == 0:
-            vehicleType = "opensteer"
-        else:
-            vehicleType = "kinematic"
-        steerMgr = OSSteerManager.get_global_ptr()
-        steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "mov_type",
-                vehicleType)
-        # create the steer vehicle (attached to the reference node)
-        steerVehicleNP = steerMgr.create_steer_vehicle("vehicle" + str(i))
-        steerVehicle[i] = steerVehicleNP.node()
+    # get some models, with animations, to attach to vehicles
+    # get the model
+    vehicleNPs = app.loader.load_model(vehicleFile[vehicleFileIdx])
+    # set random scale (0.35 - 0.45)
+    scale = meanScale + 0.1 * random.uniform(0.0, 1.0)
+    vehicleNPs.set_scale(scale)
+    # associate an anim with a given anim control
+    tmpAnims = AnimControlCollection()
+    vehicleAnimNP = [None, None]
+    # first anim -> modelAnimCtls[i][0]
+    vehicleAnimNP[0] = app.loader.load_model(vehicleAnimFiles[vehicleFileIdx][0])
+    vehicleAnimNP[0].reparent_to(vehicleNPs)
+    auto_bind(vehicleNPs.node(), tmpAnims)
+    vehicleAnimCtls.append([None, None])
+    vehicleAnimCtls[-1][0] = tmpAnims.get_anim(0)
+    tmpAnims.clear_anims()
+    vehicleAnimNP[0].detach_node()
+    # second anim -> modelAnimCtls[i][1]
+    vehicleAnimNP[1] = app.loader.load_model(vehicleAnimFiles[vehicleFileIdx][1])
+    vehicleAnimNP[1].reparent_to(vehicleNPs)
+    auto_bind(vehicleNPs.node(), tmpAnims)
+    vehicleAnimCtls[-1][1] = tmpAnims.get_anim(0)
+    tmpAnims.clear_anims()
+    vehicleAnimNP[1].detach_node()
+    # reparent all node paths
+    vehicleAnimNP[0].reparent_to(vehicleNPs)
+    vehicleAnimNP[1].reparent_to(vehicleNPs)
+    # set parameter for vehicle's move type (OPENSTEER or OPENSTEER_KINEMATIC)
+    steerMgr = OSSteerManager.get_global_ptr()
+    steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "mov_type",
+            moveType)
+    # create the steer vehicle (attached to the reference node)
+    steerVehicleNP = steerMgr.create_steer_vehicle("vehicle" + str(len(steerVehicles)))
+    steerVehicles.append(steerVehicleNP.node())
+    randPos = pos
+    if randPos == None:
         # set the position randomly
         randPos = getRandomPos(sceneNP)
-        steerVehicleNP.set_pos(randPos)
-        # attach some geometry (a model) to steer vehicle
-        vehicleNP[i].reparent_to(steerVehicleNP)
-        # add the steer vehicle to the plug-in
-        steerPlugIn.add_steer_vehicle(steerVehicleNP)
-
+    steerVehicleNP.set_pos(randPos)
+    # attach some geometry (a model) to steer vehicle
+    vehicleNPs.reparent_to(steerVehicleNP)
+    # add the steer vehicle to the plug-in
+    steerPlugIn.add_steer_vehicle(steerVehicleNP)
 
 def readFromBamFile(fileName):
     """read scene from a file"""
@@ -305,3 +358,63 @@ def writeToBamFileAndExit(fileName):
     OSSteerManager.get_global_ptr().write_to_bam_file(fileName)
     #
     sys.exit(0)
+
+class HandleObstacleData:
+    """ data passed to obstacle's handling callback"""
+    
+    def __init__(self, addObstacle, sceneNP, steerPlugIn):
+        self.addObstacle = addObstacle
+        self.sceneNP = sceneNP
+        self.steerPlugIn = steerPlugIn
+
+def handleObstacles(data):
+    """handle add/remove obstacles"""
+    
+    global app
+    if data == None:
+        return
+
+    addObstacle = data.addObstacle
+    sceneNP = data.sceneNP
+    steerPlugIn = data.steerPlugIn
+    # get the collision entry, if any
+    entry0 = getCollisionEntryFromCamera()
+    if entry0:
+        # get the hit object
+        hitObject = entry0.get_into_node_path()
+        print("hit " + str(hitObject) + " object")
+
+        # check if we want add obstacle and
+        # if sceneNP is the hitObject or an ancestor thereof
+        if addObstacle and ((sceneNP == hitObject) or sceneNP.is_ancestor_of(hitObject)):
+            # the hit object is the scene: add an obstacle to the scene
+            # get a model as obstacle
+            obstacleNP = app.loader.load_model(obstacleFile)
+            obstacleNP.set_collide_mask(mask)
+            # set random scale (0.03 - 0.04)
+            scale = 0.03 + 0.01 * random.uniform(0.0, 1.0)
+            obstacleNP.set_scale(scale)
+            # set obstacle position
+            pos = entry0.get_surface_point(sceneNP)
+            obstacleNP.set_pos(sceneNP, pos)
+            # try to add to plug-in
+            if steerPlugIn.add_obstacle(obstacleNP, "box") < 0:
+                # something went wrong remove from scene
+                obstacleNP.remove_node()
+                return
+            print("added " + str(obstacleNP) + " obstacle.")
+        # check if we want remove obstacle
+        elif not addObstacle:
+            # cycle through the local obstacle list
+            for index in range(steerPlugIn.get_num_obstacles()):
+                # get the obstacle's NodePath
+                ref = steerPlugIn.get_obstacle(index)
+                obstacleNP = OSSteerManager.get_global_ptr().get_obstacle_by_ref(ref)
+                # check if obstacleNP is the hitObject or an ancestor thereof
+                if (obstacleNP == hitObject) or obstacleNP.is_ancestor_of(hitObject):
+                    # try to remove from plug-in
+                    if not steerPlugIn.remove_obstacle(ref).is_empty():
+                        # all ok remove from scene
+                        print("removed " + str(obstacleNP) + " obstacle.")
+                        obstacleNP.remove_node()
+                        break

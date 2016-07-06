@@ -8,14 +8,13 @@
 #include "common.h"
 
 ///specific data/functions declarations/definitions
-NodePath sceneNP, vehicleNP[2];
-PT(AnimControl)vehicleAnimCtls[2][2];
+NodePath sceneNP;
+vector<vector<PT(AnimControl)> > vehicleAnimCtls;
 PT(OSSteerPlugIn)steerPlugIn;
-PT(OSSteerVehicle)steerVehicle[2];
-int NUMVEHICLES = 2;
+vector<PT(OSSteerVehicle)>steerVehicles;
 //
 void setParametersBeforeCreation();
-void toggleSteeringSpeed(const Event*, void*);
+void toggleWanderBehavior(const Event*, void*);
 AsyncTask::DoneStatus updatePlugIn(GenericAsyncTask*, void*);
 
 int main(int argc, char *argv[])
@@ -28,13 +27,15 @@ int main(int argc, char *argv[])
 	PT(TextNode)text;
 	text = new TextNode("Help");
 	text->set_text(
-			msg + "\n\n"
-			"- press \"d\" to toggle debug drawing\n"
-            "- press \"s\"/\"shift-s\" to increase/decrease vehicle's max speed\n"
-            "- press \"f\"/\"shift-f\" to increase/decrease vehicle's max force\n"
-			"- press \"s\" to toggle steering speed\n");
+            msg + "\n\n"
+            "- press \"d\" to toggle debug drawing\n"
+			"- press \"a\"/\"k\" to add 'opensteer'/'kinematic' vehicle\n"
+            "- press \"s\"/\"shift-s\" to increase/decrease last inserted vehicle's max speed\n"
+            "- press \"f\"/\"shift-f\" to increase/decrease last inserted vehicle's max force\n"
+            "- press \"t\" to toggle last inserted vehicle's wander behavior\n"
+			"- press \"o\"/\"shift-o\" to add/remove obstacle\n");
 	NodePath textNodePath = window->get_aspect_2d().attach_new_node(text);
-	textNodePath.set_pos(-1.25, 0.0, 0.9);
+	textNodePath.set_pos(-1.25, 0.0, -0.5);
 	textNodePath.set_scale(0.035);
 
 	// create a steer manager; set root and mask to manage 'kinematic' vehicles
@@ -44,10 +45,6 @@ int main(int argc, char *argv[])
 	cout << endl << "Default creation parameters:";
 	printCreationParameters();
 
-	// set creation parameters as strings before plug-in/vehicles creation
-	cout << endl << "Current creation parameters:";
-	setParametersBeforeCreation();
-
 	// load or restore all scene stuff: if passed an argument
 	// try to read it from bam file
 	if ((not (argc > 1)) or (not readFromBamFile(argv[1])))
@@ -56,63 +53,75 @@ int main(int argc, char *argv[])
 		// reparent the reference node to render
 		steerMgr->get_reference_node_path().reparent_to(window->get_render());
 
-		// get a sceneNP and reparent to the reference node
-		sceneNP = loadPlane();
-		// set name: to ease restoring from bam file
-		sceneNP.set_name("SceneNP");
+		// get a sceneNP, naming it with "SceneNP" to ease restoring from bam
+		// file
+		sceneNP = loadTerrain("SceneNP");
+		// and reparent to the reference node
 		sceneNP.reparent_to(steerMgr->get_reference_node_path());
 
 		// set sceneNP's collide mask
 		sceneNP.set_collide_mask(mask);
 
-		// create the default plug-in (attached to the reference node)
+		// set creation parameters as strings before plug-in/vehicles creation
+		cout << endl << "Current creation parameters:";
+		setParametersBeforeCreation();
+
+		// create the plug-in (attached to the reference node)
 		NodePath plugInNP = steerMgr->create_steer_plug_in();
 		steerPlugIn = DCAST(OSSteerPlugIn, plugInNP.node());
 
-		// get steer vehicles, models and animations
-		//1: get the model
-		//2: create the steer vehicle (it is attached to the reference node)
-		//3: set its position
-		//4: attach the model to steer vehicle
-		//5: add the steer vehicle to the plug-in
-		getVehiclesModelsAnims(NUMVEHICLES, sceneNP, vehicleNP, steerPlugIn,
-		                           steerVehicle, vehicleAnimCtls);
+		// set the pathway
+		ValueList<LPoint3f> pointList;
+		pointList.add_value(LPoint3f(79.474, 51.7236, 2.0207));
+		pointList.add_value(LPoint3f(108.071, 51.1972, 2.7246));
+		pointList.add_value(LPoint3f(129.699, 30.1742, 0.720501));
+		pointList.add_value(LPoint3f(141.597, 73.496, 2.14218));
+		pointList.add_value(LPoint3f(105.917, 107.032, 3.06428));
+		pointList.add_value(LPoint3f(61.2637, 109.622, 3.03588));
+		// note: pedestrian handles single radius pathway only
+		ValueList<float> radiusList;
+		radiusList.add_value(4);
+		steerPlugIn->set_pathway(pointList, radiusList, true, true);
 	}
 	else
 	{
 		// valid bamFile
 		// restore plug-in: through steer manager
-		NodePath steerPlugInNP = OSSteerManager::get_global_ptr()->get_steer_plug_in(0);
+		NodePath steerPlugInNP =
+				OSSteerManager::get_global_ptr()->get_steer_plug_in(0);
 		steerPlugIn = DCAST(OSSteerPlugIn, steerPlugInNP.node());
 		// restore sceneNP: through panda3d
-		NodePath sceneNP = OSSteerManager::get_global_ptr()->
-				get_reference_node_path().find("**/SceneNP");
+		sceneNP =
+				OSSteerManager::get_global_ptr()->get_reference_node_path().find(
+						"**/SceneNP");
 		// reparent the reference node to render
 		OSSteerManager::get_global_ptr()->get_reference_node_path().reparent_to(
-		window->get_render());
+				window->get_render());
 
 		// restore steer vehicles
+		int NUMVEHICLES =
+				OSSteerManager::get_global_ptr()->get_num_steer_vehicles();
+		steerVehicles.resize(NUMVEHICLES);
+		vehicleAnimCtls.resize(NUMVEHICLES);
 		for (int i = 0; i < NUMVEHICLES; ++i)
 		{
 			// restore the steer vehicle: through steer manager
 			NodePath steerVehicleNP =
-			OSSteerManager::get_global_ptr()->get_steer_vehicle(i);
-			steerVehicle[i] = DCAST(OSSteerVehicle, steerVehicleNP.node());
+					OSSteerManager::get_global_ptr()->get_steer_vehicle(i);
+			steerVehicles[i] = DCAST(OSSteerVehicle, steerVehicleNP.node());
 			// restore animations
 			AnimControlCollection tmpAnims;
-			auto_bind(steerVehicle[i], tmpAnims);
+			auto_bind(steerVehicles[i], tmpAnims);
+			vehicleAnimCtls[i] = vector<PT(AnimControl)>(2);
 			for (int j = 0; j < tmpAnims.get_num_anims(); ++j)
 			{
 				vehicleAnimCtls[i][j] = tmpAnims.get_anim(j);
 			}
 		}
-	}
 
-	// show the added vehicles
-	cout << "Vehicles added to plug-in:" << endl;
-	for (int i = 0; i < steerPlugIn->get_num_steer_vehicles(); ++i)
-	{
-		cout << "\t- " << *((*steerPlugIn)[i]) << endl;
+		// set creation parameters as strings before other plug-ins/vehicles creation
+		cout << endl << "Current creation parameters:";
+		setParametersBeforeCreation();
 	}
 
 	/// first option: start the default update task for all plug-ins
@@ -136,19 +145,40 @@ int main(int argc, char *argv[])
 	framework.define_key("d", "toggleDebugDraw", &toggleDebugDraw,
 			(void*) steerPlugIn.p());
 
-	// increase/decrease vehicle's max speed
+	// handle addition steer vehicles, models and animations
+	HandleVehicleData vehicleData(0.7, 0, "opensteer", sceneNP,
+						steerPlugIn, steerVehicles, vehicleAnimCtls);
+	framework.define_key("a", "addVehicle", &handleVehicles,
+			(void*) &vehicleData);
+	HandleVehicleData vehicleDataKinematic(0.7, 1, "kinematic", sceneNP,
+			steerPlugIn, steerVehicles, vehicleAnimCtls);
+	framework.define_key("k", "addVehicle", &handleVehicles,
+			(void*) &vehicleDataKinematic);
+
+	// handle obstacle addition
+	HandleObstacleData obstacleAddition(true, sceneNP, steerPlugIn);
+	framework.define_key("o", "addObstacle", &handleObstacles,
+			(void*) &obstacleAddition);
+	// handle obstacle removal
+	HandleObstacleData obstacleRemoval(false, sceneNP, steerPlugIn);
+	framework.define_key("shift-o", "removeObstacle", &handleObstacles,
+			(void*) &obstacleRemoval);
+
+	// increase/decrease last inserted vehicle's max speed
 	framework.define_key("s", "changeVehicleMaxSpeed", &changeVehicleMaxSpeed,
-			(void*) steerVehicle[0].p());
-	framework.define_key("shift-s", "changeVehicleMaxSpeed", &changeVehicleMaxSpeed,
-			(void*) steerVehicle[0].p());
-	// increase/decrease vehicle's max force
+			(void*) &steerVehicles);
+	framework.define_key("shift-s", "changeVehicleMaxSpeed",
+			&changeVehicleMaxSpeed, (void*) &steerVehicles);
+	// increase/decrease last inserted vehicle's max force
 	framework.define_key("f", "changeVehicleMaxForce", &changeVehicleMaxForce,
-			(void*) steerVehicle[0].p());
-	framework.define_key("shift-f", "changeVehicleMaxForce", &changeVehicleMaxForce,
-			(void*) steerVehicle[0].p());
+			(void*) &steerVehicles);
+	framework.define_key("shift-f", "changeVehicleMaxForce",
+			&changeVehicleMaxForce, (void*) &steerVehicles);
 
 	// handle OSSteerVehicle(s)' events
-	framework.define_key("move-event", "handleVehicleEvent",
+	framework.define_key("avoid_obstacle", "handleVehicleEvent",
+			&handleVehicleEvent, nullptr);
+	framework.define_key("avoid_close_neighbor", "handleVehicleEvent",
 			&handleVehicleEvent, nullptr);
 
 	// write to bam file on exit
@@ -157,13 +187,13 @@ int main(int argc, char *argv[])
 	framework.define_key("close_request_event", "writeToBamFile",
 			&writeToBamFileAndExit, (void*) &bamFileName);
 
-	// 'low speed turn' specific: toggle steering speed
-	framework.define_key("t", "toggleSteeringSpeed", &toggleSteeringSpeed,
+	// 'pedestrian' specific: toggle wander behavior
+	framework.define_key("t", "toggleWanderBehavior", &toggleWanderBehavior,
 			nullptr);
 
 	// place camera trackball (local coordinate)
 	PT(Trackball)trackball = DCAST(Trackball, window->get_mouse().find("**/+Trackball").node());
-	trackball->set_pos(0.0, 50.0, 0.0);
+	trackball->set_pos(-128.0, 120.0, -40.0);
 	trackball->set_hpr(0.0, 20.0, 0.0);
 
 	// do the main loop, equals to call app.run() in python
@@ -179,36 +209,42 @@ void setParametersBeforeCreation()
 	ValueList<string> valueList;
 	// set plug-in type
 	steerMgr->set_parameter_value(OSSteerManager::STEERPLUGIN, "plugin_type",
-			"low_speed_turn");
+			"pedestrian");
 
 	// set vehicle type, mass, speed
 	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "vehicle_type",
-			"low_speed_turn");
+			"pedestrian");
 	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "mass", "2.0");
-	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "speed", "0.01");
+	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "speed",
+			"0.01");
 
 	// set vehicle throwing events
 	valueList.clear();
-	valueList.add_value("move@move-event@0.5");
+	valueList.add_value("avoid_obstacle@avoid_obstacle@1.0:avoid_close_neighbor@avoid_close_neighbor@");
 	steerMgr->set_parameter_values(OSSteerManager::STEERVEHICLE,
 			"thrown_events", valueList);
 	//
 	printCreationParameters();
 }
 
-// toggle steering speed
-void toggleSteeringSpeed(const Event*, void*)
+// toggle wander behavior of last inserted vehicle
+void toggleWanderBehavior(const Event*, void*)
 {
-	if (steerVehicle[0]->get_steering_speed() < 4.9)
+    if (steerVehicles.size() == 0)
+    {
+        return;
+    }
+
+	if (steerVehicles.back()->get_wander_behavior())
 	{
-		steerVehicle[0]->set_steering_speed(5.0);
+		steerVehicles.back()->set_wander_behavior(false);
 	}
 	else
 	{
-		steerVehicle[0]->set_steering_speed(1.0);
+		steerVehicles.back()->set_wander_behavior(true);
 	}
-	cout << *steerVehicle[0] << "'s steering speed is "
-			<< steerVehicle[0]->get_steering_speed() << endl;
+	cout << *steerVehicles.back() << "'s wander behavior is "
+			<< steerVehicles.back()->get_wander_behavior() << endl;
 }
 
 // custom update task for plug-ins
@@ -219,10 +255,10 @@ AsyncTask::DoneStatus updatePlugIn(GenericAsyncTask* task, void* data)
 	double dt = ClockObject::get_global_clock()->get_dt();
 	steerPlugIn->update(dt);
 	// handle vehicle's animation
-	for (int i = 0; i < NUMVEHICLES; ++i)
+	for (int i = 0; i < (int)vehicleAnimCtls.size(); ++i)
 	{
 		// get current velocity size
-		float currentVelSize = steerVehicle[i]->get_speed();
+		float currentVelSize = steerVehicles[i]->get_speed();
 		if (currentVelSize > 0.0)
 		{
 			int animOnIdx, animOffIdx;

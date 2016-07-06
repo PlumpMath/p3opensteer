@@ -14,7 +14,7 @@
 /**
  * Returns the OSSteerPlugIn type.
  */
-INLINE OSSteerPlugIn::OSSteerPlugInType OSSteerPlugIn::get_plug_in_type()
+INLINE OSSteerPlugIn::OSSteerPlugInType OSSteerPlugIn::get_plug_in_type() const
 {
 	return mPlugInType;
 }
@@ -56,7 +56,7 @@ INLINE int OSSteerPlugIn::size() const
 /**
  * Returns the pathway points.
  */
-INLINE ValueList<LPoint3f> OSSteerPlugIn::get_pathway_points()
+INLINE ValueList<LPoint3f> OSSteerPlugIn::get_pathway_points() const
 {
 	return mPathwayPoints;
 }
@@ -64,7 +64,7 @@ INLINE ValueList<LPoint3f> OSSteerPlugIn::get_pathway_points()
 /**
  * Returns the pathway points.
  */
-INLINE ValueList<float> OSSteerPlugIn::get_pathway_radii()
+INLINE ValueList<float> OSSteerPlugIn::get_pathway_radii() const
 {
 	return mPathwayRadii;
 }
@@ -72,7 +72,7 @@ INLINE ValueList<float> OSSteerPlugIn::get_pathway_radii()
 /**
  * Returns the pathway points.
  */
-INLINE bool OSSteerPlugIn::get_pathway_single_radius()
+INLINE bool OSSteerPlugIn::get_pathway_single_radius() const
 {
 	return mPathwaySingleRadius;
 }
@@ -80,7 +80,7 @@ INLINE bool OSSteerPlugIn::get_pathway_single_radius()
 /**
  * Returns the pathway points.
  */
-INLINE bool OSSteerPlugIn::get_pathway_closed_cycle()
+INLINE bool OSSteerPlugIn::get_pathway_closed_cycle() const
 {
 	return mPathwayClosedCycle;
 }
@@ -106,12 +106,12 @@ INLINE int OSSteerPlugIn::add_obstacle(const string& type, const string& seenFro
  */
 INLINE int OSSteerPlugIn::get_obstacle(int index) const
 {
-	pvector<OSSteerManager::ObstacleAttributes> obstacleAttrs =
-			mLocalObstacles.get_second();
+	pvector<OSSteerManager::ObstacleAttributes>& obstacleAttrs =
+			const_cast<OSSteerManager::GlobalObstacles&>(mLocalObstacles).second();
 	CONTINUE_IF_ELSE_R((index >= 0) && (index < (int) obstacleAttrs.size()),
 			OS_ERROR)
 
-	return obstacleAttrs[index].get_first().get_ref();
+	return obstacleAttrs[index].first().get_ref();
 }
 
 /**
@@ -119,7 +119,7 @@ INLINE int OSSteerPlugIn::get_obstacle(int index) const
  */
 INLINE int OSSteerPlugIn::get_num_obstacles() const
 {
-	 return (int) mLocalObstacles.get_second().size();
+	return (int) const_cast<OSSteerManager::GlobalObstacles&>(mLocalObstacles).second().size();
 }
 
 /**
@@ -143,9 +143,10 @@ inline void OSSteerPlugIn::do_reset()
 	mPathwaySingleRadius = mPathwayClosedCycle = false;
 #ifdef OS_DEBUG
 	mDrawer3dNP.clear();
+	mDrawer3dStaticNP.clear();
 	mDrawer2dNP.clear();
 	mDebugCamera.clear();
-	mDrawer3d = mDrawer2d = NULL;
+	mDrawer3d = mDrawer3dStatic = mDrawer2d = NULL;
 	mEnableDebugDrawUpdate = false;
 #endif
 }

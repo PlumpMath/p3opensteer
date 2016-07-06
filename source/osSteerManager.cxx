@@ -355,6 +355,8 @@ ValueList<string> OSSteerManager::get_parameter_name_list(OSType type) const
 
 /**
  * Sets all parameters to their default values (if any).
+ * \note: After reading objects from bam files, the objects' creation parameters
+ * which reside in the manager, are reset to their default values.
  */
 void OSSteerManager::set_parameters_defaults(OSType type)
 {
@@ -457,13 +459,14 @@ OSObstacleSettings OSSteerManager::get_obstacle_settings(int ref) const
 	CONTINUE_IF_ELSE_R(ref > 0, settings)
 
 	// find settings by ref
-	pvector<ObstacleAttributes>::const_iterator iter;
-	for (iter = mObstacles.get_second().begin();
-			iter != mObstacles.get_second().end(); ++iter)
+	pvector<ObstacleAttributes>& obstacleAttrs =
+			const_cast<GlobalObstacles&>(mObstacles).second();
+	pvector<ObstacleAttributes>::iterator iter;
+	for (iter = obstacleAttrs.begin(); iter != obstacleAttrs.end(); ++iter)
 	{
-		if ((*iter).get_first().get_ref() == ref)
+		if ((*iter).first().get_ref() == ref)
 		{
-			settings = (*iter).get_first();
+			settings = (*iter).first();
 			break;
 		}
 	}
@@ -481,13 +484,14 @@ NodePath OSSteerManager::get_obstacle_by_ref(int ref) const
 	CONTINUE_IF_ELSE_R(ref > 0, obstacleNP)
 
 	// find settings by ref
-	pvector<ObstacleAttributes>::const_iterator iter;
-	for (iter = mObstacles.get_second().begin();
-			iter != mObstacles.get_second().end(); ++iter)
+	pvector<ObstacleAttributes>& obstacleAttrs =
+			const_cast<GlobalObstacles&>(mObstacles).second();
+	pvector<ObstacleAttributes>::iterator iter;
+	for (iter = obstacleAttrs.begin(); iter != obstacleAttrs.end(); ++iter)
 	{
-		if ((*iter).get_first().get_ref() == ref)
+		if ((*iter).first().get_ref() == ref)
 		{
-			obstacleNP = (*iter).get_second();
+			obstacleNP = (*iter).second();
 			break;
 		}
 	}

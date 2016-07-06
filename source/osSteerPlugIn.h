@@ -45,10 +45,6 @@ class OSSteerVehicle;
  */
 class EXPORT_CLASS OSSteerPlugIn: public PandaNode
 {
-public:
-//	typedef Pair<pvector<LPoint3f>, > ObstacleAttributes;
-//	typedef Pair<OpenSteer::ObstacleGroup, pvector<ObstacleAttributes> > GlobalObstacles;
-
 PUBLISHED:
 	/**
 	 * Steer Plug-In type.
@@ -73,7 +69,7 @@ PUBLISHED:
 	 */
 	///@{
 	void set_plug_in_type(OSSteerPlugInType type);
-	INLINE OSSteerPlugInType get_plug_in_type();
+	INLINE OSSteerPlugInType get_plug_in_type() const;
 	void update(float dt);
 	///@}
 
@@ -83,6 +79,7 @@ PUBLISHED:
 	///@{
 	int add_steer_vehicle(NodePath steerVehicleNP);
 	int remove_steer_vehicle(NodePath steerVehicleNP);
+	bool check_steer_vehicle_compatibility(NodePath steerVehicleNP) const;
 	INLINE PT(OSSteerVehicle) get_steer_vehicle(int index) const;
 	INLINE int get_num_steer_vehicles() const;
 	MAKE_SEQ(get_steer_vehicles, get_num_steer_vehicles, get_steer_vehicle);
@@ -96,10 +93,10 @@ PUBLISHED:
 	///@{
 	void set_pathway(const ValueList<LPoint3f>& pointList,
 			const ValueList<float>& radiusList, bool singleRadius, bool closedCycle);
-	INLINE ValueList<LPoint3f> get_pathway_points();
-	INLINE ValueList<float> get_pathway_radii();
-	INLINE bool get_pathway_single_radius();
-	INLINE bool get_pathway_closed_cycle();
+	INLINE ValueList<LPoint3f> get_pathway_points() const;
+	INLINE ValueList<float> get_pathway_radii() const;
+	INLINE bool get_pathway_single_radius() const;
+	INLINE bool get_pathway_closed_cycle() const;
 	///@}
 
 	/**
@@ -122,11 +119,29 @@ PUBLISHED:
 	///@}
 
 	/**
+	 * \name PEDESTRIAN SPECIFIC SETTINGS.
+	 * \note PEDESTRIAN OSSteerPlugIn supports currently only single radius
+	 * pathway.
+	 */
+	/**
+	 * PEDESTRIAN OSSteerPlugIn proximity database.
+	 */
+	enum OSProximityDatabase
+	{
+		LQ_PD,
+		BRUTEFORCE_PD
+	};
+	///@{
+	void set_proximity_database(OSProximityDatabase pd = LQ_PD);
+	OSProximityDatabase get_proximity_database() const;
+	///@}
+
+	/**
 	 * \name LOW SPEED TURN SPECIFIC SETTINGS.
 	 */
 	///@{
 	void set_steering_speed(float steeringSpeed = 1.0);
-	float get_steering_speed();
+	float get_steering_speed() const;
 	///@}
 
 	/**
@@ -200,15 +215,27 @@ private:
 			const LVector3f& forward, const LPoint3f& position);
 	///@}
 
+	/**
+	 * \name SPECIFIC SETTINGS (USED FOR SERIALIZATION ONLY).
+	 */
+	///@{
+	//pedestrian
+	OSProximityDatabase mPD_ser;
+	//low speed turn
+	float mSteeringSpeed_ser;
+	///@}
+
 #ifdef OS_DEBUG
 	///OpenSteer debug node paths.
-	NodePath mDrawer3dNP, mDrawer2dNP;
+	NodePath mDrawer3dNP, mDrawer3dStaticNP, mDrawer2dNP;
 	///OpenSteer debug camera.
 	NodePath mDebugCamera;
 	///OpenSteer DebugDrawers.
-	ossup::DrawMeshDrawer *mDrawer3d, *mDrawer2d;
+	ossup::DrawMeshDrawer *mDrawer3d, *mDrawer3dStatic, *mDrawer2d;
 	///Enable Debug Draw update.
 	bool mEnableDebugDrawUpdate;
+	///Draw static geometry
+	void do_debug_draw_static_geometry();
 #endif
 
 	// Explicitly disabled copy constructor and copy assignment operator.
