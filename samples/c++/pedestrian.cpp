@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
 		steerMgr->get_reference_node_path().reparent_to(window->get_render());
 
 		// get a sceneNP and reparent to the reference node
-		sceneNP = loadPlane();
+		sceneNP = loadTerrain();
 		// set name: to ease restoring from bam file
 		sceneNP.set_name("SceneNP");
 		sceneNP.reparent_to(steerMgr->get_reference_node_path());

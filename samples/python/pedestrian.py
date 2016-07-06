@@ -10,7 +10,7 @@ from panda3d.core import TextNode, ClockObject, AnimControlCollection, \
         auto_bind
 #
 from common import startFramework, toggleDebugFlag, toggleDebugDraw, mask, \
-        loadPlane, printCreationParameters, handleVehicleEvent, \
+        loadTerrain, printCreationParameters, handleVehicleEvent, \
         changeVehicleMaxForce, changeVehicleMaxSpeed, getVehiclesModelsAnims, \
         rateFactor, writeToBamFileAndExit, readFromBamFile, bamFileName
 import sys
@@ -126,7 +126,7 @@ if __name__ == '__main__':
         steerMgr.get_reference_node_path().reparent_to(app.render)
     
         # get a sceneNP and reparent to the reference node
-        sceneNP = loadPlane()
+        sceneNP = loadTerrain()
         # set name: to ease restoring from bam file
         sceneNP.set_name("SceneNP")
         sceneNP.reparent_to(steerMgr.get_reference_node_path())

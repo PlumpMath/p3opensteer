@@ -75,7 +75,7 @@ def loadTerrain():
     heightField = PNMImage(Filename(dataDir + "/heightfield.png"))
     terrain.set_heightfield(heightField)
     # sizing
-    widthScale, heightScale = (3.0, 100.0)
+    widthScale, heightScale = (0.5, 25.0)
     environmentWidthX = (heightField.get_x_size() - 1) * widthScale
     environmentWidthY = (heightField.get_y_size() - 1) * widthScale
     environmentWidth = (environmentWidthX + environmentWidthY) / 2.0
@@ -292,7 +292,6 @@ def getVehiclesModelsAnims(NUMVEHICLES, sceneNP, vehicleNP, steerPlugIn,
         vehicleNP[i].reparent_to(steerVehicleNP)
         # add the steer vehicle to the plug-in
         steerPlugIn.add_steer_vehicle(steerVehicleNP)
-
 
 def readFromBamFile(fileName):
     """read scene from a file"""

@@ -97,7 +97,7 @@ NodePath loadTerrain()
 	PNMImage heightField(Filename(dataDir + string("/heightfield.png")));
 	terrain->set_heightfield(heightField);
 	//sizing
-	float widthScale = 3.0, heightScale = 100.0;
+	float widthScale = 0.5, heightScale = 25.0;
 	float environmentWidthX = (heightField.get_x_size() - 1) * widthScale;
 	float environmentWidthY = (heightField.get_y_size() - 1) * widthScale;
 	float environmentWidth = (environmentWidthX + environmentWidthY) / 2.0;
