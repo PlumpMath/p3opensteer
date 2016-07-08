@@ -31,7 +31,7 @@ const float rateFactor[2] =
 //obstacle model
 string obstacleFile("plants2.egg");
 //bame file
-string bamFileName("plugin.boo");
+string bamFileName("plug_in.boo");
 //support
 random_device rd;
 
@@ -303,55 +303,49 @@ LPoint3f getRandomPos(NodePath modelNP)
 }
 
 // get vehicles, models and animations
-void getVehiclesModelsAnims(int NUMVEHICLES, const NodePath& sceneNP,
-		NodePath vehicleNP[2], PT(OSSteerPlugIn)steerPlugIn,
-PT(OSSteerVehicle)steerVehicle[2], PT(AnimControl)vehicleAnimCtls[2][2])
+void getVehiclesModelsAnims(int vehicleFileIdx, const string& moveType,
+		const NodePath& sceneNP, vector<NodePath>& vehicleNP, PT(OSSteerPlugIn)steerPlugIn,
+vector<PT(OSSteerVehicle)>&steerVehicle, vector<vector<PT(AnimControl)> >& vehicleAnimCtls)
 {
-	for (int i = 0; i < min(NUMVEHICLES, 2); ++i)
-	{
-		// get some models, with animations, to attach to vehicles
-		// get the model
-		vehicleNP[i] = window->load_model(framework.get_models(),
-		vehicleFile[i]);
-		// set random scale (0.35 - 0.45)
-		float scale = 0.35 + 0.1 * ((float) rd() / (float) rd.max());
-		vehicleNP[i].set_scale(scale);
-		// associate an anim with a given anim control
-		AnimControlCollection tmpAnims;
-		NodePath vehicleAnimNP[2];
-		// first anim -> modelAnimCtls[i][0]
-		vehicleAnimNP[0] = window->load_model(vehicleNP[i], vehicleAnimFiles[i][0]);
-		auto_bind(vehicleNP[i].node(), tmpAnims);
-		vehicleAnimCtls[i][0] = tmpAnims.get_anim(0);
-		tmpAnims.clear_anims();
-		vehicleAnimNP[0].detach_node();
-		// second anim -> modelAnimCtls[i][1]
-		vehicleAnimNP[1] = window->load_model(vehicleNP[i], vehicleAnimFiles[i][1]);
-		auto_bind(vehicleNP[i].node(), tmpAnims);
-		vehicleAnimCtls[i][1] = tmpAnims.get_anim(0);
-		tmpAnims.clear_anims();
-		vehicleAnimNP[1].detach_node();
-		// reparent all node paths
-		vehicleAnimNP[0].reparent_to(vehicleNP[i]);
-		vehicleAnimNP[1].reparent_to(vehicleNP[i]);
-		// set parameter for vehicle's type (OPENSTEER or OPENSTEER_KINEMATIC)
-		string vehicleType;
-		(i % 2) == 0 ? vehicleType = "opensteer" : vehicleType = "kinematic";
-		WPT(OSSteerManager) steerMgr = OSSteerManager::get_global_ptr();
-		steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "mov_type",
-		vehicleType);
-		// create the steer vehicle (attached to the reference node)
-		NodePath steerVehicleNP = steerMgr->create_steer_vehicle(
-		"vehicle" + str(i));
-		steerVehicle[i] = DCAST(OSSteerVehicle, steerVehicleNP.node());
-		// set the position randomly
-		LPoint3f randPos = getRandomPos(sceneNP);
-		steerVehicleNP.set_pos(randPos);
-		// attach some geometry (a model) to steer vehicle
-		vehicleNP[i].reparent_to(steerVehicleNP);
-		// add the steer vehicle to the plug-in
-		steerPlugIn->add_steer_vehicle(steerVehicleNP);
-	}
+	// get some models, with animations, to attach to vehicles
+	// get the model
+	vehicleNP.push_back(window->load_model(framework.get_models(), vehicleFile[vehicleFileIdx]));
+	// set random scale (0.35 - 0.45)
+	float scale = 0.35 + 0.1 * ((float) rd() / (float) rd.max());
+	vehicleNP.back().set_scale(scale);
+	// associate an anim with a given anim control
+	AnimControlCollection tmpAnims;
+	NodePath vehicleAnimNP[2];
+	// first anim -> modelAnimCtls[i][0]
+	vehicleAnimNP[0] = window->load_model(vehicleNP.back(), vehicleAnimFiles[vehicleFileIdx][0]);
+	auto_bind(vehicleNP.back().node(), tmpAnims);
+	vehicleAnimCtls.push_back(vector<PT(AnimControl)>(2));
+	vehicleAnimCtls.back()[0] = tmpAnims.get_anim(0);
+	tmpAnims.clear_anims();
+	vehicleAnimNP[0].detach_node();
+	// second anim -> modelAnimCtls[i][1]
+	vehicleAnimNP[1] = window->load_model(vehicleNP.back(), vehicleAnimFiles[vehicleFileIdx][1]);
+	auto_bind(vehicleNP.back().node(), tmpAnims);
+	vehicleAnimCtls.back()[1] = tmpAnims.get_anim(0);
+	tmpAnims.clear_anims();
+	vehicleAnimNP[1].detach_node();
+	// reparent all node paths
+	vehicleAnimNP[0].reparent_to(vehicleNP.back());
+	vehicleAnimNP[1].reparent_to(vehicleNP.back());
+	// set parameter for vehicle's move type (OPENSTEER or OPENSTEER_KINEMATIC)
+	WPT(OSSteerManager) steerMgr = OSSteerManager::get_global_ptr();
+	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "mov_type",
+	moveType);
+	// create the steer vehicle (attached to the reference node)
+	NodePath steerVehicleNP = steerMgr->create_steer_vehicle("vehicle" + str(vehicleNP.size() - 1));
+	steerVehicle.push_back(DCAST(OSSteerVehicle, steerVehicleNP.node()));
+	// set the position randomly
+	LPoint3f randPos = getRandomPos(sceneNP);
+	steerVehicleNP.set_pos(randPos);
+	// attach some geometry (a model) to steer vehicle
+	vehicleNP.back().reparent_to(steerVehicleNP);
+	// add the steer vehicle to the plug-in
+	steerPlugIn->add_steer_vehicle(steerVehicleNP);
 }
 
 // read scene from a file

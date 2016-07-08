@@ -17,11 +17,10 @@ import sys
         
 # # specific data/functions declarations/definitions
 sceneNP = None
-vehicleNP = [None for i in range(2)]
-vehicleAnimCtls = [[None for i in range(2)] for i in range(2)]
+vehicleNP = []
+vehicleAnimCtls = []
 steerPlugIn = None
-steerVehicle = [None for i in range(2)]
-NUMVEHICLES = 2
+steerVehicle = []
 #
 def setParametersBeforeCreation():
     """set parameters as strings before plug-ins/vehicles creation"""
@@ -66,7 +65,7 @@ def updatePlugIn(steerPlugIn, task):
     dt = ClockObject.get_global_clock().get_dt()
     steerPlugIn.update(dt)
     # handle vehicle's animation
-    for i in range(NUMVEHICLES):
+    for i in range(len(vehicleAnimCtls)):
         # get current velocity size
         currentVelSize = steerVehicle[i].get_speed()
         if currentVelSize > 0.0:
@@ -144,7 +143,12 @@ if __name__ == '__main__':
         #3: set steer vehicles' positions
         #4: attach the models to steer vehicles
         #5: add the steer vehicles to the plug-in
-        getVehiclesModelsAnims(NUMVEHICLES, sceneNP, vehicleNP, steerPlugIn, 
+        for i in range(2):
+            if i % 2 == 0:
+                moveType = "opensteer"
+            else:
+                moveType = "kinematic"
+            getVehiclesModelsAnims(i, moveType, sceneNP, vehicleNP, steerPlugIn, 
                            steerVehicle, vehicleAnimCtls)
     else:
         # valid bamFile
@@ -157,6 +161,10 @@ if __name__ == '__main__':
         OSSteerManager.get_global_ptr().get_reference_node_path().reparent_to(app.render)
     
         # restore steer vehicles
+        NUMVEHICLES = OSSteerManager.get_global_ptr().get_num_steer_vehicles()
+        tmpList = [None for i in range(NUMVEHICLES)]
+        steerVehicle.extend(tmpList)
+        vehicleAnimCtls.extend(tmpList)
         for i in range(NUMVEHICLES):
             # restore the steer vehicle: through steer manager
             steerVehicleNP = OSSteerManager.get_global_ptr().get_steer_vehicle(i)
@@ -164,6 +172,7 @@ if __name__ == '__main__':
             # restore animations
             tmpAnims = AnimControlCollection()
             auto_bind(steerVehicle[i], tmpAnims)
+            vehicleAnimCtls[i] = [None, None];
             for j in range(tmpAnims.get_num_anims()):
                 vehicleAnimCtls[i][j] = tmpAnims.get_anim(j)
 

@@ -144,8 +144,8 @@ if __name__ == '__main__':
         #3: set steer vehicles' positions
         #4: attach the models to steer vehicles
         #5: add the steer vehicles to the plug-in
-        getVehiclesModelsAnims(NUMVEHICLES, sceneNP, vehicleNP, steerPlugIn, 
-                           steerVehicle, vehicleAnimCtls)
+#         getVehiclesModelsAnims(NUMVEHICLES, sceneNP, vehicleNP, steerPlugIn, 
+#                            steerVehicle, vehicleAnimCtls)
     else:
         # valid bamFile
         # restore plug-in: through steer manager

@@ -75,8 +75,8 @@ int main(int argc, char *argv[])
 		//3: set its position
 		//4: attach the model to steer vehicle
 		//5: add the steer vehicle to the plug-in
-		getVehiclesModelsAnims(NUMVEHICLES, sceneNP, vehicleNP, steerPlugIn,
-		                           steerVehicle, vehicleAnimCtls);
+//		getVehiclesModelsAnims(NUMVEHICLES, sceneNP, vehicleNP, steerPlugIn, XXX
+//		                           steerVehicle, vehicleAnimCtls);
 	}
 	else
 	{

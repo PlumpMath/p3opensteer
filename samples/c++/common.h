@@ -49,9 +49,9 @@ void toggleDebugDraw(const Event*, void*);
 void changeVehicleMaxSpeed(const Event*, void*);
 void changeVehicleMaxForce(const Event*, void*);
 LPoint3f getRandomPos(NodePath);
-void getVehiclesModelsAnims(int, const NodePath&, NodePath vehicleNP[],
-		PT(OSSteerPlugIn)steerPlugIn, PT(OSSteerVehicle)steerVehicle[],
-		PT(AnimControl)vehicleAnimCtls[][2]);
+void getVehiclesModelsAnims(int, const string&, const NodePath& ,
+		vector<NodePath>&, PT(OSSteerPlugIn), vector<PT(OSSteerVehicle)>&,
+		vector<vector<PT(AnimControl)> >&);
 bool readFromBamFile(string);
 void writeToBamFileAndExit(const Event*, void*);
 
