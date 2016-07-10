@@ -428,6 +428,10 @@ int OSSteerPlugIn::add_steer_vehicle(NodePath steerVehicleNP)
 	// continue if steerVehicle doesn't belong to any steer plug-in
 	CONTINUE_IF_ELSE_R(!steerVehicle->mSteerPlugIn, OS_ERROR)
 
+	// continue if steerVehicle is compatible
+	CONTINUE_IF_ELSE_R(check_steer_vehicle_compatibility(steerVehicleNP),
+			OS_ERROR)
+
 	bool result = false;
 	//add to update list
 	PTA(PT(OSSteerVehicle))::iterator iter;
@@ -479,7 +483,7 @@ int OSSteerPlugIn::add_steer_vehicle(NodePath steerVehicleNP)
 }
 
 /**
- * Removes a SteerVehicle from this OSSteerPlugIn (ie from the OpenSteer
+ * Removes a OSSteerVehicle from this OSSteerPlugIn (ie from the OpenSteer
  * handling mechanism).
  * Returns a negative number on error.
  */
@@ -518,9 +522,85 @@ int OSSteerPlugIn::remove_steer_vehicle(NodePath steerVehicleNP)
 }
 
 /**
+ * Checks if an OSSteerVehicle could be handled by this OSSteerPlugIn.
+ */
+bool OSSteerPlugIn::check_steer_vehicle_compatibility(
+		NodePath steerVehicleNP) const
+{
+	CONTINUE_IF_ELSE_R(
+			(!steerVehicleNP.is_empty())
+					&& (steerVehicleNP.node()->is_of_type(
+							OSSteerVehicle::get_class_type())), false)
+
+	OSSteerVehicle::OSSteerVehicleType vehicleType = DCAST(OSSteerVehicle,
+			steerVehicleNP.node())->get_vehicle_type();
+
+	bool result = false;
+	switch (mPlugInType)
+	{
+	case ONE_TURNING:
+		if (vehicleType == OSSteerVehicle::ONE_TURNING)
+		{
+			result = true;
+		}
+		break;
+	case PEDESTRIAN:
+		if (vehicleType == OSSteerVehicle::PEDESTRIAN)
+		{
+			result = true;
+		}
+		break;
+	case BOID:
+		if (vehicleType == OSSteerVehicle::BOID)
+		{
+			result = true;
+		}
+		break;
+	case MULTIPLE_PURSUIT:
+		if ((vehicleType == OSSteerVehicle::MP_WANDERER)
+				|| (vehicleType == OSSteerVehicle::MP_PURSUER))
+		{
+			result = true;
+		}
+		break;
+	case SOCCER:
+		if ((vehicleType == OSSteerVehicle::PLAYER)
+				|| (vehicleType == OSSteerVehicle::BALL))
+		{
+			result = true;
+		}
+		break;
+	case CAPTURE_THE_FLAG:
+		if ((vehicleType == OSSteerVehicle::CTF_SEEKER)
+				|| (vehicleType == OSSteerVehicle::CTF_ENEMY))
+		{
+			result = true;
+		}
+		break;
+	case LOW_SPEED_TURN:
+		if (vehicleType == OSSteerVehicle::LOW_SPEED_TURN)
+		{
+			result = true;
+		}
+		break;
+	case MAP_DRIVE:
+		if (vehicleType == OSSteerVehicle::MAP_DRIVER)
+		{
+			result = true;
+		}
+		break;
+	default:
+		break;
+	}
+	//
+	return result;
+}
+
+/**
  * Sets the pathway of this OSSteerPlugin.
- * \note pointList and radiusList should have the same number of elements; if
- * not the number of points will be considered as the number of segments.
+ * \note pointList and radiusList should have the same number of elements; in
+ * any case, the number of segments is equal to the number of points if the
+ * cycle is closed otherwise to the number of points - 1.
  */
 void OSSteerPlugIn::set_pathway(const ValueList<LPoint3f>& pointList,
 		const ValueList<float>& radiusList, bool singleRadius, bool closedCycle)
@@ -544,6 +624,11 @@ void OSSteerPlugIn::set_pathway(const ValueList<LPoint3f>& pointList,
 			lastRadius = radiusList[idx];
 		}
 	}
+	//exception for PEDESTRIAN type: only single radius
+	if (mPlugInType == PEDESTRIAN)
+	{
+		singleRadius = true;
+	}
 	//set the actual path
 	static_cast<ossup::PlugIn*>(mPlugIn)->setPathway(numOfPoints, osPoints,
 			singleRadius, radii, closedCycle);
@@ -555,6 +640,9 @@ void OSSteerPlugIn::set_pathway(const ValueList<LPoint3f>& pointList,
 	mPathwayRadii = radiusList;
 	mPathwaySingleRadius = singleRadius;
 	mPathwayClosedCycle = closedCycle;
+#ifdef OS_DEBUG
+	do_debug_draw_static_geometry();
+#endif //OS_DEBUG
 }
 
 /**
@@ -695,6 +783,9 @@ int OSSteerPlugIn::do_add_obstacle(NodePath objectNP,
 			objectNP.reparent_to(mReferenceNP);
 		}
 	}
+#ifdef OS_DEBUG
+	do_debug_draw_static_geometry();
+#endif //OS_DEBUG
 	return ref;
 }
 
@@ -766,6 +857,9 @@ NodePath OSSteerPlugIn::remove_obstacle(int ref)
 				mLocalObstacles.second().begin() + pointerIdx;
 		mLocalObstacles.second().erase(iterAL);
 	}
+#ifdef OS_DEBUG
+	do_debug_draw_static_geometry();
+#endif //OS_DEBUG
 	//
 	return resultNP;
 }
@@ -824,25 +918,82 @@ void OSSteerPlugIn::update(float dt)
 }
 
 /**
- * Sets steering speed (LOW SPEED TURN).
+ * Sets the type of proximity database:
+ * - BruteForceProximityDatabase
+ * - LQProximityDatabase (default).
+ * \note PEDESTRIAN OSSteerPlugIn only.
+ */
+void OSSteerPlugIn::set_proximity_database(OSProximityDatabase pd)
+{
+	if (mPlugInType == PEDESTRIAN)
+	{
+		ossup::PedestrianPlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::PedestrianPlugIn<OSSteerVehicle>*>(mPlugIn);
+		switch (pd)
+		{
+		case LQ_PD:
+			plugIn->setPD(0);
+			break;
+		case BRUTEFORCE_PD:
+			plugIn->setPD(1);
+			break;
+		default:
+			break;
+		}
+	}
+}
+
+/**
+ * Returns the type of proximity database
+ * - BruteForceProximityDatabase
+ * - LQProximityDatabase (default)
+ * or a negative number on error.
+ * \note PEDESTRIAN OSSteerPlugIn only.
+ */
+OSSteerPlugIn::OSProximityDatabase OSSteerPlugIn::get_proximity_database() const
+{
+	if (mPlugInType == PEDESTRIAN)
+	{
+		ossup::PedestrianPlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::PedestrianPlugIn<OSSteerVehicle>*>(mPlugIn);
+
+		switch (plugIn->pdIdx)
+		{
+		case 0:
+			return LQ_PD;
+			break;
+		case 1:
+			return BRUTEFORCE_PD;
+			break;
+		default:
+			break;
+		}
+	}
+	return (OSProximityDatabase) OS_ERROR;
+}
+
+/**
+ * Sets steering speed (>=0).
+ * \note LOW_SPEED_TURN OSSteerPlugIn only.
  */
 void OSSteerPlugIn::set_steering_speed(float steeringSpeed)
 {
 	if (mPlugInType == LOW_SPEED_TURN)
 	{
 		static_cast<ossup::LowSpeedTurnPlugIn<OSSteerVehicle>*>(mPlugIn)->steeringSpeed =
-				steeringSpeed;
+				(steeringSpeed >= 0 ? steeringSpeed : -steeringSpeed);
 	}
 }
 
 /**
- * Returns steering speed (LOW SPEED TURN).
+ * Returns steering speed (>=0), a negative number on error.
+ * \note LOW_SPEED_TURN OSSteerPlugIn only.
  */
-float OSSteerPlugIn::get_steering_speed()
+float OSSteerPlugIn::get_steering_speed() const
 {
-	return mPlugInType == LOW_SPEED_TURN ?
+	return (mPlugInType == LOW_SPEED_TURN) ?
 			static_cast<ossup::LowSpeedTurnPlugIn<OSSteerVehicle>*>(mPlugIn)->steeringSpeed :
-			0.0;
+			OS_ERROR;
 }
 
 /**
@@ -871,26 +1022,34 @@ void OSSteerPlugIn::enable_debug_drawing(NodePath debugCamera)
 		//set the debug node as child of mReferenceDebugNP node
 		mDrawer3dNP = mReferenceDebugNP.attach_new_node(
 				string("OpenSteerDebugNodePath_") + get_name());
+		mDrawer3dStaticNP = mReferenceDebugNP.attach_new_node(
+				string("OpenSteerDebugNodePathStatic_") + get_name());
 		//set the 2D debug node as child of mReferenceDebug2DNP node
 		mDrawer2dNP = mReferenceDebug2DNP.attach_new_node(
 				string("OpenSteerDebugNodePath2D_") + get_name());
 		//set debug node paths
 		mDrawer3dNP.set_bin("fixed", 10);
+		mDrawer3dStaticNP.set_bin("fixed", 10);
 		mDrawer2dNP.set_bin("fixed", 10);
 		//by default Debug NodePaths are hidden
 		mDrawer3dNP.hide();
+		mDrawer3dStaticNP.hide();
 		mDrawer2dNP.hide();
 		//no collide mask for all Debug NodePaths' children
 		mDrawer3dNP.set_collide_mask(BitMask32::all_off());
+		mDrawer3dStaticNP.set_collide_mask(BitMask32::all_off());
 		mDrawer2dNP.set_collide_mask(BitMask32::all_off());
 		//create new Debug Drawers
 		NodePath meshDrawerCamera = mDebugCamera;
-		if (! mDebugCamera.node()->is_of_type(Camera::get_class_type()))
+		if (!mDebugCamera.node()->is_of_type(Camera::get_class_type()))
 		{
 			meshDrawerCamera = mDebugCamera.find(string("**/+Camera"));
 		}
-		mDrawer3d = new ossup::DrawMeshDrawer(mDrawer3dNP, meshDrawerCamera, 100,
-				0.04);
+		mDrawer3d = new ossup::DrawMeshDrawer(mDrawer3dNP, meshDrawerCamera,
+				100, 0.04);
+		mDrawer3dStatic = new ossup::DrawMeshDrawer(mDrawer3dStaticNP,
+				meshDrawerCamera, 100, 0.04);
+		mDrawer3dStatic->setSize(7.5);
 		mDrawer2d = new ossup::DrawMeshDrawer(mDrawer2dNP, meshDrawerCamera, 50,
 				0.04);
 	}
@@ -909,12 +1068,18 @@ void OSSteerPlugIn::disable_debug_drawing()
 		mDebugCamera = NodePath();
 		//remove the opensteer debug node paths
 		mDrawer3dNP.remove_node();
+		mDrawer3dStaticNP.remove_node();
 		mDrawer2dNP.remove_node();
 		//reset the DebugDrawers
 		if (mDrawer3d)
 		{
 			delete mDrawer3d;
 			mDrawer3d = NULL;
+		}
+		if (mDrawer3dStatic)
+		{
+			delete mDrawer3dStatic;
+			mDrawer3dStatic = NULL;
 		}
 		if (mDrawer2d)
 		{
@@ -932,11 +1097,12 @@ void OSSteerPlugIn::disable_debug_drawing()
 int OSSteerPlugIn::toggle_debug_drawing(bool enable)
 {
 #ifdef OS_DEBUG
-	//continue if mDrawer3dNP and mDrawer2dNP are not empty
+	//continue if mDebugCamera, mDrawer3dNP, mDrawer3dStaticNP and mDrawer2dNP are not empty
 	CONTINUE_IF_ELSE_R(
 			(!mDebugCamera.is_empty())
-					&& ((!mDrawer3dNP.is_empty()) && (!mDrawer2dNP.is_empty())),
-			OS_ERROR)
+					&& ((!mDrawer3dNP.is_empty())
+							&& (!mDrawer3dStaticNP.is_empty())
+							&& (!mDrawer2dNP.is_empty())), OS_ERROR)
 
 	if (enable)
 	{
@@ -949,6 +1115,14 @@ int OSSteerPlugIn::toggle_debug_drawing(bool enable)
 			mEnableDebugDrawUpdate = true;
 			//set drawer
 			gDrawer3d = mDrawer3d;
+		}
+		if (mDrawer3dStaticNP.is_hidden())
+		{
+			//clear drawer
+			mDrawer3dStatic->clear();
+			mDrawer3dStaticNP.show();
+			//draw static geometry
+			do_debug_draw_static_geometry();
 		}
 		if (mDrawer2dNP.is_hidden())
 		{
@@ -973,6 +1147,14 @@ int OSSteerPlugIn::toggle_debug_drawing(bool enable)
 			//set drawer
 			gDrawer3d = NULL;
 		}
+		if (!mDrawer3dStaticNP.is_hidden())
+		{
+			//clear drawer
+			mDrawer3dStatic->clear();
+			mDrawer3dStaticNP.hide();
+			//set drawer
+			gDrawer3d = NULL;
+		}
 		if (!mDrawer2dNP.is_hidden())
 		{
 			//clear drawer
@@ -988,6 +1170,68 @@ int OSSteerPlugIn::toggle_debug_drawing(bool enable)
 #endif //OS_DEBUG
 	return OS_SUCCESS;
 }
+
+#ifdef OS_DEBUG
+/**
+ * Draws static geometry.
+ * \note Internal use only.
+ */
+void OSSteerPlugIn::do_debug_draw_static_geometry()
+{
+	//continue if mDrawer3dStaticNP is not empty
+	CONTINUE_IF_ELSE_V(
+			(!mDebugCamera.is_empty()) && (!mDrawer3dStaticNP.is_empty()))
+
+	//set drawer
+	ossup::DrawMeshDrawer * currentDrawer = gDrawer3d;
+	gDrawer3d = mDrawer3dStatic;
+
+	//drawers' initializations
+	mDrawer3dStatic->initialize();
+
+	//draw static geometry
+	//ctf: render home base and obstacles
+	if (mPlugInType == CAPTURE_THE_FLAG)
+	{
+		ossup::CtfPlugIn<OSSteerVehicle>* plugIn = static_cast<ossup::CtfPlugIn<
+				OSSteerVehicle>*>(mPlugIn);
+		plugIn->drawHomeBase();
+		plugIn->drawObstacles();
+	}
+	//map drive: render path and map
+	if (mPlugInType == MAP_DRIVE)
+	{
+		ossup::MapDrivePlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn);
+		plugIn->drawMap();
+		plugIn->drawPath();
+	}
+	//pedestrian: render path and obstacles
+	if (mPlugInType == PEDESTRIAN)
+	{
+		ossup::PedestrianPlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::PedestrianPlugIn<OSSteerVehicle>*>(mPlugIn);
+		plugIn->drawPath();
+		plugIn->drawObstacles();
+	}
+	//soccer: render path
+	if (mPlugInType == SOCCER)
+	{
+		static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn)->drawSoccerField();
+	}
+	//boid: render obstacles
+	if (mPlugInType == BOID)
+	{
+		static_cast<ossup::BoidsPlugIn<OSSteerVehicle>*>(mPlugIn)->drawObstacles();
+	}
+
+	//drawer finalizations
+	mDrawer3dStatic->finalize();
+
+	//(re)set drawer
+	gDrawer3d = currentDrawer;
+}
+#endif //OS_DEBUG
 
 //TypedWritable API
 /**
@@ -1053,6 +1297,40 @@ void OSSteerPlugIn::write_datagram(BamWriter *manager, Datagram &dg)
 			manager->write_pointer(dg, (*iter).second().node());
 		}
 	}
+
+	///SPECIFICS
+	if(mPlugInType == ONE_TURNING)
+	{
+		/*do nothing*/;
+	}
+	if(mPlugInType == PEDESTRIAN)
+	{
+		dg.add_uint8((uint8_t) get_proximity_database());
+	}
+	if(mPlugInType == BOID)
+	{
+		;
+	}
+	if(mPlugInType == MULTIPLE_PURSUIT)
+	{
+		;
+	}
+	if(mPlugInType == SOCCER)
+	{
+		;
+	}
+	if(mPlugInType == CAPTURE_THE_FLAG)
+	{
+		;
+	}
+	if(mPlugInType == LOW_SPEED_TURN)
+	{
+		dg.add_stdfloat(get_steering_speed());
+	}
+	if(mPlugInType == MAP_DRIVE)
+	{
+		;
+	}
 }
 
 /**
@@ -1116,9 +1394,14 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 		pvector<PT(OSSteerVehicle)>::iterator iter;
 		for (iter = mSteerVehicles.begin(); iter != mSteerVehicles.end(); ++iter)
 		{
-			//do add to real update list
-			static_cast<ossup::PlugIn*>(mPlugIn)->addVehicle(
-					&(*iter)->get_abstract_vehicle());
+			//first check vehicle's compatibility, because it might
+			//not have gained its final type
+			if (check_steer_vehicle_compatibility(NodePath::any_path((*iter))))
+			{
+				//do add to real update list
+				static_cast<ossup::PlugIn*>(mPlugIn)->addVehicle(
+						&(*iter)->get_abstract_vehicle());
+			}
 		}
 	}
 	//3: (re)add obstacles
@@ -1143,6 +1426,40 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 					(*iter).first().get_forward(),
 					(*iter).first().get_position());
 		}
+	}
+
+	///SPECIFICS
+	if(mPlugInType == ONE_TURNING)
+	{
+		/*do nothing*/;
+	}
+	if(mPlugInType == PEDESTRIAN)
+	{
+		set_proximity_database(mPD_ser);
+	}
+	if(mPlugInType == BOID)
+	{
+		;
+	}
+	if(mPlugInType == MULTIPLE_PURSUIT)
+	{
+		;
+	}
+	if(mPlugInType == SOCCER)
+	{
+		;
+	}
+	if(mPlugInType == CAPTURE_THE_FLAG)
+	{
+		;
+	}
+	if(mPlugInType == LOW_SPEED_TURN)
+	{
+		set_steering_speed(mSteeringSpeed_ser);
+	}
+	if(mPlugInType == MAP_DRIVE)
+	{
+		;
 	}
 }
 
@@ -1237,6 +1554,40 @@ void OSSteerPlugIn::fillin(DatagramIterator &scan, BamReader *manager)
 		mLocalObstacles.first()[i] = NULL;
 		mLocalObstacles.second()[i].first().read_datagram(scan);
 		manager->read_pointer(scan);
+	}
+
+	///SPECIFICS
+	if(mPlugInType == ONE_TURNING)
+	{
+		/*do nothing*/;
+	}
+	if(mPlugInType == PEDESTRIAN)
+	{
+		mPD_ser = (OSProximityDatabase) scan.get_uint8();
+	}
+	if(mPlugInType == BOID)
+	{
+		;
+	}
+	if(mPlugInType == MULTIPLE_PURSUIT)
+	{
+		;
+	}
+	if(mPlugInType == SOCCER)
+	{
+		;
+	}
+	if(mPlugInType == CAPTURE_THE_FLAG)
+	{
+		;
+	}
+	if(mPlugInType == LOW_SPEED_TURN)
+	{
+		mSteeringSpeed_ser = scan.get_stdfloat();
+	}
+	if(mPlugInType == MAP_DRIVE)
+	{
+		;
 	}
 }
 

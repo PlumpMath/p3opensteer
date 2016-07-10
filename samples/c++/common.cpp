@@ -62,6 +62,15 @@ void startFramework(int argc, char *argv[], const string& msg)
 	OSSteerPlugIn::register_with_read_factory();
 	OSSteerVehicle::register_with_read_factory();
 	///
+
+	//common callbacks
+	// handle obstacle addition
+	bool TRUE = true;
+	framework.define_key("o", "addObstacle", &handleObstacles, (void*) &TRUE);
+	// handle obstacle removal
+	bool FALSE = false;
+	framework.define_key("shift-o", "removeObstacle", &handleObstacles,
+			(void*) &FALSE);
 }
 
 // load plane stuff
@@ -97,7 +106,7 @@ NodePath loadTerrain()
 	PNMImage heightField(Filename(dataDir + string("/heightfield.png")));
 	terrain->set_heightfield(heightField);
 	//sizing
-	float widthScale = 0.5, heightScale = 25.0;
+	float widthScale = 0.5, heightScale = 10.0;
 	float environmentWidthX = (heightField.get_x_size() - 1) * widthScale;
 	float environmentWidthY = (heightField.get_y_size() - 1) * widthScale;
 	float environmentWidth = (environmentWidthX + environmentWidthY) / 2.0;
@@ -302,8 +311,8 @@ LPoint3f getRandomPos(NodePath modelNP)
 	return LPoint3f(x, y, gotCollisionZ.get_second());
 }
 
-// get vehicles, models and animations
-void getVehiclesModelsAnims(int vehicleFileIdx, const string& moveType,
+// get a vehicle, model and animations
+void getVehicleModelAnims(int vehicleFileIdx, const string& moveType,
 		const NodePath& sceneNP, vector<NodePath>& vehicleNP, PT(OSSteerPlugIn)steerPlugIn,
 vector<PT(OSSteerVehicle)>&steerVehicle, vector<vector<PT(AnimControl)> >& vehicleAnimCtls)
 {
@@ -311,7 +320,7 @@ vector<PT(OSSteerVehicle)>&steerVehicle, vector<vector<PT(AnimControl)> >& vehic
 	// get the model
 	vehicleNP.push_back(window->load_model(framework.get_models(), vehicleFile[vehicleFileIdx]));
 	// set random scale (0.35 - 0.45)
-	float scale = 0.35 + 0.1 * ((float) rd() / (float) rd.max());
+	float scale = 0.7 + 0.1 * ((float) rd() / (float) rd.max());
 	vehicleNP.back().set_scale(scale);
 	// associate an anim with a given anim control
 	AnimControlCollection tmpAnims;
@@ -367,4 +376,16 @@ void writeToBamFileAndExit(const Event* e, void* data)
 	framework.close_framework();
 	//
 	exit(0);
+}
+
+// handle add/remove obstacles XXX
+void handleObstacles(const Event* e, void* data)
+{
+	bool addObstacle = *reinterpret_cast<bool*>(data);
+	// get the collision entry, if any
+	PT(CollisionEntry)entry0 = getCollisionEntryFromCamera();
+	if (entry0)
+	{
+		cout << *entry0 << endl;
+	}
 }

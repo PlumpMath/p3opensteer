@@ -5,23 +5,23 @@ Created on Jun 26, 2016
 '''
 
 import panda3d.core
-from p3opensteer import OSSteerManager, ValueList_string
+from p3opensteer import OSSteerManager, ValueList_string, ValueList_LPoint3f, \
+        ValueList_float
 from panda3d.core import TextNode, ClockObject, AnimControlCollection, \
-        auto_bind
+        auto_bind, LPoint3f
 #
 from common import startFramework, toggleDebugFlag, toggleDebugDraw, mask, \
         loadTerrain, printCreationParameters, handleVehicleEvent, \
-        changeVehicleMaxForce, changeVehicleMaxSpeed, getVehiclesModelsAnims, \
+        changeVehicleMaxForce, changeVehicleMaxSpeed, getVehicleModelAnims, \
         rateFactor, writeToBamFileAndExit, readFromBamFile, bamFileName
 import sys
         
 # # specific data/functions declarations/definitions
 sceneNP = None
-vehicleNP = [None for i in range(2)]
-vehicleAnimCtls = [[None for i in range(2)] for i in range(2)]
+vehicleNP = []
+vehicleAnimCtls = []
 steerPlugIn = None
-steerVehicle = [None for i in range(2)]
-NUMVEHICLES = 2
+steerVehicle = []
 #
 def setParametersBeforeCreation():
     """set parameters as strings before plug-ins/vehicles creation"""
@@ -30,11 +30,11 @@ def setParametersBeforeCreation():
     valueList = ValueList_string()
     # set plug-in type
     steerMgr.set_parameter_value(OSSteerManager.STEERPLUGIN, "plugin_type",
-            "low_speed_turn")
+            "pedestrian")
 
     # set vehicle type, mass, speed
     steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "vehicle_type",
-            "low_speed_turn")
+            "pedestrian")
     steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "mass",
             "2.0")
     steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "speed",
@@ -66,7 +66,7 @@ def updatePlugIn(steerPlugIn, task):
     dt = ClockObject.get_global_clock().get_dt()
     steerPlugIn.update(dt)
     # handle vehicle's animation
-    for i in range(NUMVEHICLES):
+    for i in range(len(vehicleAnimCtls)):
         # get current velocity size
         currentVelSize = steerVehicle[i].get_speed()
         if currentVelSize > 0.0:
@@ -104,7 +104,7 @@ if __name__ == '__main__':
             "- press \"f\"/\"shift-f\" to increase/decrease vehicle's max force\n"
             "- press \"t\" to toggle steering speed\n")
     textNodePath = app.aspect2d.attach_new_node(text)
-    textNodePath.set_pos(-1.25, 0.0, 0.9)
+    textNodePath.set_pos(-1.25, 0.0, -0.5)
     textNodePath.set_scale(0.035)
     
     # create a steer manager; set root and mask to manage 'kinematic' vehicles
@@ -134,9 +134,22 @@ if __name__ == '__main__':
         # set sceneNP's collide mask
         sceneNP.set_collide_mask(mask)
         
-        # create the default plug-in (attached to the reference node)
+        # create the plug-in (attached to the reference node)
         plugInNP = steerMgr.create_steer_plug_in()
         steerPlugIn = plugInNP.node()
+    
+        # set the pathway
+        pointList = ValueList_LPoint3f()
+        pointList.add_value(LPoint3f(79.474, 51.7236, 2.0207))
+        pointList.add_value(LPoint3f(108.071, 51.1972, 2.7246))
+        pointList.add_value(LPoint3f(129.699, 30.1742, 0.720501))
+        pointList.add_value(LPoint3f(141.597, 73.496, 2.14218))
+        pointList.add_value(LPoint3f(105.917, 107.032, 3.06428))
+        pointList.add_value(LPoint3f(61.2637, 109.622, 3.03588))
+        # note: pedestrian handles single radius pathway only 
+        radiusList = ValueList_float()
+        radiusList.add_value(4)
+        steerPlugIn.set_pathway(pointList, radiusList, True, True)
     
         # get steer vehicles, models and animations   
         #1: get the models and attach animations to them
@@ -144,8 +157,8 @@ if __name__ == '__main__':
         #3: set steer vehicles' positions
         #4: attach the models to steer vehicles
         #5: add the steer vehicles to the plug-in
-#         getVehiclesModelsAnims(NUMVEHICLES, sceneNP, vehicleNP, steerPlugIn, 
-#                            steerVehicle, vehicleAnimCtls)
+        getVehicleModelAnims(0, "kinematic", sceneNP, vehicleNP, steerPlugIn, 
+                       steerVehicle, vehicleAnimCtls)
     else:
         # valid bamFile
         # restore plug-in: through steer manager
@@ -157,6 +170,10 @@ if __name__ == '__main__':
         OSSteerManager.get_global_ptr().get_reference_node_path().reparent_to(app.render)
     
         # restore steer vehicles
+        NUMVEHICLES = OSSteerManager.get_global_ptr().get_num_steer_vehicles()
+        tmpList = [None for i in range(NUMVEHICLES)]
+        steerVehicle.extend(tmpList)
+        vehicleAnimCtls.extend(tmpList)
         for i in range(NUMVEHICLES):
             # restore the steer vehicle: through steer manager
             steerVehicleNP = OSSteerManager.get_global_ptr().get_steer_vehicle(i)
@@ -164,6 +181,7 @@ if __name__ == '__main__':
             # restore animations
             tmpAnims = AnimControlCollection()
             auto_bind(steerVehicle[i], tmpAnims)
+            vehicleAnimCtls[i] = [None, None];
             for j in range(tmpAnims.get_num_anims()):
                 vehicleAnimCtls[i][j] = tmpAnims.get_anim(j)
 
@@ -198,7 +216,7 @@ if __name__ == '__main__':
     app.accept("shift-f", changeVehicleMaxForce, ["shift-f", steerVehicle[0]])
     
     # handle OSSteerVehicle(s)' events
-    app.accept("move-event", handleVehicleEvent)
+#     app.accept("move-event", handleVehicleEvent) XXX
     
     # write to bam file on exit
     app.win.set_close_request_event("close_request_event")
@@ -209,7 +227,7 @@ if __name__ == '__main__':
     
     # place camera
     trackball = app.trackball.node()
-    trackball.set_pos(0.0, 50.0, 0.0);
+    trackball.set_pos(-128.0, 120.0, -40.0);
     trackball.set_hpr(0.0, 20.0, 0.0);
    
     # app.run(), equals to do the main loop in C++

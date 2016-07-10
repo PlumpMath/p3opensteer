@@ -50,6 +50,12 @@ def startFramework(msg):
     props = WindowProperties()
     props.setTitle("p3opensteer: " + msg)
     app.win.requestProperties(props)
+ 
+    #common callbacks     
+    # handle obstacle addition
+    app.accept("o", handleObstacles, [True])
+    # handle obstacle removal
+    app.accept("shift-o", handleObstacles, [False]);
     #
     return app
 
@@ -75,7 +81,7 @@ def loadTerrain():
     heightField = PNMImage(Filename(dataDir + "/heightfield.png"))
     terrain.set_heightfield(heightField)
     # sizing
-    widthScale, heightScale = (0.5, 25.0)
+    widthScale, heightScale = (0.5, 10.0)
     environmentWidthX = (heightField.get_x_size() - 1) * widthScale
     environmentWidthY = (heightField.get_y_size() - 1) * widthScale
     environmentWidth = (environmentWidthX + environmentWidthY) / 2.0
@@ -242,16 +248,16 @@ def getRandomPos(modelNP):
             break
     return LPoint3f(x, y, gotCollisionZ.get_second())
 
-def getVehiclesModelsAnims(vehicleFileIdx, moveType, sceneNP, vehicleNP, steerPlugIn, 
+def getVehicleModelAnims(vehicleFileIdx, moveType, sceneNP, vehicleNP, steerPlugIn, 
                            steerVehicle, vehicleAnimCtls):
-    """get vehicles, models and animations"""
+    """get a vehicle, model and animations"""
     
     global app, vehicleAnimFiles
     # get some models, with animations, to attach to vehicles
     # get the model
     vehicleNP.append(app.loader.load_model(vehicleFile[vehicleFileIdx]))
     # set random scale (0.35 - 0.45)
-    scale = 0.35 + 0.1 * random.uniform(0.0, 1.0)
+    scale = 0.7 + 0.1 * random.uniform(0.0, 1.0)
     vehicleNP[-1].set_scale(scale)
     # associate an anim with a given anim control
     tmpAnims = AnimControlCollection()
@@ -300,3 +306,15 @@ def writeToBamFileAndExit(fileName):
     OSSteerManager.get_global_ptr().write_to_bam_file(fileName)
     #
     sys.exit(0)
+
+
+def handleObstacles(data):
+    """handle add/remove obstacles""" #XXX
+    
+    global app
+
+    addObstacle = data
+    # get the collision entry, if any
+    entry0 = getCollisionEntryFromCamera()
+    if entry0:
+        print(entry0)

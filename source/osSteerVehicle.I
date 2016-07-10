@@ -13,7 +13,7 @@
 /**
  * Returns the OSSteerVehicle type.
  */
-INLINE OSSteerVehicle::OSSteerVehicleType OSSteerVehicle::get_vehicle_type()
+INLINE OSSteerVehicle::OSSteerVehicleType OSSteerVehicle::get_vehicle_type() const
 {
 	return mVehicleType;
 }
@@ -40,7 +40,7 @@ INLINE void OSSteerVehicle::set_settings(const OSVehicleSettings& settings)
 /**
  * Returns OSSteerVehicle's settings as a whole.
  */
-INLINE OSVehicleSettings OSSteerVehicle::get_settings()
+INLINE OSVehicleSettings OSSteerVehicle::get_settings() const
 {
 	//get OpenSteer vehicle settings
 	return static_cast<VehicleAddOn*>(mVehicle)->getSettings();
@@ -57,7 +57,7 @@ INLINE void OSSteerVehicle::set_mass(float mass)
 /**
  * Returns the OSSteerVehicle's mass.
  */
-INLINE float OSSteerVehicle::get_mass()
+INLINE float OSSteerVehicle::get_mass() const
 {
 	return mVehicle->mass();
 }
@@ -73,7 +73,7 @@ INLINE void OSSteerVehicle::set_radius(float radius)
 /**
  * Returns the OSSteerVehicle's radius.
  */
-INLINE float OSSteerVehicle::get_radius()
+INLINE float OSSteerVehicle::get_radius() const
 {
 	return mVehicle->radius();
 }
@@ -89,7 +89,7 @@ INLINE void OSSteerVehicle::set_speed(float speed)
 /**
  * Returns the OSSteerVehicle's speed.
  */
-INLINE float OSSteerVehicle::get_speed()
+INLINE float OSSteerVehicle::get_speed() const
 {
 	return mVehicle->speed();
 }
@@ -105,7 +105,7 @@ INLINE void OSSteerVehicle::set_max_force(float max_force)
 /**
  * Returns the OSSteerVehicle's max force.
  */
-INLINE float OSSteerVehicle::get_max_force()
+INLINE float OSSteerVehicle::get_max_force() const
 {
 	return mVehicle->maxForce();
 }
@@ -121,7 +121,7 @@ INLINE void OSSteerVehicle::set_max_speed(float max_speed)
 /**
  * Returns the OSSteerVehicle's max speed.
  */
-INLINE float OSSteerVehicle::get_max_speed()
+INLINE float OSSteerVehicle::get_max_speed() const
 {
 	return mVehicle->maxSpeed();
 }
@@ -203,7 +203,7 @@ INLINE void OSSteerVehicle::set_mov_type(OSSteerVehicle::OSSteerVehicleMovType m
 /**
  * Returns OSSteerVehicle's move type (opensteer native or kinematic).
  */
-INLINE OSSteerVehicle::OSSteerVehicleMovType OSSteerVehicle::get_mov_type()
+INLINE OSSteerVehicle::OSSteerVehicleMovType OSSteerVehicle::get_mov_type() const
 {
 	return mMovType;
 }

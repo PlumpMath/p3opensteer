@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
 		{
 			string moveType;
 			(i % 2) == 0 ? moveType = "opensteer" : moveType = "kinematic";
-			getVehiclesModelsAnims(i, moveType, sceneNP, vehicleNP, steerPlugIn,
+			getVehicleModelAnims(i, moveType, sceneNP, vehicleNP, steerPlugIn,
 					steerVehicle, vehicleAnimCtls);
 		}
 	}
@@ -232,7 +232,7 @@ AsyncTask::DoneStatus updatePlugIn(GenericAsyncTask* task, void* data)
 	double dt = ClockObject::get_global_clock()->get_dt();
 	steerPlugIn->update(dt);
 	// handle vehicle's animation
-	for (int i = 0; i < vehicleAnimCtls.size(); ++i)
+	for (int i = 0; i < (int)vehicleAnimCtls.size(); ++i)
 	{
 		// get current velocity size
 		float currentVelSize = steerVehicle[i]->get_speed();

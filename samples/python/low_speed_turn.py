@@ -11,7 +11,7 @@ from panda3d.core import TextNode, ClockObject, AnimControlCollection, \
 #
 from common import startFramework, toggleDebugFlag, toggleDebugDraw, mask, \
         loadPlane, printCreationParameters, handleVehicleEvent, \
-        changeVehicleMaxForce, changeVehicleMaxSpeed, getVehiclesModelsAnims, \
+        changeVehicleMaxForce, changeVehicleMaxSpeed, getVehicleModelAnims, \
         rateFactor, writeToBamFileAndExit, readFromBamFile, bamFileName
 import sys
         
@@ -148,7 +148,7 @@ if __name__ == '__main__':
                 moveType = "opensteer"
             else:
                 moveType = "kinematic"
-            getVehiclesModelsAnims(i, moveType, sceneNP, vehicleNP, steerPlugIn, 
+            getVehicleModelAnims(i, moveType, sceneNP, vehicleNP, steerPlugIn, 
                            steerVehicle, vehicleAnimCtls)
     else:
         # valid bamFile
