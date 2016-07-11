@@ -40,8 +40,8 @@ extern random_device rd;
 
 ///functions' declarations
 void startFramework(int argc, char *argv[], const string&);
-NodePath loadPlane();
-NodePath loadTerrain();
+NodePath loadPlane(const string&);
+NodePath loadTerrain(const string&);
 PT(CollisionEntry)getCollisionEntryFromCamera();
 void printCreationParameters();
 void handleVehicleEvent(const Event*, void*);
@@ -49,11 +49,10 @@ void toggleDebugDraw(const Event*, void*);
 void changeVehicleMaxSpeed(const Event*, void*);
 void changeVehicleMaxForce(const Event*, void*);
 LPoint3f getRandomPos(NodePath);
-void getVehicleModelAnims(int, const string&, const NodePath& ,
+void getVehicleModelAnims(float, int, const string&, const NodePath& ,
 		vector<NodePath>&, PT(OSSteerPlugIn), vector<PT(OSSteerVehicle)>&,
 		vector<vector<PT(AnimControl)> >&);
 bool readFromBamFile(string);
 void writeToBamFileAndExit(const Event*, void*);
-void handleObstacles(const Event*, void*);
 
 #endif /* COMMON_H_ */

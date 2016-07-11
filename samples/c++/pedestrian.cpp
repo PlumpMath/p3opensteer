@@ -17,6 +17,7 @@ vector<PT(OSSteerVehicle)>steerVehicle;
 void setParametersBeforeCreation();
 void toggleSteeringSpeed(const Event*, void*);
 AsyncTask::DoneStatus updatePlugIn(GenericAsyncTask*, void*);
+void handleObstacles(const Event*, void*);
 
 int main(int argc, char *argv[])
 {
@@ -56,10 +57,10 @@ int main(int argc, char *argv[])
 		// reparent the reference node to render
 		steerMgr->get_reference_node_path().reparent_to(window->get_render());
 
-		// get a sceneNP and reparent to the reference node
-		sceneNP = loadTerrain();
-		// set name: to ease restoring from bam file
-		sceneNP.set_name("SceneNP");
+		// get a sceneNP, naming it with "SceneNP" to ease restoring from bam
+		// file
+		sceneNP = loadTerrain("SceneNP");
+		// and reparent to the reference node
 		sceneNP.reparent_to(steerMgr->get_reference_node_path());
 
 		// set sceneNP's collide mask
@@ -88,7 +89,7 @@ int main(int argc, char *argv[])
 		//3: set its position
 		//4: attach the model to steer vehicle
 		//5: add the steer vehicle to the plug-in
-		getVehicleModelAnims(0, "kinematic", sceneNP, vehicleNP, steerPlugIn,
+		getVehicleModelAnims(0.7, 0, "kinematic", sceneNP, vehicleNP, steerPlugIn,
 				steerVehicle, vehicleAnimCtls);
 	}
 	else
@@ -154,6 +155,14 @@ int main(int argc, char *argv[])
 	toggleDebugFlag = false;
 	framework.define_key("d", "toggleDebugDraw", &toggleDebugDraw,
 			(void*) steerPlugIn.p());
+
+	// handle obstacle addition
+	bool TRUE = true;
+	framework.define_key("o", "addObstacle", &handleObstacles, (void*) &TRUE);
+	// handle obstacle removal
+	bool FALSE = false;
+	framework.define_key("shift-o", "removeObstacle", &handleObstacles,
+			(void*) &FALSE);
 
 	// increase/decrease vehicle's max speed
 	framework.define_key("s", "changeVehicleMaxSpeed", &changeVehicleMaxSpeed,
@@ -270,4 +279,71 @@ AsyncTask::DoneStatus updatePlugIn(GenericAsyncTask* task, void* data)
 	}
 	//
 	return AsyncTask::DS_cont;
+}
+
+// handle add/remove obstacles
+void handleObstacles(const Event* e, void* data)
+{
+	bool addObstacle = *reinterpret_cast<bool*>(data);
+	// get the collision entry, if any
+	PT(CollisionEntry)entry0 = getCollisionEntryFromCamera();
+	if (entry0)
+	{
+		// get the hit object
+		NodePath hitObject = entry0->get_into_node_path();
+		cout << "hit " << hitObject << " object" << endl;
+
+		// check if we want add obstacle and
+		// if sceneNP is the hitObject or an ancestor thereof
+		if (addObstacle
+				and ((sceneNP == hitObject) or sceneNP.is_ancestor_of(hitObject)))
+		{
+			// the hit object is the scene: add an obstacle to the scene
+			// get a model as obstacle
+			NodePath obstacleNP = window->load_model(framework.get_models(),
+					obstacleFile);
+			obstacleNP.set_collide_mask(mask);
+			// set random scale (0.03 - 0.04)
+			float scale = 0.03 + 0.01 * ((float) rd() / (float) rd.max());
+			obstacleNP.set_scale(scale);
+			// set obstacle position
+			LPoint3f pos = entry0->get_surface_point(sceneNP);
+			obstacleNP.set_pos(sceneNP, pos);
+			// try to add to plug-in
+			if (steerPlugIn->add_obstacle(obstacleNP, "box") < 0)
+			{
+				// something went wrong remove from scene
+				obstacleNP.remove_node();
+				return;
+			}
+			cout << "added " << obstacleNP << " obstacle." << endl;
+		}
+		// check if we want remove obstacle
+		else if (not addObstacle)
+		{
+			// cycle through the local obstacle list
+			for (int index = 0; index < steerPlugIn->get_num_obstacles();
+					++index)
+			{
+				// get the obstacle's NodePath
+				int ref = steerPlugIn->get_obstacle(index);
+				NodePath obstacleNP =
+						OSSteerManager::get_global_ptr()->get_obstacle_by_ref(
+								ref);
+				// check if obstacleNP is the hitObject or an ancestor thereof
+				if ((obstacleNP == hitObject)
+						or obstacleNP.is_ancestor_of(hitObject))
+				{
+					// try to remove from plug-in
+					if (not steerPlugIn->remove_obstacle(ref).is_empty())
+					{
+						// all ok remove from scene
+						cout << "removed " << obstacleNP << " obstacle." << endl;
+						obstacleNP.remove_node();
+						break;
+					}
+				}
+			}
+		}
+	}
 }

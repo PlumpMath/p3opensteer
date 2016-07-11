@@ -57,10 +57,10 @@ int main(int argc, char *argv[])
 		// reparent the reference node to render
 		steerMgr->get_reference_node_path().reparent_to(window->get_render());
 
-		// get a sceneNP and reparent to the reference node
-		sceneNP = loadPlane();
-		// set name: to ease restoring from bam file
-		sceneNP.set_name("SceneNP");
+		// get a sceneNP, naming it with "SceneNP" to ease restoring from bam
+		// file
+		sceneNP = loadPlane("SceneNP");
+		// and reparent to the reference node
 		sceneNP.reparent_to(steerMgr->get_reference_node_path());
 
 		// set sceneNP's collide mask
@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
 		{
 			string moveType;
 			(i % 2) == 0 ? moveType = "opensteer" : moveType = "kinematic";
-			getVehicleModelAnims(i, moveType, sceneNP, vehicleNP, steerPlugIn,
+			getVehicleModelAnims(0.35, i, moveType, sceneNP, vehicleNP, steerPlugIn,
 					steerVehicle, vehicleAnimCtls);
 		}
 	}

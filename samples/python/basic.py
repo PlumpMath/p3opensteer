@@ -24,7 +24,7 @@ if __name__ == '__main__':
     steerMgr.get_reference_node_path().reparent_to(app.render)
 
     print("get a sceneNP and reparent to the reference node")
-    sceneNP = loadPlane()
+    sceneNP = loadPlane("SceneNP")
     sceneNP.reparent_to(steerMgr.get_reference_node_path())
     
     print("set sceneNP's collide mask")

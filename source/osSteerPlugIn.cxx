@@ -667,8 +667,6 @@ int OSSteerPlugIn::add_obstacle(NodePath& objectNP,
 	//compute new obstacle dimensions
 	modelRadius = OSSteerManager::get_global_ptr()->get_bounding_dimensions(
 			objectNP, modelDims, modelDeltaCenter);
-	//the obstacle is reparented to the OSSteerPlugIn's reference node path
-	objectNP.wrt_reparent_to(mReferenceNP);
 	//correct obstacle's parameters
 	position = objectNP.get_pos();
 	forward = mReferenceNP.get_relative_vector(objectNP, LVector3f::forward());
@@ -680,7 +678,7 @@ int OSSteerPlugIn::add_obstacle(NodePath& objectNP,
 	radius = modelRadius;
 	//
 	return do_add_obstacle(objectNP, type, seenFromState, width, height, depth,
-			radius, side, up, forward, position);
+			radius, side, up, forward, position + LPoint3f(0.0, 0.0, height / 2.0));
 }
 
 /**

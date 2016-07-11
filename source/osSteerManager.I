@@ -68,11 +68,12 @@ INLINE int OSSteerManager::get_num_steer_vehicles() const
  */
 INLINE int OSSteerManager::get_obstacle(int index) const
 {
-	pvector<ObstacleAttributes> obstacleAttrs = mObstacles.get_second();
-	CONTINUE_IF_ELSE_R((index >= 0) && (index < (int ) obstacleAttrs.size()),
+	pvector<ObstacleAttributes>& obstacleAttrs =
+			const_cast<GlobalObstacles&>(mObstacles).second();
+	CONTINUE_IF_ELSE_R((index >= 0) && (index < (int) obstacleAttrs.size()),
 			OS_ERROR)
 
-	return obstacleAttrs[index].get_first().get_ref();
+	return obstacleAttrs[index].first().get_ref();
 }
 
 /**
@@ -80,7 +81,7 @@ INLINE int OSSteerManager::get_obstacle(int index) const
  */
 INLINE int OSSteerManager::get_num_obstacles() const
 {
-	 return (int) mObstacles.get_second().size();
+	return (int) const_cast<GlobalObstacles&>(mObstacles).second().size();
 }
 
 /**

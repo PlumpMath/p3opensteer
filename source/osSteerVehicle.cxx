@@ -634,14 +634,14 @@ void OSSteerVehicle::do_update_steer_vehicle(const float currentTime,
 		WPT(OSSteerManager)steerMgr = OSSteerManager::get_global_ptr();
 		// correct panda's Z: set the collision ray origin wrt collision root
 		LPoint3f pOrig = steerMgr->get_collision_root().get_relative_point(
-				mReferenceNP, updatedPos) + mHeigthCorrection;
+				mReferenceNP, updatedPos) + mHeigthCorrection * 2.0;
 		// get the collision height wrt the reference node path
 		Pair<bool,float> gotCollisionZ = steerMgr->get_collision_height(pOrig,
 				mReferenceNP);
-		if (gotCollisionZ.get_first())
+		if (gotCollisionZ.first())
 		{
 			//updatedPos.z needs correction
-			updatedPos.set_z(gotCollisionZ.get_second());
+			updatedPos.set_z(gotCollisionZ.second());
 		}
 	}
 	thisNP.set_pos(updatedPos);

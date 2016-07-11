@@ -64,17 +64,10 @@ void startFramework(int argc, char *argv[], const string& msg)
 	///
 
 	//common callbacks
-	// handle obstacle addition
-	bool TRUE = true;
-	framework.define_key("o", "addObstacle", &handleObstacles, (void*) &TRUE);
-	// handle obstacle removal
-	bool FALSE = false;
-	framework.define_key("shift-o", "removeObstacle", &handleObstacles,
-			(void*) &FALSE);
 }
 
 // load plane stuff
-NodePath loadPlane()
+NodePath loadPlane(const string& name)
 {
 	CardMaker cm("plane");
 	cm.set_frame(-15, 15, -15, 15);
@@ -82,6 +75,8 @@ NodePath loadPlane()
 	plane.set_p(-90.0);
 	plane.set_z(0.0);
 	plane.set_color(0.15, 0.35, 0.35);
+	plane.set_collide_mask(mask);
+	plane.set_name(name);
 	return plane;
 }
 
@@ -100,7 +95,7 @@ static AsyncTask::DoneStatus terrainUpdate(GenericAsyncTask* task, void* data)
 }
 
 // load terrain stuff
-NodePath loadTerrain()
+NodePath loadTerrain(const string& name)
 {
 	GeoMipTerrain *terrain = new GeoMipTerrain("terrain");
 	PNMImage heightField(Filename(dataDir + string("/heightfield.png")));
@@ -129,6 +124,8 @@ NodePath loadTerrain()
 			Filename(string("terrain.png")));
 	terrain->get_root().set_tex_scale(textureStage0, 1.0, 1.0);
 	terrain->get_root().set_texture(textureStage0, textureImage, 1);
+	terrain->get_root().set_collide_mask(mask);
+	terrain->get_root().set_name(name);
 	//brute force generation
 	bool bruteForce = true;
 	terrain->set_bruteforce(bruteForce);
@@ -312,7 +309,7 @@ LPoint3f getRandomPos(NodePath modelNP)
 }
 
 // get a vehicle, model and animations
-void getVehicleModelAnims(int vehicleFileIdx, const string& moveType,
+void getVehicleModelAnims(float meanScale, int vehicleFileIdx, const string& moveType,
 		const NodePath& sceneNP, vector<NodePath>& vehicleNP, PT(OSSteerPlugIn)steerPlugIn,
 vector<PT(OSSteerVehicle)>&steerVehicle, vector<vector<PT(AnimControl)> >& vehicleAnimCtls)
 {
@@ -320,7 +317,7 @@ vector<PT(OSSteerVehicle)>&steerVehicle, vector<vector<PT(AnimControl)> >& vehic
 	// get the model
 	vehicleNP.push_back(window->load_model(framework.get_models(), vehicleFile[vehicleFileIdx]));
 	// set random scale (0.35 - 0.45)
-	float scale = 0.7 + 0.1 * ((float) rd() / (float) rd.max());
+	float scale = meanScale + 0.1 * ((float) rd() / (float) rd.max());
 	vehicleNP.back().set_scale(scale);
 	// associate an anim with a given anim control
 	AnimControlCollection tmpAnims;
@@ -376,16 +373,4 @@ void writeToBamFileAndExit(const Event* e, void* data)
 	framework.close_framework();
 	//
 	exit(0);
-}
-
-// handle add/remove obstacles XXX
-void handleObstacles(const Event* e, void* data)
-{
-	bool addObstacle = *reinterpret_cast<bool*>(data);
-	// get the collision entry, if any
-	PT(CollisionEntry)entry0 = getCollisionEntryFromCamera();
-	if (entry0)
-	{
-		cout << *entry0 << endl;
-	}
 }

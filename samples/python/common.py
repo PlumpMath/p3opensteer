@@ -52,14 +52,10 @@ def startFramework(msg):
     app.win.requestProperties(props)
  
     #common callbacks     
-    # handle obstacle addition
-    app.accept("o", handleObstacles, [True])
-    # handle obstacle removal
-    app.accept("shift-o", handleObstacles, [False]);
     #
     return app
 
-def loadPlane():
+def loadPlane(name):
     """load plane stuff"""
     
     cm = CardMaker("plane")
@@ -68,9 +64,11 @@ def loadPlane():
     plane.set_p(-90.0)
     plane.set_z(0.0)
     plane.set_color(0.15, 0.35, 0.35)
+    plane.set_collide_mask(mask)
+    plane.set_name(name)
     return plane
 
-def loadTerrain():
+def loadTerrain(name):
     """load terrain stuff"""
 
     global app, terrain, terrainRootNetPos
@@ -105,6 +103,8 @@ def loadTerrain():
     terrain.get_root().set_texture(textureStage0, textureImage, 1)
     # reparent this Terrain node path to the object node path
     terrain.get_root().reparent_to(steerMgr.get_reference_node_path())
+    terrain.get_root().set_collide_mask(mask)
+    terrain.get_root().set_name(name)
     # brute force generation
     bruteForce = True
     terrain.set_bruteforce(bruteForce)
@@ -248,7 +248,7 @@ def getRandomPos(modelNP):
             break
     return LPoint3f(x, y, gotCollisionZ.get_second())
 
-def getVehicleModelAnims(vehicleFileIdx, moveType, sceneNP, vehicleNP, steerPlugIn, 
+def getVehicleModelAnims(meanScale, vehicleFileIdx, moveType, sceneNP, vehicleNP, steerPlugIn, 
                            steerVehicle, vehicleAnimCtls):
     """get a vehicle, model and animations"""
     
@@ -257,7 +257,7 @@ def getVehicleModelAnims(vehicleFileIdx, moveType, sceneNP, vehicleNP, steerPlug
     # get the model
     vehicleNP.append(app.loader.load_model(vehicleFile[vehicleFileIdx]))
     # set random scale (0.35 - 0.45)
-    scale = 0.7 + 0.1 * random.uniform(0.0, 1.0)
+    scale = meanScale + 0.1 * random.uniform(0.0, 1.0)
     vehicleNP[-1].set_scale(scale)
     # associate an anim with a given anim control
     tmpAnims = AnimControlCollection()
@@ -306,15 +306,3 @@ def writeToBamFileAndExit(fileName):
     OSSteerManager.get_global_ptr().write_to_bam_file(fileName)
     #
     sys.exit(0)
-
-
-def handleObstacles(data):
-    """handle add/remove obstacles""" #XXX
-    
-    global app
-
-    addObstacle = data
-    # get the collision entry, if any
-    entry0 = getCollisionEntryFromCamera()
-    if entry0:
-        print(entry0)
