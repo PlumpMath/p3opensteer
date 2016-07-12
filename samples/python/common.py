@@ -21,8 +21,6 @@ toggleDebugFlag = False
 terrain = None
 terrainRootNetPos = None
 DEFAULT_MAXVALUE = 1.0
-maxSpeedValue = DEFAULT_MAXVALUE
-maxForceValue = DEFAULT_MAXVALUE / 10.0
 # models and animations
 vehicleFile = ["eve.egg", "ralph.egg"]
 vehicleAnimFiles = [["eve-walk.egg", "eve-run.egg"],
@@ -185,23 +183,24 @@ def handleVehicleEvent(name, vehicle):
     vehicleNP = NodePath.any_path(vehicle)
     print ("got " + name + " event from '"+ vehicleNP.get_name() + "' at " + str(vehicleNP.get_pos()))
 
-def toggleDebugDraw(plugIn):
+def toggleDebugDraw(plugIn = None):
     """toggle debug draw"""
     
     global toggleDebugFlag
-    if not plugIn:
+    if plugIn == None:
         return
 
     toggleDebugFlag = not toggleDebugFlag
     plugIn.toggle_debug_drawing(toggleDebugFlag)
 
-def changeVehicleMaxSpeed(e, vehicle):
+def changeVehicleMaxSpeed(e, vehicles = None):
     """change vehicle's max speed"""
     
-    global maxSpeedValue, DEFAULT_MAXVALUE
-    if not vehicle:
+    global DEFAULT_MAXVALUE
+    if (vehicles == None) or (len(vehicles) == 0):
         return
 
+    maxSpeedValue = vehicles[-1].get_max_speed()
     if e[:6] == "shift-":
         maxSpeedValue = maxSpeedValue - 1
         if maxSpeedValue < DEFAULT_MAXVALUE:
@@ -209,16 +208,17 @@ def changeVehicleMaxSpeed(e, vehicle):
     else:
         maxSpeedValue = maxSpeedValue + 1
 
-    vehicle.set_max_speed(maxSpeedValue)
-    print(str(vehicle) + "'s max speed is " + str(vehicle.get_max_speed()))  
+    vehicles[-1].set_max_speed(maxSpeedValue)
+    print(str(vehicles[-1]) + "'s max speed is " + str(vehicles[-1].get_max_speed()))  
 
-def changeVehicleMaxForce(e, vehicle):
+def changeVehicleMaxForce(e, vehicles = None):
     """change vehicle's max force"""
     
-    global maxForceValue, DEFAULT_MAXVALUE
-    if not vehicle:
+    global DEFAULT_MAXVALUE
+    if (vehicles == None) or (len(vehicles) == 0):
         return
 
+    maxForceValue = vehicles[-1].get_max_force()
     if e[:6] == "shift-":
         maxForceValue = maxForceValue - 0.1
         if maxForceValue < DEFAULT_MAXVALUE / 10.0:
@@ -226,8 +226,8 @@ def changeVehicleMaxForce(e, vehicle):
     else:
         maxForceValue = maxForceValue + 0.1
 
-    vehicle.set_max_force(maxForceValue)
-    print(str(vehicle) + "'s max force is " + str(vehicle.get_max_force()))  
+    vehicles[-1].set_max_force(maxForceValue)
+    print(str(vehicles[-1]) + "'s max force is " + str(vehicles[-1].get_max_force()))  
 
 def getRandomPos(modelNP):
     """return a random point on the facing upwards surface of the model"""
@@ -264,11 +264,13 @@ class HandleVehicleData:
         self.steerVehicle = steerVehicle
         self.vehicleAnimCtls = vehicleAnimCtls
         
-def handleVehicles(data):
+def handleVehicles(data = None):
     """handle add/remove obstacles""" 
     
     global app
-
+    if data == None:
+        return
+    
     # get the collision entry, if any
     entry0 = getCollisionEntryFromCamera()
     if entry0:
@@ -370,6 +372,8 @@ def handleObstacles(data):
     """handle add/remove obstacles"""
     
     global app
+    if data == None:
+        return
 
     addObstacle = data.addObstacle
     sceneNP = data.sceneNP

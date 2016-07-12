@@ -9,10 +9,10 @@
 
 ///specific data/functions declarations/definitions
 NodePath sceneNP;
-vector<NodePath> vehicleNP;
+vector<NodePath> vehicleNPs;
 vector<vector<PT(AnimControl)> > vehicleAnimCtls;
 PT(OSSteerPlugIn)steerPlugIn;
-vector<PT(OSSteerVehicle)>steerVehicle;
+vector<PT(OSSteerVehicle)>steerVehicles;
 //
 void setParametersBeforeCreation();
 void toggleSteeringSpeed(const Event*, void*);
@@ -80,8 +80,8 @@ int main(int argc, char *argv[])
 		{
 			string moveType;
 			(i % 2) == 0 ? moveType = "opensteer" : moveType = "kinematic";
-			getVehicleModelAnims(0.35, i, moveType, sceneNP, vehicleNP, steerPlugIn,
-					steerVehicle, vehicleAnimCtls);
+			getVehicleModelAnims(0.35, i, moveType, sceneNP, vehicleNPs, steerPlugIn,
+					steerVehicles, vehicleAnimCtls);
 		}
 	}
 	else
@@ -101,17 +101,17 @@ int main(int argc, char *argv[])
 
 		// restore steer vehicles
 		int NUMVEHICLES = OSSteerManager::get_global_ptr()->get_num_steer_vehicles();
-		steerVehicle.resize(NUMVEHICLES);
+		steerVehicles.resize(NUMVEHICLES);
 		vehicleAnimCtls.resize(NUMVEHICLES);
 		for (int i = 0; i < NUMVEHICLES; ++i)
 		{
 			// restore the steer vehicle: through steer manager
 			NodePath steerVehicleNP =
 					OSSteerManager::get_global_ptr()->get_steer_vehicle(i);
-			steerVehicle[i] = DCAST(OSSteerVehicle, steerVehicleNP.node());
+			steerVehicles[i] = DCAST(OSSteerVehicle, steerVehicleNP.node());
 			// restore animations
 			AnimControlCollection tmpAnims;
-			auto_bind(steerVehicle[i], tmpAnims);
+			auto_bind(steerVehicles[i], tmpAnims);
 			vehicleAnimCtls[i] = vector<PT(AnimControl)>(2);
 			for (int j = 0; j < tmpAnims.get_num_anims(); ++j)
 			{
@@ -148,16 +148,16 @@ int main(int argc, char *argv[])
 	framework.define_key("d", "toggleDebugDraw", &toggleDebugDraw,
 			(void*) steerPlugIn.p());
 
-	// increase/decrease vehicle's max speed
+	// increase/decrease last inserted vehicle's max speed
 	framework.define_key("s", "changeVehicleMaxSpeed", &changeVehicleMaxSpeed,
-			(void*) steerVehicle[0].p());
+			(void*) &steerVehicles);
 	framework.define_key("shift-s", "changeVehicleMaxSpeed",
-			&changeVehicleMaxSpeed, (void*) steerVehicle[0].p());
-	// increase/decrease vehicle's max force
+			&changeVehicleMaxSpeed, (void*) &steerVehicles);
+	// increase/decrease last inserted vehicle's max force
 	framework.define_key("f", "changeVehicleMaxForce", &changeVehicleMaxForce,
-			(void*) steerVehicle[0].p());
+			(void*) &steerVehicles);
 	framework.define_key("shift-f", "changeVehicleMaxForce",
-			&changeVehicleMaxForce, (void*) steerVehicle[0].p());
+			&changeVehicleMaxForce, (void*) &steerVehicles);
 
 	// handle OSSteerVehicle(s)' events
 	framework.define_key("move-event", "handleVehicleEvent",
@@ -212,16 +212,16 @@ void setParametersBeforeCreation()
 // toggle steering speed
 void toggleSteeringSpeed(const Event*, void*)
 {
-	if (steerVehicle[0]->get_steering_speed() < 4.9)
+	if (steerVehicles[0]->get_steering_speed() < 4.9)
 	{
-		steerVehicle[0]->set_steering_speed(5.0);
+		steerVehicles[0]->set_steering_speed(5.0);
 	}
 	else
 	{
-		steerVehicle[0]->set_steering_speed(1.0);
+		steerVehicles[0]->set_steering_speed(1.0);
 	}
-	cout << *steerVehicle[0] << "'s steering speed is "
-			<< steerVehicle[0]->get_steering_speed() << endl;
+	cout << *steerVehicles[0] << "'s steering speed is "
+			<< steerVehicles[0]->get_steering_speed() << endl;
 }
 
 // custom update task for plug-ins
@@ -235,7 +235,7 @@ AsyncTask::DoneStatus updatePlugIn(GenericAsyncTask* task, void* data)
 	for (int i = 0; i < (int)vehicleAnimCtls.size(); ++i)
 	{
 		// get current velocity size
-		float currentVelSize = steerVehicle[i]->get_speed();
+		float currentVelSize = steerVehicles[i]->get_speed();
 		if (currentVelSize > 0.0)
 		{
 			int animOnIdx, animOffIdx;

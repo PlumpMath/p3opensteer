@@ -17,8 +17,6 @@ bool toggleDebugFlag = false;
 static GeoMipTerrain* terrain;
 static LPoint3f terrainRootNetPos;
 #define DEFAULT_MAXVALUE 1.0
-static float maxSpeedValue = DEFAULT_MAXVALUE;
-static float maxForceValue = DEFAULT_MAXVALUE / 10.0;
 //models and animations
 string vehicleFile[2] =
 { "eve.egg", "ralph.egg" };
@@ -132,7 +130,7 @@ NodePath loadTerrain(const string& name)
 	//Generate the terrain
 	terrain->generate();
 	//check if terrain needs update or not
-	if (!bruteForce)
+	if (not bruteForce)
 	{
 		//save the net pos of terrain root
 		terrainRootNetPos = terrain->get_root().get_net_transform()->get_pos();
@@ -222,7 +220,7 @@ void handleVehicleEvent(const Event* e, void* data)
 void toggleDebugDraw(const Event* e, void* data)
 {
 	PT(OSSteerPlugIn)plugIn = reinterpret_cast<OSSteerPlugIn*>(data);
-	if(! plugIn)
+	if(not plugIn)
 	{
 		return;
 	}
@@ -234,11 +232,14 @@ void toggleDebugDraw(const Event* e, void* data)
 // change vehicle's max speed
 void changeVehicleMaxSpeed(const Event* e, void* data)
 {
-	PT(OSSteerVehicle)vehicle = reinterpret_cast<OSSteerVehicle*>(data);
-	if(! vehicle)
+	vector<PT(OSSteerVehicle)>*vehicles =
+			reinterpret_cast<vector<PT(OSSteerVehicle)>*>(data);
+	if((not vehicles) or (vehicles->size() == 0))
 	{
 		return;
 	}
+
+	float maxSpeedValue = vehicles->back()->get_max_speed();
 	if (e->get_name().substr(0, 6) == string("shift-"))
 	{
 		maxSpeedValue = maxSpeedValue - 1;
@@ -252,19 +253,22 @@ void changeVehicleMaxSpeed(const Event* e, void* data)
 		maxSpeedValue = maxSpeedValue + 1;
 	}
 
-	vehicle->set_max_speed(maxSpeedValue);
-	cout << *vehicle << "'s max speed is " << vehicle->get_max_speed() << endl;
+	vehicles->back()->set_max_speed(maxSpeedValue);
+	cout << *(vehicles->back()) << "'s max speed is " <<
+			(vehicles->back())->get_max_speed() << endl;
 }
 
 // change vehicle's max force
 void changeVehicleMaxForce(const Event* e, void* data)
 {
-	PT(OSSteerVehicle)vehicle = reinterpret_cast<OSSteerVehicle*>(data);
-	if(! vehicle)
+	vector<PT(OSSteerVehicle)>*vehicles =
+			reinterpret_cast<vector<PT(OSSteerVehicle)>*>(data);
+	if((not vehicles) or (vehicles->size() == 0))
 	{
 		return;
 	}
 
+	float maxForceValue = vehicles->back()->get_max_force();
 	if (e->get_name().substr(0, 6) == string("shift-"))
 	{
 		maxForceValue = maxForceValue - 0.1;
@@ -278,8 +282,9 @@ void changeVehicleMaxForce(const Event* e, void* data)
 		maxForceValue = maxForceValue + 0.1;
 	}
 
-	vehicle->set_max_force(maxForceValue);
-	cout << *vehicle << "'s max force is " << vehicle->get_max_force() << endl;
+	vehicles->back()->set_max_force(maxForceValue);
+	cout << *(vehicles->back()) << "'s max force is " <<
+			(vehicles->back())->get_max_force() << endl;
 }
 
 // return a random point on the facing upwards surface of the model
@@ -314,6 +319,11 @@ LPoint3f getRandomPos(NodePath modelNP)
 // handle add/remove obstacles
 void handleVehicles(const Event* e, void* data)
 {
+	if (not data)
+	{
+		return;
+	}
+
 	PT(CollisionEntry)entry0 = getCollisionEntryFromCamera();
 	if (entry0)
 	{

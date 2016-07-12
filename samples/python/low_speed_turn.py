@@ -17,10 +17,10 @@ import sys
         
 # # specific data/functions declarations/definitions
 sceneNP = None
-vehicleNP = []
+vehicleNPs = []
 vehicleAnimCtls = []
 steerPlugIn = None
-steerVehicle = []
+steerVehicles = []
 #
 def setParametersBeforeCreation():
     """set parameters as strings before plug-ins/vehicles creation"""
@@ -50,24 +50,24 @@ def setParametersBeforeCreation():
 def toggleSteeringSpeed():
     """toggle steering speed"""
     
-    global steerVehicle
-    if steerVehicle[0].get_steering_speed() < 4.9:
-        steerVehicle[0].set_steering_speed(5.0)
+    global steerVehicles
+    if steerVehicles[0].get_steering_speed() < 4.9:
+        steerVehicles[0].set_steering_speed(5.0)
     else:
-        steerVehicle[0].set_steering_speed(1.0)
-    print(str(steerVehicle[0]) + "'s steering speed is " + str(steerVehicle[0].get_steering_speed()))
+        steerVehicles[0].set_steering_speed(1.0)
+    print(str(steerVehicles[0]) + "'s steering speed is " + str(steerVehicles[0].get_steering_speed()))
 
 def updatePlugIn(steerPlugIn, task):
     """custom update task for plug-ins"""
     
-    global steerVehicle, vehicleAnimCtls
+    global steerVehicles, vehicleAnimCtls
     # call update for plug-in
     dt = ClockObject.get_global_clock().get_dt()
     steerPlugIn.update(dt)
     # handle vehicle's animation
     for i in range(len(vehicleAnimCtls)):
         # get current velocity size
-        currentVelSize = steerVehicle[i].get_speed()
+        currentVelSize = steerVehicles[i].get_speed()
         if currentVelSize > 0.0:
             if currentVelSize < 4.0: 
                 animOnIdx = 0
@@ -148,8 +148,8 @@ if __name__ == '__main__':
                 moveType = "opensteer"
             else:
                 moveType = "kinematic"
-            getVehicleModelAnims(0.35, i, moveType, sceneNP, vehicleNP, steerPlugIn, 
-                           steerVehicle, vehicleAnimCtls)
+            getVehicleModelAnims(0.35, i, moveType, sceneNP, vehicleNPs, steerPlugIn, 
+                           steerVehicles, vehicleAnimCtls)
     else:
         # valid bamFile
         # restore plug-in: through steer manager
@@ -163,15 +163,15 @@ if __name__ == '__main__':
         # restore steer vehicles
         NUMVEHICLES = OSSteerManager.get_global_ptr().get_num_steer_vehicles()
         tmpList = [None for i in range(NUMVEHICLES)]
-        steerVehicle.extend(tmpList)
+        steerVehicles.extend(tmpList)
         vehicleAnimCtls.extend(tmpList)
         for i in range(NUMVEHICLES):
             # restore the steer vehicle: through steer manager
             steerVehicleNP = OSSteerManager.get_global_ptr().get_steer_vehicle(i)
-            steerVehicle[i] = steerVehicleNP.node()
+            steerVehicles[i] = steerVehicleNP.node()
             # restore animations
             tmpAnims = AnimControlCollection()
-            auto_bind(steerVehicle[i], tmpAnims)
+            auto_bind(steerVehicles[i], tmpAnims)
             vehicleAnimCtls[i] = [None, None];
             for j in range(tmpAnims.get_num_anims()):
                 vehicleAnimCtls[i][j] = tmpAnims.get_anim(j)
@@ -199,15 +199,15 @@ if __name__ == '__main__':
     toggleDebugFlag = False
     app.accept("d", toggleDebugDraw, [steerPlugIn])
 
-    # increase/decrease vehicle's max speed
-    app.accept("s", changeVehicleMaxSpeed, ["s", steerVehicle[0]])
-    app.accept("shift-s", changeVehicleMaxSpeed, ["shift-s", steerVehicle[0]])
-    # increase/decrease vehicle's max force
-    app.accept("f", changeVehicleMaxForce, ["f", steerVehicle[0]])
-    app.accept("shift-f", changeVehicleMaxForce, ["shift-f", steerVehicle[0]])
+    # increase/decrease last inserted vehicle's max speed
+    app.accept("s", changeVehicleMaxSpeed, ["s", steerVehicles])
+    app.accept("shift-s", changeVehicleMaxSpeed, ["shift-s", steerVehicles])
+    # increase/decrease last inserted vehicle's max force
+    app.accept("f", changeVehicleMaxForce, ["f", steerVehicles])
+    app.accept("shift-f", changeVehicleMaxForce, ["shift-f", steerVehicles])
     
     # handle OSSteerVehicle(s)' events
-    app.accept("move-event", handleVehicleEvent)
+    app.accept("move-event", handleVehicleEvent, ["move-event"])
     
     # write to bam file on exit
     app.win.set_close_request_event("close_request_event")

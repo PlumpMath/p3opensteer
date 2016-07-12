@@ -9,13 +9,13 @@
 
 ///specific data/functions declarations/definitions
 NodePath sceneNP;
-vector<NodePath> vehicleNP;
+vector<NodePath> vehicleNPs;
 vector<vector<PT(AnimControl)> > vehicleAnimCtls;
 PT(OSSteerPlugIn)steerPlugIn;
-vector<PT(OSSteerVehicle)>steerVehicle;
+vector<PT(OSSteerVehicle)>steerVehicles;
 //
 void setParametersBeforeCreation();
-void toggleSteeringSpeed(const Event*, void*);
+void toggleWanderBehavior(const Event*, void*);
 AsyncTask::DoneStatus updatePlugIn(GenericAsyncTask*, void*);
 
 int main(int argc, char *argv[])
@@ -28,12 +28,13 @@ int main(int argc, char *argv[])
 	PT(TextNode)text;
 	text = new TextNode("Help");
 	text->set_text(
-			msg
-					+ "\n\n"
-							"- press \"d\" to toggle debug drawing\n"
-							"- press \"s\"/\"shift-s\" to increase/decrease vehicle's max speed\n"
-							"- press \"f\"/\"shift-f\" to increase/decrease vehicle's max force\n"
-							"- press \"s\" to toggle steering speed\n");
+            msg + "\n\n"
+            "- press \"d\" to toggle debug drawing\n"
+			"- press \"a\"/\"k\" to add 'opensteer'/'kinematic' vehicle\n"
+            "- press \"s\"/\"shift-s\" to increase/decrease last inserted vehicle's max speed\n"
+            "- press \"f\"/\"shift-f\" to increase/decrease last inserted vehicle's max force\n"
+            "- press \"t\" to toggle last inserted vehicle's wander behavior\n"
+			"- press \"o\"/\"shift-o\" to add/remove obstacle\n");
 	NodePath textNodePath = window->get_aspect_2d().attach_new_node(text);
 	textNodePath.set_pos(-1.25, 0.0, -0.5);
 	textNodePath.set_scale(0.035);
@@ -83,7 +84,7 @@ int main(int argc, char *argv[])
 		radiusList.add_value(4);
 		steerPlugIn->set_pathway(pointList, radiusList, true, true);
 	}
-	else //XXX
+	else
 	{
 		// valid bamFile
 		// restore plug-in: through steer manager
@@ -101,17 +102,17 @@ int main(int argc, char *argv[])
 		// restore steer vehicles
 		int NUMVEHICLES =
 				OSSteerManager::get_global_ptr()->get_num_steer_vehicles();
-		steerVehicle.resize(NUMVEHICLES);
+		steerVehicles.resize(NUMVEHICLES);
 		vehicleAnimCtls.resize(NUMVEHICLES);
 		for (int i = 0; i < NUMVEHICLES; ++i)
 		{
 			// restore the steer vehicle: through steer manager
 			NodePath steerVehicleNP =
 					OSSteerManager::get_global_ptr()->get_steer_vehicle(i);
-			steerVehicle[i] = DCAST(OSSteerVehicle, steerVehicleNP.node());
+			steerVehicles[i] = DCAST(OSSteerVehicle, steerVehicleNP.node());
 			// restore animations
 			AnimControlCollection tmpAnims;
-			auto_bind(steerVehicle[i], tmpAnims);
+			auto_bind(steerVehicles[i], tmpAnims);
 			vehicleAnimCtls[i] = vector<PT(AnimControl)>(2);
 			for (int j = 0; j < tmpAnims.get_num_anims(); ++j)
 			{
@@ -142,12 +143,12 @@ int main(int argc, char *argv[])
 			(void*) steerPlugIn.p());
 
 	// handle addition steer vehicles, models and animations
-	HandleVehicleData vehicleData(0.7, 0, "opensteer", sceneNP, vehicleNP,
-						steerPlugIn, steerVehicle, vehicleAnimCtls);
+	HandleVehicleData vehicleData(0.7, 0, "opensteer", sceneNP, vehicleNPs,
+						steerPlugIn, steerVehicles, vehicleAnimCtls);
 	framework.define_key("a", "addVehicle", &handleVehicles,
 			(void*) &vehicleData);
 	HandleVehicleData vehicleDataKinematic(0.7, 1, "kinematic", sceneNP,
-						vehicleNP, steerPlugIn, steerVehicle, vehicleAnimCtls);
+						vehicleNPs, steerPlugIn, steerVehicles, vehicleAnimCtls);
 	framework.define_key("k", "addVehicle", &handleVehicles,
 			(void*) &vehicleDataKinematic);
 
@@ -160,16 +161,16 @@ int main(int argc, char *argv[])
 	framework.define_key("shift-o", "removeObstacle", &handleObstacles,
 			(void*) &obstacleRemoval);
 
-//	// increase/decrease vehicle's max speed
-//	framework.define_key("s", "changeVehicleMaxSpeed", &changeVehicleMaxSpeed,
-//			(void*) steerVehicle[0].p());
-//	framework.define_key("shift-s", "changeVehicleMaxSpeed",
-//			&changeVehicleMaxSpeed, (void*) steerVehicle[0].p());
-//	// increase/decrease vehicle's max force
-//	framework.define_key("f", "changeVehicleMaxForce", &changeVehicleMaxForce,
-//			(void*) steerVehicle[0].p());
-//	framework.define_key("shift-f", "changeVehicleMaxForce",
-//			&changeVehicleMaxForce, (void*) steerVehicle[0].p());
+	// increase/decrease last inserted vehicle's max speed
+	framework.define_key("s", "changeVehicleMaxSpeed", &changeVehicleMaxSpeed,
+			(void*) &steerVehicles);
+	framework.define_key("shift-s", "changeVehicleMaxSpeed",
+			&changeVehicleMaxSpeed, (void*) &steerVehicles);
+	// increase/decrease last inserted vehicle's max force
+	framework.define_key("f", "changeVehicleMaxForce", &changeVehicleMaxForce,
+			(void*) &steerVehicles);
+	framework.define_key("shift-f", "changeVehicleMaxForce",
+			&changeVehicleMaxForce, (void*) &steerVehicles);
 
 	// handle OSSteerVehicle(s)' events
 	framework.define_key("avoid_obstacle", "handleVehicleEvent",
@@ -183,8 +184,8 @@ int main(int argc, char *argv[])
 	framework.define_key("close_request_event", "writeToBamFile",
 			&writeToBamFileAndExit, (void*) &bamFileName);
 
-	// 'low speed turn' specific: toggle steering speed
-	framework.define_key("t", "toggleSteeringSpeed", &toggleSteeringSpeed,
+	// 'pedestrian' specific: toggle wander behavior
+	framework.define_key("t", "toggleWanderBehavior", &toggleWanderBehavior,
 			nullptr);
 
 	// place camera trackball (local coordinate)
@@ -223,19 +224,24 @@ void setParametersBeforeCreation()
 	printCreationParameters();
 }
 
-// toggle steering speed
-void toggleSteeringSpeed(const Event*, void*)
+// toggle wander behavior of last inserted vehicle
+void toggleWanderBehavior(const Event*, void*)
 {
-	if (steerVehicle[0]->get_steering_speed() < 4.9)
+    if (steerVehicles.size() == 0)
+    {
+        return;
+    }
+
+	if (steerVehicles.back()->get_wander_behavior())
 	{
-		steerVehicle[0]->set_steering_speed(5.0);
+		steerVehicles.back()->set_wander_behavior(false);
 	}
 	else
 	{
-		steerVehicle[0]->set_steering_speed(1.0);
+		steerVehicles.back()->set_wander_behavior(true);
 	}
-	cout << *steerVehicle[0] << "'s steering speed is "
-			<< steerVehicle[0]->get_steering_speed() << endl;
+	cout << *steerVehicles.back() << "'s wander behavior is "
+			<< steerVehicles.back()->get_wander_behavior() << endl;
 }
 
 // custom update task for plug-ins
@@ -249,7 +255,7 @@ AsyncTask::DoneStatus updatePlugIn(GenericAsyncTask* task, void* data)
 	for (int i = 0; i < (int)vehicleAnimCtls.size(); ++i)
 	{
 		// get current velocity size
-		float currentVelSize = steerVehicle[i]->get_speed();
+		float currentVelSize = steerVehicles[i]->get_speed();
 		if (currentVelSize > 0.0)
 		{
 			int animOnIdx, animOffIdx;
