@@ -17,7 +17,6 @@ vector<PT(OSSteerVehicle)>steerVehicle;
 void setParametersBeforeCreation();
 void toggleSteeringSpeed(const Event*, void*);
 AsyncTask::DoneStatus updatePlugIn(GenericAsyncTask*, void*);
-void handleObstacles(const Event*, void*);
 
 int main(int argc, char *argv[])
 {
@@ -29,11 +28,12 @@ int main(int argc, char *argv[])
 	PT(TextNode)text;
 	text = new TextNode("Help");
 	text->set_text(
-			msg + "\n\n"
-			"- press \"d\" to toggle debug drawing\n"
-            "- press \"s\"/\"shift-s\" to increase/decrease vehicle's max speed\n"
-            "- press \"f\"/\"shift-f\" to increase/decrease vehicle's max force\n"
-			"- press \"s\" to toggle steering speed\n");
+			msg
+					+ "\n\n"
+							"- press \"d\" to toggle debug drawing\n"
+							"- press \"s\"/\"shift-s\" to increase/decrease vehicle's max speed\n"
+							"- press \"f\"/\"shift-f\" to increase/decrease vehicle's max force\n"
+							"- press \"s\" to toggle steering speed\n");
 	NodePath textNodePath = window->get_aspect_2d().attach_new_node(text);
 	textNodePath.set_pos(-1.25, 0.0, -0.5);
 	textNodePath.set_scale(0.035);
@@ -71,28 +71,19 @@ int main(int argc, char *argv[])
 		steerPlugIn = DCAST(OSSteerPlugIn, plugInNP.node());
 
 		// set the pathway
-        ValueList<LPoint3f> pointList;
-        pointList.add_value(LPoint3f(79.474, 51.7236, 2.0207));
-        pointList.add_value(LPoint3f(108.071, 51.1972, 2.7246));
-        pointList.add_value(LPoint3f(129.699, 30.1742, 0.720501));
-        pointList.add_value(LPoint3f(141.597, 73.496, 2.14218));
-        pointList.add_value(LPoint3f(105.917, 107.032, 3.06428));
-        pointList.add_value(LPoint3f(61.2637, 109.622, 3.03588));
-        // note: pedestrian handles single radius pathway only
-        ValueList<float> radiusList;
-        radiusList.add_value(4);
-        steerPlugIn->set_pathway(pointList, radiusList, true, true);
-
-		// get steer vehicles, models and animations
-		//1: get the model
-		//2: create the steer vehicle (it is attached to the reference node)
-		//3: set its position
-		//4: attach the model to steer vehicle
-		//5: add the steer vehicle to the plug-in
-		getVehicleModelAnims(0.7, 0, "kinematic", sceneNP, vehicleNP, steerPlugIn,
-				steerVehicle, vehicleAnimCtls);
+		ValueList<LPoint3f> pointList;
+		pointList.add_value(LPoint3f(79.474, 51.7236, 2.0207));
+		pointList.add_value(LPoint3f(108.071, 51.1972, 2.7246));
+		pointList.add_value(LPoint3f(129.699, 30.1742, 0.720501));
+		pointList.add_value(LPoint3f(141.597, 73.496, 2.14218));
+		pointList.add_value(LPoint3f(105.917, 107.032, 3.06428));
+		pointList.add_value(LPoint3f(61.2637, 109.622, 3.03588));
+		// note: pedestrian handles single radius pathway only
+		ValueList<float> radiusList;
+		radiusList.add_value(4);
+		steerPlugIn->set_pathway(pointList, radiusList, true, true);
 	}
-	else
+	else //XXX
 	{
 		// valid bamFile
 		// restore plug-in: through steer manager
@@ -108,7 +99,8 @@ int main(int argc, char *argv[])
 				window->get_render());
 
 		// restore steer vehicles
-		int NUMVEHICLES = OSSteerManager::get_global_ptr()->get_num_steer_vehicles();
+		int NUMVEHICLES =
+				OSSteerManager::get_global_ptr()->get_num_steer_vehicles();
 		steerVehicle.resize(NUMVEHICLES);
 		vehicleAnimCtls.resize(NUMVEHICLES);
 		for (int i = 0; i < NUMVEHICLES; ++i)
@@ -126,13 +118,6 @@ int main(int argc, char *argv[])
 				vehicleAnimCtls[i][j] = tmpAnims.get_anim(j);
 			}
 		}
-	}
-
-	// show the added vehicles
-	cout << "Vehicles added to plug-in:" << endl;
-	for (int i = 0; i < steerPlugIn->get_num_steer_vehicles(); ++i)
-	{
-		cout << "\t- " << *((*steerPlugIn)[i]) << endl;
 	}
 
 	/// first option: start the default update task for all plug-ins
@@ -156,28 +141,41 @@ int main(int argc, char *argv[])
 	framework.define_key("d", "toggleDebugDraw", &toggleDebugDraw,
 			(void*) steerPlugIn.p());
 
-	// handle obstacle addition
-	bool TRUE = true;
-	framework.define_key("o", "addObstacle", &handleObstacles, (void*) &TRUE);
-	// handle obstacle removal
-	bool FALSE = false;
-	framework.define_key("shift-o", "removeObstacle", &handleObstacles,
-			(void*) &FALSE);
+	// handle addition steer vehicles, models and animations
+	HandleVehicleData vehicleData(0.7, 0, "opensteer", sceneNP, vehicleNP,
+						steerPlugIn, steerVehicle, vehicleAnimCtls);
+	framework.define_key("a", "addVehicle", &handleVehicles,
+			(void*) &vehicleData);
+	HandleVehicleData vehicleDataKinematic(0.7, 1, "kinematic", sceneNP,
+						vehicleNP, steerPlugIn, steerVehicle, vehicleAnimCtls);
+	framework.define_key("k", "addVehicle", &handleVehicles,
+			(void*) &vehicleDataKinematic);
 
-	// increase/decrease vehicle's max speed
-	framework.define_key("s", "changeVehicleMaxSpeed", &changeVehicleMaxSpeed,
-			(void*) steerVehicle[0].p());
-	framework.define_key("shift-s", "changeVehicleMaxSpeed",
-			&changeVehicleMaxSpeed, (void*) steerVehicle[0].p());
-	// increase/decrease vehicle's max force
-	framework.define_key("f", "changeVehicleMaxForce", &changeVehicleMaxForce,
-			(void*) steerVehicle[0].p());
-	framework.define_key("shift-f", "changeVehicleMaxForce",
-			&changeVehicleMaxForce, (void*) steerVehicle[0].p());
+	// handle obstacle addition
+	HandleObstacleData obstacleAddition(true, sceneNP, steerPlugIn);
+	framework.define_key("o", "addObstacle", &handleObstacles,
+			(void*) &obstacleAddition);
+	// handle obstacle removal
+	HandleObstacleData obstacleRemoval(false, sceneNP, steerPlugIn);
+	framework.define_key("shift-o", "removeObstacle", &handleObstacles,
+			(void*) &obstacleRemoval);
+
+//	// increase/decrease vehicle's max speed
+//	framework.define_key("s", "changeVehicleMaxSpeed", &changeVehicleMaxSpeed,
+//			(void*) steerVehicle[0].p());
+//	framework.define_key("shift-s", "changeVehicleMaxSpeed",
+//			&changeVehicleMaxSpeed, (void*) steerVehicle[0].p());
+//	// increase/decrease vehicle's max force
+//	framework.define_key("f", "changeVehicleMaxForce", &changeVehicleMaxForce,
+//			(void*) steerVehicle[0].p());
+//	framework.define_key("shift-f", "changeVehicleMaxForce",
+//			&changeVehicleMaxForce, (void*) steerVehicle[0].p());
 
 	// handle OSSteerVehicle(s)' events
-//	framework.define_key("move-event", "handleVehicleEvent", XXX
-//			&handleVehicleEvent, nullptr);
+	framework.define_key("avoid_obstacle", "handleVehicleEvent",
+			&handleVehicleEvent, nullptr);
+	framework.define_key("avoid_close_neighbor", "handleVehicleEvent",
+			&handleVehicleEvent, nullptr);
 
 	// write to bam file on exit
 	window->get_graphics_window()->set_close_request_event(
@@ -218,7 +216,7 @@ void setParametersBeforeCreation()
 
 	// set vehicle throwing events
 	valueList.clear();
-	valueList.add_value("move@move-event@0.5");
+	valueList.add_value("avoid_obstacle@avoid_obstacle@1.0:avoid_close_neighbor@avoid_close_neighbor@");
 	steerMgr->set_parameter_values(OSSteerManager::STEERVEHICLE,
 			"thrown_events", valueList);
 	//
@@ -279,71 +277,4 @@ AsyncTask::DoneStatus updatePlugIn(GenericAsyncTask* task, void* data)
 	}
 	//
 	return AsyncTask::DS_cont;
-}
-
-// handle add/remove obstacles
-void handleObstacles(const Event* e, void* data)
-{
-	bool addObstacle = *reinterpret_cast<bool*>(data);
-	// get the collision entry, if any
-	PT(CollisionEntry)entry0 = getCollisionEntryFromCamera();
-	if (entry0)
-	{
-		// get the hit object
-		NodePath hitObject = entry0->get_into_node_path();
-		cout << "hit " << hitObject << " object" << endl;
-
-		// check if we want add obstacle and
-		// if sceneNP is the hitObject or an ancestor thereof
-		if (addObstacle
-				and ((sceneNP == hitObject) or sceneNP.is_ancestor_of(hitObject)))
-		{
-			// the hit object is the scene: add an obstacle to the scene
-			// get a model as obstacle
-			NodePath obstacleNP = window->load_model(framework.get_models(),
-					obstacleFile);
-			obstacleNP.set_collide_mask(mask);
-			// set random scale (0.03 - 0.04)
-			float scale = 0.03 + 0.01 * ((float) rd() / (float) rd.max());
-			obstacleNP.set_scale(scale);
-			// set obstacle position
-			LPoint3f pos = entry0->get_surface_point(sceneNP);
-			obstacleNP.set_pos(sceneNP, pos);
-			// try to add to plug-in
-			if (steerPlugIn->add_obstacle(obstacleNP, "box") < 0)
-			{
-				// something went wrong remove from scene
-				obstacleNP.remove_node();
-				return;
-			}
-			cout << "added " << obstacleNP << " obstacle." << endl;
-		}
-		// check if we want remove obstacle
-		else if (not addObstacle)
-		{
-			// cycle through the local obstacle list
-			for (int index = 0; index < steerPlugIn->get_num_obstacles();
-					++index)
-			{
-				// get the obstacle's NodePath
-				int ref = steerPlugIn->get_obstacle(index);
-				NodePath obstacleNP =
-						OSSteerManager::get_global_ptr()->get_obstacle_by_ref(
-								ref);
-				// check if obstacleNP is the hitObject or an ancestor thereof
-				if ((obstacleNP == hitObject)
-						or obstacleNP.is_ancestor_of(hitObject))
-				{
-					// try to remove from plug-in
-					if (not steerPlugIn->remove_obstacle(ref).is_empty())
-					{
-						// all ok remove from scene
-						cout << "removed " << obstacleNP << " obstacle." << endl;
-						obstacleNP.remove_node();
-						break;
-					}
-				}
-			}
-		}
-	}
 }

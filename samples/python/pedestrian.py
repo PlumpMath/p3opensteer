@@ -14,7 +14,8 @@ from common import startFramework, toggleDebugFlag, toggleDebugDraw, mask, \
         loadTerrain, printCreationParameters, handleVehicleEvent, \
         changeVehicleMaxForce, changeVehicleMaxSpeed, getVehicleModelAnims, \
         rateFactor, writeToBamFileAndExit, readFromBamFile, bamFileName, \
-        getCollisionEntryFromCamera, obstacleFile
+        getCollisionEntryFromCamera, obstacleFile, HandleObstacleData, \
+        handleObstacles, HandleVehicleData, handleVehicles
 import sys, random
         
 # # specific data/functions declarations/definitions
@@ -43,7 +44,7 @@ def setParametersBeforeCreation():
 
     # set vehicle throwing events
     valueList.clear()
-    valueList.add_value("move@move-event@0.5")
+    valueList.add_value("avoid_obstacle@avoid_obstacle@1.0:avoid_close_neighbor@avoid_close_neighbor@")
     steerMgr.set_parameter_values(OSSteerManager.STEERVEHICLE,
             "thrown_events", valueList)
     #
@@ -89,55 +90,6 @@ def updatePlugIn(steerPlugIn, task):
             vehicleAnimCtls[i][1].stop()
     #
     return task.cont
-
-
-def handleObstacles(data):
-    """handle add/remove obstacles""" #XXX
-    
-    global app, sceneNP, steerPlugIn
-
-    addObstacle = data
-    # get the collision entry, if any
-    entry0 = getCollisionEntryFromCamera()
-    if entry0:
-        # get the hit object
-        hitObject = entry0.get_into_node_path()
-        print("hit " + str(hitObject) + " object")
-
-        # check if we want add obstacle and
-        # if sceneNP is the hitObject or an ancestor thereof
-        if addObstacle and ((sceneNP == hitObject) or sceneNP.is_ancestor_of(hitObject)):
-            # the hit object is the scene: add an obstacle to the scene
-            # get a model as obstacle
-            obstacleNP = app.loader.load_model(obstacleFile)
-            obstacleNP.set_collide_mask(mask)
-            # set random scale (0.03 - 0.04)
-            scale = 0.03 + 0.01 * random.uniform(0.0, 1.0)
-            obstacleNP.set_scale(scale)
-            # set obstacle position
-            pos = entry0.get_surface_point(sceneNP)
-            obstacleNP.set_pos(sceneNP, pos)
-            # try to add to plug-in
-            if steerPlugIn.add_obstacle(obstacleNP, "box") < 0:
-                # something went wrong remove from scene
-                obstacleNP.remove_node()
-                return
-            print("added " + str(obstacleNP) + " obstacle.")
-        # check if we want remove obstacle
-        elif not addObstacle:
-            # cycle through the local obstacle list
-            for index in range(steerPlugIn.get_num_obstacles()):
-                # get the obstacle's NodePath
-                ref = steerPlugIn.get_obstacle(index)
-                obstacleNP = OSSteerManager.get_global_ptr().get_obstacle_by_ref(ref)
-                # check if obstacleNP is the hitObject or an ancestor thereof
-                if (obstacleNP == hitObject) or obstacleNP.is_ancestor_of(hitObject):
-                    # try to remove from plug-in
-                    if not steerPlugIn.remove_obstacle(ref).is_empty():
-                        # all ok remove from scene
-                        print("removed " + str(obstacleNP) + " obstacle.")
-                        obstacleNP.remove_node()
-                        break
         
 if __name__ == '__main__':
 
@@ -200,15 +152,6 @@ if __name__ == '__main__':
         radiusList = ValueList_float()
         radiusList.add_value(4)
         steerPlugIn.set_pathway(pointList, radiusList, True, True)
-    
-        # get steer vehicles, models and animations   
-        #1: get the models and attach animations to them
-        #2: create the steer vehicles (attached to the reference node)
-        #3: set steer vehicles' positions
-        #4: attach the models to steer vehicles
-        #5: add the steer vehicles to the plug-in
-        getVehicleModelAnims(0.7, 0, "kinematic", sceneNP, vehicleNP, steerPlugIn, 
-                       steerVehicle, vehicleAnimCtls)
     else:
         # valid bamFile
         # restore plug-in: through steer manager
@@ -235,11 +178,6 @@ if __name__ == '__main__':
             for j in range(tmpAnims.get_num_anims()):
                 vehicleAnimCtls[i][j] = tmpAnims.get_anim(j)
 
-    # show the added vehicles
-    print("Vehicles added to plug-in:")
-    for vehicle in steerPlugIn:
-        print("\t- " + str(vehicle))
-
     # # first option: start the default update task for all plug-ins
 #     steerMgr.start_default_update()
 
@@ -258,20 +196,31 @@ if __name__ == '__main__':
     toggleDebugFlag = False
     app.accept("d", toggleDebugDraw, [steerPlugIn])
 
-    # handle obstacle addition
-    app.accept("o", handleObstacles, [True])
-    # handle obstacle removal
-    app.accept("shift-o", handleObstacles, [False]);
+    # handle addition steer vehicles, models and animations 
+    vehicleData = HandleVehicleData(0.7, 0, "opensteer", sceneNP, vehicleNP, 
+                        steerPlugIn, steerVehicle, vehicleAnimCtls)
+    app.accept("a", handleVehicles, [vehicleData])
+    vehicleDataKinematic = HandleVehicleData(0.7, 1, "kinematic", sceneNP, 
+                        vehicleNP, steerPlugIn, steerVehicle, vehicleAnimCtls)
+    app.accept("k", handleVehicles, [vehicleDataKinematic])
 
-    # increase/decrease vehicle's max speed
-    app.accept("s", changeVehicleMaxSpeed, ["s", steerVehicle[0]])
-    app.accept("shift-s", changeVehicleMaxSpeed, ["shift-s", steerVehicle[0]])
-    # increase/decrease vehicle's max force
-    app.accept("f", changeVehicleMaxForce, ["f", steerVehicle[0]])
-    app.accept("shift-f", changeVehicleMaxForce, ["shift-f", steerVehicle[0]])
+    # handle obstacle addition
+    obstacleAddition = HandleObstacleData(True, sceneNP, steerPlugIn)
+    app.accept("o", handleObstacles, [obstacleAddition])
+    # handle obstacle removal
+    obstacleRemoval = HandleObstacleData(False, sceneNP, steerPlugIn)
+    app.accept("shift-o", handleObstacles, [obstacleRemoval]);
+
+#     # increase/decrease vehicle's max speed
+#     app.accept("s", changeVehicleMaxSpeed, ["s", steerVehicle[0]])
+#     app.accept("shift-s", changeVehicleMaxSpeed, ["shift-s", steerVehicle[0]])
+#     # increase/decrease vehicle's max force
+#     app.accept("f", changeVehicleMaxForce, ["f", steerVehicle[0]])
+#     app.accept("shift-f", changeVehicleMaxForce, ["shift-f", steerVehicle[0]])
     
     # handle OSSteerVehicle(s)' events
-#     app.accept("move-event", handleVehicleEvent) XXX
+    app.accept("avoid_obstacle", handleVehicleEvent, ["avoid_obstacle"])
+    app.accept("avoid_close_neighbor", handleVehicleEvent, ["avoid_close_neighbor"])
     
     # write to bam file on exit
     app.win.set_close_request_event("close_request_event")

@@ -44,6 +44,8 @@ def startFramework(msg):
     load_prc_file_data("", "win-size 1024 768")
     load_prc_file_data("", "show-frame-rate-meter #t")
     load_prc_file_data("", "sync-video #t")
+#     load_prc_file_data("", "want-directtools #t")
+#     load_prc_file_data("", "want-tk #t")
         
     # Setup your application
     app = ShowBase()
@@ -177,11 +179,11 @@ def printCreationParameters():
         print ("\t" + name + " = " + 
                steerMgr.get_parameter_value(OSSteerManager.STEERVEHICLE, name))
 
-def handleVehicleEvent(vehicle):
+def handleVehicleEvent(name, vehicle):
     """handle vehicle's events"""
     
     vehicleNP = NodePath.any_path(vehicle)
-    print ("move-event - '" + vehicleNP.get_name() + "' - " + str(vehicleNP.get_pos()))
+    print ("got " + name + " event from '"+ vehicleNP.get_name() + "' at " + str(vehicleNP.get_pos()))
 
 def toggleDebugDraw(plugIn):
     """toggle debug draw"""
@@ -248,8 +250,55 @@ def getRandomPos(modelNP):
             break
     return LPoint3f(x, y, gotCollisionZ.get_second())
 
+class HandleVehicleData:
+    """ data passed to vehicle's handling callback"""
+    
+    def __init__(self, meanScale, vehicleFileIdx, moveType, sceneNP, vehicleNP, 
+                 steerPlugIn, steerVehicle, vehicleAnimCtls):
+        self.meanScale = meanScale
+        self.vehicleFileIdx = vehicleFileIdx
+        self.moveType = moveType
+        self.sceneNP = sceneNP
+        self.vehicleNP = vehicleNP
+        self.steerPlugIn = steerPlugIn
+        self.steerVehicle = steerVehicle
+        self.vehicleAnimCtls = vehicleAnimCtls
+        
+def handleVehicles(data):
+    """handle add/remove obstacles""" 
+    
+    global app
+
+    # get the collision entry, if any
+    entry0 = getCollisionEntryFromCamera()
+    if entry0:
+        # get the hit object
+        hitObject = entry0.get_into_node_path()
+        print("hit " + str(hitObject) + " object")
+
+        sceneNP = data.sceneNP
+        # check if sceneNP is the hitObject or an ancestor thereof
+        if (sceneNP == hitObject) or sceneNP.is_ancestor_of(hitObject):
+            # the hit object is the scene: add an vehicle to the scene
+            meanScale = data.meanScale
+            vehicleFileIdx = data.vehicleFileIdx
+            moveType = data.moveType
+            vehicleNP = data.vehicleNP
+            steerPlugIn = data.steerPlugIn
+            steerVehicle = data.steerVehicle
+            vehicleAnimCtls = data.vehicleAnimCtls            
+            # add vehicle
+            pos = entry0.get_surface_point(NodePath())
+            getVehicleModelAnims(meanScale, vehicleFileIdx, moveType, sceneNP, 
+                                 vehicleNP, steerPlugIn, steerVehicle, 
+                                 vehicleAnimCtls, pos)
+            # show the added vehicles
+            print("Vehicles added to plug-in so far:")
+            for vehicle in steerPlugIn:
+                print("\t- " + str(vehicle))
+
 def getVehicleModelAnims(meanScale, vehicleFileIdx, moveType, sceneNP, vehicleNP, steerPlugIn, 
-                           steerVehicle, vehicleAnimCtls):
+                           steerVehicle, vehicleAnimCtls, pos = None):
     """get a vehicle, model and animations"""
     
     global app, vehicleAnimFiles
@@ -287,8 +336,10 @@ def getVehicleModelAnims(meanScale, vehicleFileIdx, moveType, sceneNP, vehicleNP
     # create the steer vehicle (attached to the reference node)
     steerVehicleNP = steerMgr.create_steer_vehicle("vehicle" + str(len(vehicleNP) - 1))
     steerVehicle.append(steerVehicleNP.node())
-    # set the position randomly
-    randPos = getRandomPos(sceneNP)
+    randPos = pos
+    if randPos == None:
+        # set the position randomly
+        randPos = getRandomPos(sceneNP)
     steerVehicleNP.set_pos(randPos)
     # attach some geometry (a model) to steer vehicle
     vehicleNP[-1].reparent_to(steerVehicleNP)
@@ -306,3 +357,61 @@ def writeToBamFileAndExit(fileName):
     OSSteerManager.get_global_ptr().write_to_bam_file(fileName)
     #
     sys.exit(0)
+
+class HandleObstacleData:
+    """ data passed to obstacle's handling callback"""
+    
+    def __init__(self, addObstacle, sceneNP, steerPlugIn):
+        self.addObstacle = addObstacle
+        self.sceneNP = sceneNP
+        self.steerPlugIn = steerPlugIn
+
+def handleObstacles(data):
+    """handle add/remove obstacles"""
+    
+    global app
+
+    addObstacle = data.addObstacle
+    sceneNP = data.sceneNP
+    steerPlugIn = data.steerPlugIn
+    # get the collision entry, if any
+    entry0 = getCollisionEntryFromCamera()
+    if entry0:
+        # get the hit object
+        hitObject = entry0.get_into_node_path()
+        print("hit " + str(hitObject) + " object")
+
+        # check if we want add obstacle and
+        # if sceneNP is the hitObject or an ancestor thereof
+        if addObstacle and ((sceneNP == hitObject) or sceneNP.is_ancestor_of(hitObject)):
+            # the hit object is the scene: add an obstacle to the scene
+            # get a model as obstacle
+            obstacleNP = app.loader.load_model(obstacleFile)
+            obstacleNP.set_collide_mask(mask)
+            # set random scale (0.03 - 0.04)
+            scale = 0.03 + 0.01 * random.uniform(0.0, 1.0)
+            obstacleNP.set_scale(scale)
+            # set obstacle position
+            pos = entry0.get_surface_point(sceneNP)
+            obstacleNP.set_pos(sceneNP, pos)
+            # try to add to plug-in
+            if steerPlugIn.add_obstacle(obstacleNP, "box") < 0:
+                # something went wrong remove from scene
+                obstacleNP.remove_node()
+                return
+            print("added " + str(obstacleNP) + " obstacle.")
+        # check if we want remove obstacle
+        elif not addObstacle:
+            # cycle through the local obstacle list
+            for index in range(steerPlugIn.get_num_obstacles()):
+                # get the obstacle's NodePath
+                ref = steerPlugIn.get_obstacle(index)
+                obstacleNP = OSSteerManager.get_global_ptr().get_obstacle_by_ref(ref)
+                # check if obstacleNP is the hitObject or an ancestor thereof
+                if (obstacleNP == hitObject) or obstacleNP.is_ancestor_of(hitObject):
+                    # try to remove from plug-in
+                    if not steerPlugIn.remove_obstacle(ref).is_empty():
+                        # all ok remove from scene
+                        print("removed " + str(obstacleNP) + " obstacle.")
+                        obstacleNP.remove_node()
+                        break
