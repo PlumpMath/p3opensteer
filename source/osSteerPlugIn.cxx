@@ -1514,6 +1514,9 @@ void OSSteerPlugIn::fillin(DatagramIterator &scan, BamReader *manager)
 
 	///Pathway stuff.
 	///@{
+	// clear default pathway
+	mPathwayPoints.clear();
+	mPathwayRadii.clear();
 	int sizei = scan.get_int32();
 	for (int i = 0; i < sizei; ++i)
 	{
