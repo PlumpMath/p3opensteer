@@ -1538,6 +1538,7 @@ void OSSteerPlugIn::fillin(DatagramIterator &scan, BamReader *manager)
 	manager->read_pointer(scan);
 
 	///Steer vehicles.
+	mSteerVehicles.clear();
 	unsigned int size = scan.get_uint32();
 	mSteerVehicles.resize(size);
 	for (unsigned int i = 0; i < mSteerVehicles.size(); ++i)
@@ -1547,6 +1548,8 @@ void OSSteerPlugIn::fillin(DatagramIterator &scan, BamReader *manager)
 
 	///The "local" obstacles handled by this OSSteerPlugIn.
 	//resize mLocalObstacles: will be restored in complete_pointers()
+	mLocalObstacles.first().clear();
+	mLocalObstacles.second().clear();
 	size = scan.get_uint32();
 	mLocalObstacles.first().resize(size);
 	mLocalObstacles.second().resize(size);
