@@ -20,7 +20,6 @@ import sys, random
         
 # # specific data/functions declarations/definitions
 sceneNP = None
-vehicleNPs = []
 vehicleAnimCtls = []
 steerPlugIn = None
 steerVehicles = []
@@ -202,11 +201,11 @@ if __name__ == '__main__':
     app.accept("d", toggleDebugDraw, [steerPlugIn])
 
     # handle addition steer vehicles, models and animations 
-    vehicleData = HandleVehicleData(0.7, 0, "opensteer", sceneNP, vehicleNPs, 
+    vehicleData = HandleVehicleData(0.7, 0, "opensteer", sceneNP, 
                         steerPlugIn, steerVehicles, vehicleAnimCtls)
     app.accept("a", handleVehicles, [vehicleData])
     vehicleDataKinematic = HandleVehicleData(0.7, 1, "kinematic", sceneNP, 
-                        vehicleNPs, steerPlugIn, steerVehicles, vehicleAnimCtls)
+                        steerPlugIn, steerVehicles, vehicleAnimCtls)
     app.accept("k", handleVehicles, [vehicleDataKinematic])
 
     # handle obstacle addition

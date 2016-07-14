@@ -9,7 +9,7 @@
 
 ///specific data/functions declarations/definitions
 NodePath sceneNP;
-vector<NodePath> vehicleNPs;
+//vector<NodePath> vehicleNPs;XXX
 vector<vector<PT(AnimControl)> > vehicleAnimCtls;
 PT(OSSteerPlugIn)steerPlugIn;
 vector<PT(OSSteerVehicle)>steerVehicles;
@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
 		{
 			string moveType;
 			(i % 2) == 0 ? moveType = "opensteer" : moveType = "kinematic";
-			getVehicleModelAnims(0.35, i, moveType, sceneNP, vehicleNPs, steerPlugIn,
+			getVehicleModelAnims(0.35, i, moveType, sceneNP, /*vehicleNPs, XXX*/steerPlugIn,
 					steerVehicles, vehicleAnimCtls);
 		}
 	}

@@ -50,7 +50,7 @@ void changeVehicleMaxSpeed(const Event*, void*);
 void changeVehicleMaxForce(const Event*, void*);
 LPoint3f getRandomPos(NodePath);
 void getVehicleModelAnims(float, int, const string&, const NodePath& ,
-		vector<NodePath>&, PT(OSSteerPlugIn), vector<PT(OSSteerVehicle)>&,
+		PT(OSSteerPlugIn), vector<PT(OSSteerVehicle)>&,
 		vector<vector<PT(AnimControl)> >&, const LPoint3f& pos = LPoint3f());
 bool readFromBamFile(string);
 void writeToBamFileAndExit(const Event*, void*);
@@ -73,22 +73,21 @@ struct HandleVehicleData
 {
 	HandleVehicleData(float meanScale, int vehicleFileIdx,
 			const string& moveType, const NodePath& sceneNP,
-			vector<NodePath>& vehicleNP, PT(OSSteerPlugIn)steerPlugIn,
-			vector<PT(OSSteerVehicle)>&steerVehicle,
+			PT(OSSteerPlugIn)steerPlugIn,
+			vector<PT(OSSteerVehicle)>&steerVehicles,
 			vector<vector<PT(AnimControl)> >& vehicleAnimCtls):
 		meanScale(meanScale), vehicleFileIdx(vehicleFileIdx), moveType(moveType),
-		sceneNP(sceneNP), vehicleNP(vehicleNP), steerPlugIn(steerPlugIn),
-		steerVehicle(steerVehicle), vehicleAnimCtls(vehicleAnimCtls)
+		sceneNP(sceneNP), steerPlugIn(steerPlugIn),
+		steerVehicles(steerVehicles), vehicleAnimCtls(vehicleAnimCtls)
 	{
 	}
 	//
 	float meanScale;
 	int vehicleFileIdx;
-	const string& moveType;
-	const NodePath& sceneNP;
-	vector<NodePath>& vehicleNP;
-	PT(OSSteerPlugIn)steerPlugIn;
-	vector<PT(OSSteerVehicle)>&steerVehicle;
+	string moveType;
+	NodePath sceneNP;
+	PT(OSSteerPlugIn) steerPlugIn;
+	vector<PT(OSSteerVehicle)>& steerVehicles;
 	vector<vector<PT(AnimControl)> >& vehicleAnimCtls;
 };
 void handleVehicles(const Event*, void*);

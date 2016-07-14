@@ -9,7 +9,6 @@
 
 ///specific data/functions declarations/definitions
 NodePath sceneNP;
-vector<NodePath> vehicleNPs;
 vector<vector<PT(AnimControl)> > vehicleAnimCtls;
 PT(OSSteerPlugIn)steerPlugIn;
 vector<PT(OSSteerVehicle)>steerVehicles;
@@ -92,7 +91,7 @@ int main(int argc, char *argv[])
 				OSSteerManager::get_global_ptr()->get_steer_plug_in(0);
 		steerPlugIn = DCAST(OSSteerPlugIn, steerPlugInNP.node());
 		// restore sceneNP: through panda3d
-		NodePath sceneNP =
+		sceneNP =
 				OSSteerManager::get_global_ptr()->get_reference_node_path().find(
 						"**/SceneNP");
 		// reparent the reference node to render
@@ -143,12 +142,12 @@ int main(int argc, char *argv[])
 			(void*) steerPlugIn.p());
 
 	// handle addition steer vehicles, models and animations
-	HandleVehicleData vehicleData(0.7, 0, "opensteer", sceneNP, vehicleNPs,
+	HandleVehicleData vehicleData(0.7, 0, "opensteer", sceneNP,
 						steerPlugIn, steerVehicles, vehicleAnimCtls);
 	framework.define_key("a", "addVehicle", &handleVehicles,
 			(void*) &vehicleData);
 	HandleVehicleData vehicleDataKinematic(0.7, 1, "kinematic", sceneNP,
-						vehicleNPs, steerPlugIn, steerVehicles, vehicleAnimCtls);
+			steerPlugIn, steerVehicles, vehicleAnimCtls);
 	framework.define_key("k", "addVehicle", &handleVehicles,
 			(void*) &vehicleDataKinematic);
 

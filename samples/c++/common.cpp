@@ -331,23 +331,23 @@ void handleVehicles(const Event* e, void* data)
 		NodePath hitObject = entry0->get_into_node_path();
 		cout << "hit " << hitObject << " object" << endl;
 
-		NodePath sceneNP = reinterpret_cast<HandleVehicleData*>(data)->sceneNP;
+		HandleVehicleData* vehicleData =
+				reinterpret_cast<HandleVehicleData*>(data);
+		NodePath sceneNP = vehicleData->sceneNP;
 		// check if sceneNP is the hitObject or an ancestor thereof
 		if ((sceneNP == hitObject) or sceneNP.is_ancestor_of(hitObject))
 		{
 			// the hit object is the scene: add an vehicle to the scene
-			float meanScale = reinterpret_cast<HandleVehicleData*>(data)->meanScale;
-			int vehicleFileIdx = reinterpret_cast<HandleVehicleData*>(data)->vehicleFileIdx;
-			string moveType = reinterpret_cast<HandleVehicleData*>(data)->moveType;
-			vector<NodePath>& vehicleNP = reinterpret_cast<HandleVehicleData*>(data)->vehicleNP;
-			PT(OSSteerPlugIn)steerPlugIn = reinterpret_cast<HandleVehicleData*>(data)->steerPlugIn;
-			vector<PT(OSSteerVehicle)>&steerVehicle = reinterpret_cast<HandleVehicleData*>(data)->steerVehicle;
-			vector<vector<PT(AnimControl)> >&vehicleAnimCtls = reinterpret_cast<HandleVehicleData*>(data)->vehicleAnimCtls;
+			float meanScale = vehicleData->meanScale;
+			int vehicleFileIdx = vehicleData->vehicleFileIdx;
+			string moveType = vehicleData->moveType;
+			PT(OSSteerPlugIn)steerPlugIn = vehicleData->steerPlugIn;
+			vector<PT(OSSteerVehicle)>&steerVehicles = vehicleData->steerVehicles;
+			vector<vector<PT(AnimControl)> >&vehicleAnimCtls = vehicleData->vehicleAnimCtls;
 			// add vehicle
 			LPoint3f pos = entry0->get_surface_point(NodePath());
 			getVehicleModelAnims(meanScale, vehicleFileIdx, moveType, sceneNP,
-					vehicleNP, steerPlugIn, steerVehicle,
-					vehicleAnimCtls, pos);
+					steerPlugIn, steerVehicles, vehicleAnimCtls, pos);
 			// show the added vehicles
 			cout << "Vehicles added to plug-in so far:" << endl;
 			for (int i = 0; i < steerPlugIn->get_num_steer_vehicles(); ++i)
@@ -360,42 +360,42 @@ void handleVehicles(const Event* e, void* data)
 
 // get a vehicle, model and animations
 void getVehicleModelAnims(float meanScale, int vehicleFileIdx, const string& moveType,
-		const NodePath& sceneNP, vector<NodePath>& vehicleNP, PT(OSSteerPlugIn)steerPlugIn,
-vector<PT(OSSteerVehicle)>&steerVehicle, vector<vector<PT(AnimControl)> >& vehicleAnimCtls,
+		const NodePath& sceneNP, PT(OSSteerPlugIn)steerPlugIn,
+vector<PT(OSSteerVehicle)>&steerVehicles, vector<vector<PT(AnimControl)> >& vehicleAnimCtls,
 	const LPoint3f& pos)
 {
 	// get some models, with animations, to attach to vehicles
 	// get the model
-	vehicleNP.push_back(window->load_model(framework.get_models(), vehicleFile[vehicleFileIdx]));
+	NodePath vehicleNPs = window->load_model(framework.get_models(), vehicleFile[vehicleFileIdx]);
 	// set random scale (0.35 - 0.45)
 	float scale = meanScale + 0.1 * ((float) rd() / (float) rd.max());
-	vehicleNP.back().set_scale(scale);
+	vehicleNPs.set_scale(scale);
 	// associate an anim with a given anim control
 	AnimControlCollection tmpAnims;
 	NodePath vehicleAnimNP[2];
 	// first anim -> modelAnimCtls[i][0]
-	vehicleAnimNP[0] = window->load_model(vehicleNP.back(), vehicleAnimFiles[vehicleFileIdx][0]);
-	auto_bind(vehicleNP.back().node(), tmpAnims);
+	vehicleAnimNP[0] = window->load_model(vehicleNPs, vehicleAnimFiles[vehicleFileIdx][0]);
+	auto_bind(vehicleNPs.node(), tmpAnims);
 	vehicleAnimCtls.push_back(vector<PT(AnimControl)>(2));
 	vehicleAnimCtls.back()[0] = tmpAnims.get_anim(0);
 	tmpAnims.clear_anims();
 	vehicleAnimNP[0].detach_node();
 	// second anim -> modelAnimCtls[i][1]
-	vehicleAnimNP[1] = window->load_model(vehicleNP.back(), vehicleAnimFiles[vehicleFileIdx][1]);
-	auto_bind(vehicleNP.back().node(), tmpAnims);
+	vehicleAnimNP[1] = window->load_model(vehicleNPs, vehicleAnimFiles[vehicleFileIdx][1]);
+	auto_bind(vehicleNPs.node(), tmpAnims);
 	vehicleAnimCtls.back()[1] = tmpAnims.get_anim(0);
 	tmpAnims.clear_anims();
 	vehicleAnimNP[1].detach_node();
 	// reparent all node paths
-	vehicleAnimNP[0].reparent_to(vehicleNP.back());
-	vehicleAnimNP[1].reparent_to(vehicleNP.back());
+	vehicleAnimNP[0].reparent_to(vehicleNPs);
+	vehicleAnimNP[1].reparent_to(vehicleNPs);
 	// set parameter for vehicle's move type (OPENSTEER or OPENSTEER_KINEMATIC)
 	WPT(OSSteerManager) steerMgr = OSSteerManager::get_global_ptr();
 	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "mov_type",
 	moveType);
 	// create the steer vehicle (attached to the reference node)
-	NodePath steerVehicleNP = steerMgr->create_steer_vehicle("vehicle" + str(vehicleNP.size() - 1));
-	steerVehicle.push_back(DCAST(OSSteerVehicle, steerVehicleNP.node()));
+	NodePath steerVehicleNP = steerMgr->create_steer_vehicle("vehicle" + str(steerVehicles.size()));
+	steerVehicles.push_back(DCAST(OSSteerVehicle, steerVehicleNP.node()));
 	// set the position randomly
 	LPoint3f randPos = pos;
 	if (randPos == LPoint3f::zero())
@@ -404,7 +404,7 @@ vector<PT(OSSteerVehicle)>&steerVehicle, vector<vector<PT(AnimControl)> >& vehic
 	}
 	steerVehicleNP.set_pos(randPos);
 	// attach some geometry (a model) to steer vehicle
-	vehicleNP.back().reparent_to(steerVehicleNP);
+	vehicleNPs.reparent_to(steerVehicleNP);
 	// add the steer vehicle to the plug-in
 	steerPlugIn->add_steer_vehicle(steerVehicleNP);
 }
