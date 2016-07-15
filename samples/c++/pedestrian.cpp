@@ -45,10 +45,6 @@ int main(int argc, char *argv[])
 	cout << endl << "Default creation parameters:";
 	printCreationParameters();
 
-	// set creation parameters as strings before plug-in/vehicles creation
-	cout << endl << "Current creation parameters:";
-	setParametersBeforeCreation();
-
 	// load or restore all scene stuff: if passed an argument
 	// try to read it from bam file
 	if ((not (argc > 1)) or (not readFromBamFile(argv[1])))
@@ -65,6 +61,10 @@ int main(int argc, char *argv[])
 
 		// set sceneNP's collide mask
 		sceneNP.set_collide_mask(mask);
+
+		// set creation parameters as strings before plug-in/vehicles creation
+		cout << endl << "Current creation parameters:";
+		setParametersBeforeCreation();
 
 		// create the plug-in (attached to the reference node)
 		NodePath plugInNP = steerMgr->create_steer_plug_in();
@@ -118,6 +118,10 @@ int main(int argc, char *argv[])
 				vehicleAnimCtls[i][j] = tmpAnims.get_anim(j);
 			}
 		}
+
+		// set creation parameters as strings before other plug-ins/vehicles creation
+		cout << endl << "Current creation parameters:";
+		setParametersBeforeCreation();
 	}
 
 	/// first option: start the default update task for all plug-ins

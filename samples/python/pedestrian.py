@@ -120,10 +120,6 @@ if __name__ == '__main__':
     print("\n" + "Default creation parameters:")
     printCreationParameters()
 
-    # set creation parameters as strings before plug-in/vehicles creation
-    print("\n" + "Current creation parameters:")
-    setParametersBeforeCreation()
-
     # load or restore all scene stuff: if passed an argument
     # try to read it from bam file
     if (not len(sys.argv) > 1) or (not readFromBamFile(sys.argv[1])):
@@ -139,6 +135,10 @@ if __name__ == '__main__':
         
         # set sceneNP's collide mask
         sceneNP.set_collide_mask(mask)
+
+        # set creation parameters as strings before plug-in/vehicles creation
+        print("\n" + "Current creation parameters:")
+        setParametersBeforeCreation()
         
         # create the plug-in (attached to the reference node)
         plugInNP = steerMgr.create_steer_plug_in()
@@ -181,6 +181,10 @@ if __name__ == '__main__':
             vehicleAnimCtls[i] = [None, None];
             for j in range(tmpAnims.get_num_anims()):
                 vehicleAnimCtls[i][j] = tmpAnims.get_anim(j)
+
+        # set creation parameters as strings before other plug-ins/vehicles creation
+        print("\n" + "Current creation parameters:")
+        setParametersBeforeCreation()
 
     # # first option: start the default update task for all plug-ins
 #     steerMgr.start_default_update()
