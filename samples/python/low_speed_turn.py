@@ -148,7 +148,7 @@ if __name__ == '__main__':
                 moveType = "opensteer"
             else:
                 moveType = "kinematic"
-            getVehicleModelAnims(0.35, i, moveType, sceneNP, vehicleNPs, steerPlugIn, 
+            getVehicleModelAnims(0.35, i, moveType, sceneNP, steerPlugIn, 
                            steerVehicles, vehicleAnimCtls)
     else:
         # valid bamFile

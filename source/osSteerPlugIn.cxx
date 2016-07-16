@@ -1047,7 +1047,7 @@ void OSSteerPlugIn::enable_debug_drawing(NodePath debugCamera)
 				100, 0.04);
 		mDrawer3dStatic = new ossup::DrawMeshDrawer(mDrawer3dStaticNP,
 				meshDrawerCamera, 100, 0.04);
-		mDrawer3dStatic->setSize(7.5);
+		mDrawer3dStatic->setSize(3.0);
 		mDrawer2d = new ossup::DrawMeshDrawer(mDrawer2dNP, meshDrawerCamera, 50,
 				0.04);
 	}
