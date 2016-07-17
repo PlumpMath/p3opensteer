@@ -8,6 +8,7 @@
 #ifndef COMMON_H_
 #define COMMON_H_
 
+#include <random>
 #include <pandaFramework.h>
 #include <auto_bind.h>
 #include <load_prc_file.h>
