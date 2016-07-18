@@ -258,3 +258,9 @@ samples (both in python and c++) in the 'samples' folder:
 - "soccer" shows example usage for "soccer" plug-in. 
 - "capture_the_flag" shows example usage for "capture the flag" plug-in. 
 - "map_drive" shows example usage for "map drive" plug-in. 
+
+NOTE: almost all examples save the scene on exit, by writing the reference node 
+and, recursively, all the hierarchy of nodes below it, on the 'plug_in.boo' 
+file; this may be read by executing the example by putting the file name as a 
+parameter.
+
