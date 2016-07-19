@@ -120,9 +120,9 @@ PUBLISHED:
 	 */
 	///@{
 	void set_vehicle_type(OSSteerVehicleType type);
-	INLINE OSSteerVehicleType get_vehicle_type();
+	INLINE OSSteerVehicleType get_vehicle_type() const;
 	INLINE void set_mov_type(OSSteerVehicleMovType movType);
-	INLINE OSSteerVehicleMovType get_mov_type();
+	INLINE OSSteerVehicleMovType get_mov_type() const;
 	///@}
 
 	/**
@@ -130,28 +130,50 @@ PUBLISHED:
 	 */
 	///@{
 	INLINE void set_settings(const OSVehicleSettings& settings);
-	INLINE OSVehicleSettings get_settings();
+	INLINE OSVehicleSettings get_settings() const;
 	INLINE void set_mass(float mass);
-	INLINE float get_mass();
+	INLINE float get_mass() const;
 	INLINE void set_radius(float radius);
-	INLINE float get_radius();
+	INLINE float get_radius() const;
 	INLINE void set_speed(float speed);
-	INLINE float get_speed();
+	INLINE float get_speed() const;
 	INLINE void set_max_force(float max_force);
-	INLINE float get_max_force();
+	INLINE float get_max_force() const;
 	INLINE void set_max_speed(float max_speed);
-	INLINE float get_max_speed();
-	INLINE LVector3f get_forward() const;
+	INLINE float get_max_speed() const;
 	INLINE void set_forward(const LVector3f& forward);
-	INLINE LVector3f get_side() const;
+	INLINE LVector3f get_forward() const;
 	INLINE void set_side(const LVector3f& side);
-	INLINE LVector3f get_up() const;
+	INLINE LVector3f get_side() const;
 	INLINE void set_up(const LVector3f& up);
-	INLINE LPoint3f get_position() const;
+	INLINE LVector3f get_up() const;
 	INLINE void set_position(const LPoint3f& position);
+	INLINE LPoint3f get_position() const;
 	bool enable_external_update(bool enable);
 	INLINE bool enable_up_axis_fixed(bool enable);
 	INLINE PT(OSSteerPlugIn) get_steer_plug_in() const;
+	///@}
+
+	/**
+	 * \name PEDESTRIAN SPECIFIC SETTINGS.
+	 */
+	///@{
+	/**
+	 * PEDESTRIAN OSSteerVehicle path direction.
+	 */
+	enum OSPathDirection
+	{
+		UPSTREAM,
+		DOWNSTREAM
+	};
+	void set_reverse_at_end_point(bool enable = false);
+	bool get_reverse_at_end_point() const;
+	void set_wander_behavior(bool enable = false);
+	bool get_wander_behavior() const;
+	void set_pathway_end_points(const ValueList<LPoint3f>& points);
+	ValueList<LPoint3f> get_pathway_end_points() const;
+	void set_pathway_direction(OSPathDirection direction);
+	OSPathDirection get_pathway_direction() const;
 	///@}
 
 	/**
@@ -159,7 +181,7 @@ PUBLISHED:
 	 */
 	///@{
 	void set_steering_speed(float steeringSpeed = 1.0);
-	float get_steering_speed();
+	float get_steering_speed() const;
 	///@}
 
 	/**
@@ -248,6 +270,19 @@ private:
 	void do_enable_steer_vehicle_event(OSEventThrown event, ThrowEventData eventData);
 	void do_throw_event(ThrowEventData& eventData);
 	void do_handle_steer_library_event(ThrowEventData& eventData, bool callbackCalled);
+	///@}
+
+	/**
+	 * \name SPECIFIC SETTINGS (USED FOR SERIALIZATION ONLY).
+	 */
+	///@{
+	//pedestrian
+	bool mReverseAtEndPoint_ser;
+	bool mWanderBehavior_ser;
+	ValueList<LPoint3f> mPathwayEndPoints_ser;
+	OSPathDirection mPathwayDirection_ser;
+	//low speed turn
+	float mSteeringSpeed_ser;
 	///@}
 
 	// Explicitly disabled copy constructor and copy assignment operator.

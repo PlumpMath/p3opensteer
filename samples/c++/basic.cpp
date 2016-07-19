@@ -9,7 +9,7 @@
 
 int main(int argc, char *argv[])
 {
-	startFramework(argc, argv);
+	startFramework(argc, argv, "'one turning'");
 
 	/// here is room for your own code
 
@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
 	steerMgr->get_reference_node_path().reparent_to(window->get_render());
 
 	cout << "get a sceneNP and reparent to the reference node" << endl;
-	NodePath sceneNP = loadPlane();
+	NodePath sceneNP = loadPlane("SceneNP");
 	sceneNP.reparent_to(steerMgr->get_reference_node_path());
 
 	cout << "set sceneNP's collide mask" << endl;

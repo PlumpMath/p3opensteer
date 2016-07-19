@@ -442,8 +442,9 @@ void OSSteerVehicle::do_finalize()
 }
 
 /**
- * Sets steering speed (LOW SPEED TURN).
+ * Sets steering speed.
  * \note OSSteerVehicle should be not externally updated.
+ * \note LOW_SPEED_TURN OSSteerVehicle only.
  */
 void OSSteerVehicle::set_steering_speed(float steeringSpeed)
 {
@@ -455,13 +456,155 @@ void OSSteerVehicle::set_steering_speed(float steeringSpeed)
 }
 
 /**
- * Returns steering speed (LOW SPEED TURN).
+ * Returns steering speed.
+ * \note LOW_SPEED_TURN OSSteerVehicle only.
  */
-float OSSteerVehicle::get_steering_speed()
+float OSSteerVehicle::get_steering_speed() const
 {
 	return mVehicleType == LOW_SPEED_TURN ?
 			static_cast<ossup::LowSpeedTurn<OSSteerVehicle>*>(mVehicle)->steeringSpeed :
 			0.0;
+}
+
+/**
+ * Enables/disables OSSteerVehicle to reverse direction when it reaches a
+ * pathway end-point (default: false).
+ * \note PEDESTRIAN OSSteerVehicle only.
+ */
+void OSSteerVehicle::set_reverse_at_end_point(bool enable)
+{
+	if (mVehicleType == PEDESTRIAN)
+	{
+		static_cast<ossup::Pedestrian<OSSteerVehicle>*>(mVehicle)->useDirectedPathFollowing =
+				enable;
+	}
+}
+
+/**
+ * Returns if OSSteerVehicle reverses direction when it reaches a pathway
+ * end-point, or a negative number on error.
+ * \note PEDESTRIAN OSSteerVehicle only.
+ */
+bool OSSteerVehicle::get_reverse_at_end_point() const
+{
+	return (mVehicleType == PEDESTRIAN) ?
+			static_cast<ossup::Pedestrian<OSSteerVehicle>*>(mVehicle)->useDirectedPathFollowing :
+			OS_ERROR;
+}
+
+/**
+ * Enables/disables OSSteerVehicle's wander behavior (default: false);
+ * \note PEDESTRIAN OSSteerVehicle only.
+ */
+void OSSteerVehicle::set_wander_behavior(bool enable)
+{
+	if (mVehicleType == PEDESTRIAN)
+	{
+		static_cast<ossup::Pedestrian<OSSteerVehicle>*>(mVehicle)->wanderSwitch =
+				enable;
+	}
+}
+
+/**
+ * Returns if OSSteerVehicle has wander behavior, or a negative number on error.
+ * \note PEDESTRIAN OSSteerVehicle only.
+ */
+bool OSSteerVehicle::get_wander_behavior() const
+{
+	return (mVehicleType == PEDESTRIAN) ?
+			static_cast<ossup::Pedestrian<OSSteerVehicle>*>(mVehicle)->wanderSwitch :
+			OS_ERROR;
+}
+
+/**
+ * Sets first/second pathway end points (default: first/last specified points in
+ * the pathway of the OSSteerPlugIn).
+ * \note PEDESTRIAN OSSteerVehicle only.
+ */
+void OSSteerVehicle::set_pathway_end_points(const ValueList<LPoint3f>& points)
+{
+	if (mVehicleType == PEDESTRIAN)
+	{
+		CONTINUE_IF_ELSE_V(points.size() >= 2)
+
+		static_cast<ossup::Pedestrian<OSSteerVehicle>*>(mVehicle)->pathEndpoint0 =
+				ossup::LVecBase3fToOpenSteerVec3(points[0]);
+		static_cast<ossup::Pedestrian<OSSteerVehicle>*>(mVehicle)->pathEndpoint1 =
+				ossup::LVecBase3fToOpenSteerVec3(points[1]);
+	}
+}
+
+/**
+ * Returns first/second pathway end points, or empty list on error.
+ * \note PEDESTRIAN OSSteerVehicle only.
+ */
+ValueList<LPoint3f> OSSteerVehicle::get_pathway_end_points() const
+{
+	ValueList<LPoint3f> points;
+	if (mVehicleType == PEDESTRIAN)
+	{
+		ossup::Pedestrian<OSSteerVehicle>* vehicle =
+				static_cast<ossup::Pedestrian<OSSteerVehicle>*>(mVehicle);
+		points.add_value(
+				ossup::OpenSteerVec3ToLVecBase3f(vehicle->pathEndpoint0));
+		points.add_value(
+				ossup::OpenSteerVec3ToLVecBase3f(vehicle->pathEndpoint1));
+	}
+	return points;
+}
+
+/**
+ * Sets OSSteerVehicle's direction for pathway following:
+ * - UPSTREAM
+ * - DOWNSTREAM
+ * By default direction is chosen randomly at creation time.
+ * \note PEDESTRIAN OSSteerVehicle only.
+ */
+void OSSteerVehicle::set_pathway_direction(OSPathDirection direction)
+{
+	if (mVehicleType == PEDESTRIAN)
+	{
+		ossup::Pedestrian<OSSteerVehicle>* vehicle =
+				static_cast<ossup::Pedestrian<OSSteerVehicle>*>(mVehicle);
+		switch (direction)
+		{
+		case UPSTREAM:
+			vehicle->pathDirection = 1;
+			break;
+		case DOWNSTREAM:
+			vehicle->pathDirection = -1;
+			break;
+		default:
+			break;
+		}
+	}
+}
+
+/**
+ * Returns OSSteerVehicle's direction for pathway following, or a negative
+ * number on error.
+ * \note PEDESTRIAN OSSteerVehicle only.
+ */
+OSSteerVehicle::OSPathDirection OSSteerVehicle::get_pathway_direction() const
+{
+	OSPathDirection result = (OSPathDirection) OS_ERROR;
+	if (mVehicleType == PEDESTRIAN)
+	{
+		ossup::Pedestrian<OSSteerVehicle>* vehicle =
+				static_cast<ossup::Pedestrian<OSSteerVehicle>*>(mVehicle);
+		switch (vehicle->pathDirection)
+		{
+		case 1:
+			result = UPSTREAM;
+			break;
+		case -1:
+			result = DOWNSTREAM;
+			break;
+		default:
+			break;
+		}
+	}
+	return result;
 }
 
 /**
@@ -491,14 +634,14 @@ void OSSteerVehicle::do_update_steer_vehicle(const float currentTime,
 		WPT(OSSteerManager)steerMgr = OSSteerManager::get_global_ptr();
 		// correct panda's Z: set the collision ray origin wrt collision root
 		LPoint3f pOrig = steerMgr->get_collision_root().get_relative_point(
-				mReferenceNP, updatedPos) + mHeigthCorrection;
+				mReferenceNP, updatedPos) + mHeigthCorrection * 2.0;
 		// get the collision height wrt the reference node path
 		Pair<bool,float> gotCollisionZ = steerMgr->get_collision_height(pOrig,
 				mReferenceNP);
-		if (gotCollisionZ.get_first())
+		if (gotCollisionZ.first())
 		{
 			//updatedPos.z needs correction
-			updatedPos.set_z(gotCollisionZ.get_second());
+			updatedPos.set_z(gotCollisionZ.second());
 		}
 	}
 	thisNP.set_pos(updatedPos);
@@ -832,6 +975,60 @@ void OSSteerVehicle::write_datagram(BamWriter *manager, Datagram &dg)
 
 	///The reference node path.
 	manager->write_pointer(dg, mReferenceNP.node());
+
+	///SPECIFICS
+	if(mVehicleType == ONE_TURNING)
+	{
+		/*do nothing*/;
+	}
+	if(mVehicleType == PEDESTRIAN)
+	{
+		dg.add_bool(get_reverse_at_end_point());
+		dg.add_bool(get_wander_behavior());
+		ValueList<LPoint3f> points = get_pathway_end_points();
+		dg.add_uint32(points.size());
+		for (int i = 0; i != points.size(); ++i)
+		{
+			points[i].write_datagram(dg);
+		}
+		dg.add_uint8((uint8_t) get_pathway_direction());
+	}
+	if(mVehicleType == BOID)
+	{
+		;
+	}
+	if(mVehicleType == MP_WANDERER)
+	{
+		;
+	}
+	if(mVehicleType == MP_PURSUER)
+	{
+		;
+	}
+	if(mVehicleType == PLAYER)
+	{
+		;
+	}
+	if(mVehicleType == BALL)
+	{
+		;
+	}
+	if(mVehicleType == CTF_SEEKER)
+	{
+		;
+	}
+	if(mVehicleType == CTF_ENEMY)
+	{
+		;
+	}
+	if(mVehicleType == LOW_SPEED_TURN)
+	{
+		dg.add_stdfloat(get_steering_speed());
+	}
+	if(mVehicleType == MAP_DRIVER)
+	{
+		;
+	}
 }
 
 /**
@@ -870,11 +1067,66 @@ void OSSteerVehicle::finalize(BamReader *manager)
 	do_create_vehicle(mVehicleType);
 	//set the new OpenSteer vehicle's settings
 	set_settings(mVehicleSettings);
-	//3: add the new OpenSteer vehicle to real update list (if needed)
-	if (mSteerPlugIn)
+	//3: add the new OpenSteer vehicle to real update list (if needed), by
+	//checking plugin's compatibility, because it might not have gained
+	//its final type
+	if (mSteerPlugIn
+			&& (mSteerPlugIn->check_steer_vehicle_compatibility(
+					NodePath::any_path(this))))
 	{
 		static_cast<ossup::PlugIn*>(&mSteerPlugIn->get_abstract_plug_in())->addVehicle(
 				mVehicle);
+	}
+
+	///SPECIFICS
+	if(mVehicleType == ONE_TURNING)
+	{
+		/*do nothing*/;
+	}
+	if(mVehicleType == PEDESTRIAN)
+	{
+		set_reverse_at_end_point(mReverseAtEndPoint_ser);
+		set_wander_behavior(mWanderBehavior_ser);
+		set_pathway_end_points(mPathwayEndPoints_ser);
+		mPathwayEndPoints_ser.clear();
+		set_pathway_direction(mPathwayDirection_ser);
+	}
+	if(mVehicleType == BOID)
+	{
+		;
+	}
+
+	if(mVehicleType == MP_WANDERER)
+	{
+		;
+	}
+	if(mVehicleType == MP_PURSUER)
+	{
+		;
+	}
+	if(mVehicleType == PLAYER)
+	{
+		;
+	}
+	if(mVehicleType == BALL)
+	{
+		;
+	}
+	if(mVehicleType == CTF_SEEKER)
+	{
+		;
+	}
+	if(mVehicleType == CTF_ENEMY)
+	{
+		;
+	}
+	if(mVehicleType == LOW_SPEED_TURN)
+	{
+		set_steering_speed(mSteeringSpeed_ser);
+	}
+	if(mVehicleType == MAP_DRIVER)
+	{
+		;
 	}
 }
 
@@ -955,6 +1207,62 @@ void OSSteerVehicle::fillin(DatagramIterator &scan, BamReader *manager)
 
 	///The reference node path.
 	manager->read_pointer(scan);
+
+	///SPECIFICS
+	if(mVehicleType == ONE_TURNING)
+	{
+		/*do nothing*/;
+	}
+	if(mVehicleType == PEDESTRIAN)
+	{
+		mReverseAtEndPoint_ser = scan.get_bool();
+		mWanderBehavior_ser = scan.get_bool();
+		mPathwayEndPoints_ser.clear();
+		unsigned int sizeP = scan.get_uint32();
+		for (unsigned int i = 0; i < sizeP; ++i)
+		{
+			LPoint3f point;
+			point.read_datagram(scan);
+			mPathwayEndPoints_ser.add_value(point);
+		}
+		mPathwayDirection_ser = (OSPathDirection) scan.get_uint8();
+	}
+	if(mVehicleType == BOID)
+	{
+		;
+	}
+	if(mVehicleType == MP_WANDERER)
+	{
+		;
+	}
+	if(mVehicleType == MP_PURSUER)
+	{
+		;
+	}
+	if(mVehicleType == PLAYER)
+	{
+		;
+	}
+	if(mVehicleType == BALL)
+	{
+		;
+	}
+	if(mVehicleType == CTF_SEEKER)
+	{
+		;
+	}
+	if(mVehicleType == CTF_ENEMY)
+	{
+		;
+	}
+	if(mVehicleType == LOW_SPEED_TURN)
+	{
+		mSteeringSpeed_ser = scan.get_stdfloat();
+	}
+	if(mVehicleType == MAP_DRIVER)
+	{
+		;
+	}
 }
 
 //TypedObject semantics: hardcoded

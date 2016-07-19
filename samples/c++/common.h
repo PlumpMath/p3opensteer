@@ -8,6 +8,7 @@
 #ifndef COMMON_H_
 #define COMMON_H_
 
+#include <random>
 #include <pandaFramework.h>
 #include <auto_bind.h>
 #include <load_prc_file.h>
@@ -39,9 +40,9 @@ extern string bamFileName;
 extern random_device rd;
 
 ///functions' declarations
-void startFramework(int argc, char *argv[]);
-NodePath loadPlane();
-NodePath loadTerrain();
+void startFramework(int argc, char *argv[], const string&);
+NodePath loadPlane(const string&);
+NodePath loadTerrain(const string&);
 PT(CollisionEntry)getCollisionEntryFromCamera();
 void printCreationParameters();
 void handleVehicleEvent(const Event*, void*);
@@ -49,10 +50,47 @@ void toggleDebugDraw(const Event*, void*);
 void changeVehicleMaxSpeed(const Event*, void*);
 void changeVehicleMaxForce(const Event*, void*);
 LPoint3f getRandomPos(NodePath);
-void getVehiclesModelsAnims(int, const NodePath&, NodePath vehicleNP[],
-		PT(OSSteerPlugIn)steerPlugIn, PT(OSSteerVehicle)steerVehicle[],
-		PT(AnimControl)vehicleAnimCtls[][2]);
+void getVehicleModelAnims(float, int, const string&, const NodePath& ,
+		PT(OSSteerPlugIn), vector<PT(OSSteerVehicle)>&,
+		vector<vector<PT(AnimControl)> >&, const LPoint3f& pos = LPoint3f());
 bool readFromBamFile(string);
 void writeToBamFileAndExit(const Event*, void*);
+//  data passed to obstacle's handling callback
+struct HandleObstacleData
+{
+	HandleObstacleData(bool addObstacle, const NodePath& sceneNP,
+			PT(OSSteerPlugIn)steerPlugIn):
+	addObstacle(addObstacle), sceneNP(sceneNP), steerPlugIn(steerPlugIn)
+	{
+	}
+	//
+	bool addObstacle;
+	NodePath sceneNP;
+	PT(OSSteerPlugIn)steerPlugIn;
+};
+void handleObstacles(const Event*, void*);
+// data passed to vehicle's handling callback
+struct HandleVehicleData
+{
+	HandleVehicleData(float meanScale, int vehicleFileIdx,
+			const string& moveType, const NodePath& sceneNP,
+			PT(OSSteerPlugIn)steerPlugIn,
+			vector<PT(OSSteerVehicle)>&steerVehicles,
+			vector<vector<PT(AnimControl)> >& vehicleAnimCtls):
+		meanScale(meanScale), vehicleFileIdx(vehicleFileIdx), moveType(moveType),
+		sceneNP(sceneNP), steerPlugIn(steerPlugIn),
+		steerVehicles(steerVehicles), vehicleAnimCtls(vehicleAnimCtls)
+	{
+	}
+	//
+	float meanScale;
+	int vehicleFileIdx;
+	string moveType;
+	NodePath sceneNP;
+	PT(OSSteerPlugIn) steerPlugIn;
+	vector<PT(OSSteerVehicle)>& steerVehicles;
+	vector<vector<PT(AnimControl)> >& vehicleAnimCtls;
+};
+void handleVehicles(const Event*, void*);
 
 #endif /* COMMON_H_ */

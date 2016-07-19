@@ -459,6 +459,8 @@ public:
  * \note: Public class members for tweaking:
  * - \fn void nextPD(): cycles through various types of proximity databases
  * (default: LQProximityDatabase).
+ * - \fn void setPD(): sets a proximity database given its index
+ * (0:LQProximityDatabase (default), 1:BruteForceProximityDatabase)
  */
 template<typename Entity>
 class PedestrianPlugIn: public PlugIn
@@ -796,11 +798,54 @@ public:
 			const Vec3 dimensions(diameter, diameter, diameter);
 			typedef LQProximityDatabase<AbstractVehicle*> LQPDAV;
 			pd = new LQPDAV(center, dimensions, divisions);
+			pdIdx = 0;
 			break;
 		}
 		case 1:
 		{
 			pd = new BruteForceProximityDatabase<AbstractVehicle*>();
+			pdIdx = 1;
+			break;
+		}
+		}
+
+		// switch each boid to new PD
+		for (iterator i = crowd.begin(); i != crowd.end(); i++)
+			(**i).newPD(*pd);
+
+		// delete old PD (if any)
+		delete oldPD;
+	}
+
+	int getPD()
+	{
+		return pdIdx;
+	}
+
+	void setPD(int idx)
+	{
+		// save pointer to old PD
+		ProximityDatabase* oldPD = pd;
+
+		// allocate new PD
+		switch (idx)
+		{
+		case 0:
+		{
+			const Vec3 center;
+			const float div = 20.0f;
+			const Vec3 divisions(div, 1.0f, div);
+			const float diameter = 80.0f; //XXX need better way to get this
+			const Vec3 dimensions(diameter, diameter, diameter);
+			typedef LQProximityDatabase<AbstractVehicle*> LQPDAV;
+			pd = new LQPDAV(center, dimensions, divisions);
+			pdIdx = 0;
+			break;
+		}
+		case 1:
+		{
+			pd = new BruteForceProximityDatabase<AbstractVehicle*>();
+			pdIdx = 1;
 			break;
 		}
 		}
@@ -826,6 +871,7 @@ public:
 
 	// pointer to database used to accelerate proximity queries
 	ProximityDatabase* pd;
+	int pdIdx;
 
 ///	// keep track of current flock size
 ///	int population;
