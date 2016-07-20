@@ -62,6 +62,15 @@ PUBLISHED:
 		NONE_PLUGIN
 	};
 
+	/**
+	 * OSSteerPlugIn proximity database.
+	 */
+	enum OSProximityDatabase
+	{
+		LQ_PD,
+		BRUTEFORCE_PD
+	};
+
 	virtual ~OSSteerPlugIn();
 
 	/**
@@ -119,25 +128,25 @@ PUBLISHED:
 	///@}
 
 	/**
-	 * \name PEDESTRIAN SPECIFIC SETTINGS.
-	 * \note PEDESTRIAN OSSteerPlugIn supports currently only single radius
-	 * pathway.
+	 * \name PROXIMITY DATABASE SETTINGS (PEDESTRIAN, BOID)
 	 */
-	/**
-	 * PEDESTRIAN OSSteerPlugIn proximity database.
-	 */
-	enum OSProximityDatabase
-	{
-		LQ_PD,
-		BRUTEFORCE_PD
-	};
 	///@{
 	void set_proximity_database(OSProximityDatabase pd = LQ_PD);
 	OSProximityDatabase get_proximity_database() const;
 	///@}
 
 	/**
-	 * \name LOW SPEED TURN SPECIFIC SETTINGS.
+	 * \name WORLD SETTINGS (BOID)
+	 */
+	///@{
+	void set_world_center(const LPoint3f& center);
+	LPoint3f get_world_center() const;
+	void set_world_radius(float radius);
+	float get_world_radius() const;
+	///@}
+
+	/**
+	 * \name STEERING SPEED SETTINGS (LOW_SPEED_TURN)
 	 */
 	///@{
 	void set_steering_speed(float steeringSpeed = 1.0);
@@ -219,8 +228,11 @@ private:
 	 * \name SPECIFIC SETTINGS (USED FOR SERIALIZATION ONLY).
 	 */
 	///@{
-	//pedestrian
+	//pedestrian, boid
 	OSProximityDatabase mPD_ser;
+	//boid
+	LPoint3f mWorldCenter_ser;
+	float mWorldRadius_ser;
 	//low speed turn
 	float mSteeringSpeed_ser;
 	///@}

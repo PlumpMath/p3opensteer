@@ -8,7 +8,7 @@ import panda3d.core
 from p3opensteer import OSSteerManager, ValueList_string, ValueList_LPoint3f, \
         ValueList_float
 from panda3d.core import TextNode, ClockObject, AnimControlCollection, \
-        auto_bind, LPoint3f
+        auto_bind, LPoint3f, LVecBase3f
 #
 from common import startFramework, toggleDebugFlag, toggleDebugDraw, mask, \
         loadTerrain, printCreationParameters, handleVehicleEvent, \
@@ -213,7 +213,8 @@ if __name__ == '__main__':
     app.accept("k", handleVehicles, [vehicleDataKinematic])
 
     # handle obstacle addition
-    obstacleAddition = HandleObstacleData(True, sceneNP, steerPlugIn)
+    obstacleAddition = HandleObstacleData(True, sceneNP, steerPlugIn,
+                        LVecBase3f(0.03, 0.03, 0.03))
     app.accept("o", handleObstacles, [obstacleAddition])
     # handle obstacle removal
     obstacleRemoval = HandleObstacleData(False, sceneNP, steerPlugIn)

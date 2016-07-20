@@ -156,7 +156,8 @@ int main(int argc, char *argv[])
 			(void*) &vehicleDataKinematic);
 
 	// handle obstacle addition
-	HandleObstacleData obstacleAddition(true, sceneNP, steerPlugIn);
+	HandleObstacleData obstacleAddition(true, sceneNP, steerPlugIn,
+			LVecBase3f(0.03, 0.03, 0.03));
 	framework.define_key("o", "addObstacle", &handleObstacles,
 			(void*) &obstacleAddition);
 	// handle obstacle removal

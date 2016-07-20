@@ -8,7 +8,7 @@ import panda3d.core
 from p3opensteer import OSSteerManager, ValueList_string, ValueList_LPoint3f, \
         ValueList_float
 from panda3d.core import TextNode, ClockObject, AnimControlCollection, \
-        auto_bind, LPoint3f
+        auto_bind, LPoint3f, LVector3f, LVecBase3f
 #
 from common import startFramework, toggleDebugFlag, toggleDebugDraw, mask, \
         loadTerrain, printCreationParameters, handleVehicleEvent, \
@@ -31,19 +31,20 @@ def setParametersBeforeCreation():
     valueList = ValueList_string()
     # set plug-in type
     steerMgr.set_parameter_value(OSSteerManager.STEERPLUGIN, "plugin_type",
-            "pedestrian")
+            "boid")
 
-    # set vehicle type, mass, speed
+    # set vehicle type, force, speed, max speed
     steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "vehicle_type",
-            "pedestrian")
-    steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "mass",
-            "2.0")
-    steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "speed",
-            "0.01")
+            "boid")
+    steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "max_force",
+            "5.0")
+    steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "max_speed",
+            "10.0")
+    steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "speed", "3.0")
 
     # set vehicle throwing events
     valueList.clear()
-    valueList.add_value("avoid_obstacle@avoid_obstacle@1.0:avoid_close_neighbor@avoid_close_neighbor@")
+    valueList.add_value("avoid_obstacle@avoid_obstacle@")
     steerMgr.set_parameter_values(OSSteerManager.STEERVEHICLE,
             "thrown_events", valueList)
     #
@@ -104,10 +105,9 @@ if __name__ == '__main__':
     text.set_text(
             msg + "\n\n"      
             "- press \"d\" to toggle debug drawing\n"
-            "- press \"a\"/\"k\" to add 'opensteer'/'kinematic' vehicle\n"
+            "- press \"a\" to add 'opensteer' vehicle over the hit point\n"
             "- press \"s\"/\"shift-s\" to increase/decrease last inserted vehicle's max speed\n"
             "- press \"f\"/\"shift-f\" to increase/decrease last inserted vehicle's max force\n"
-            "- press \"t\" to toggle last inserted vehicle's wander behavior\n"
             "- press \"o\"/\"shift-o\" to add/remove obstacle\n")
     textNodePath = app.aspect2d.attach_new_node(text)
     textNodePath.set_pos(-1.25, 0.0, -0.5)
@@ -144,18 +144,9 @@ if __name__ == '__main__':
         plugInNP = steerMgr.create_steer_plug_in()
         steerPlugIn = plugInNP.node()
     
-        # set the pathway
-        pointList = ValueList_LPoint3f()
-        pointList.add_value(LPoint3f(79.474, 51.7236, 2.0207))
-        pointList.add_value(LPoint3f(108.071, 51.1972, 2.7246))
-        pointList.add_value(LPoint3f(129.699, 30.1742, 0.720501))
-        pointList.add_value(LPoint3f(141.597, 73.496, 2.14218))
-        pointList.add_value(LPoint3f(105.917, 107.032, 3.06428))
-        pointList.add_value(LPoint3f(61.2637, 109.622, 3.03588))
-        # note: pedestrian handles single radius pathway only 
-        radiusList = ValueList_float()
-        radiusList.add_value(4)
-        steerPlugIn.set_pathway(pointList, radiusList, True, True)
+        # set world's center and radius
+        steerPlugIn.set_world_center(LPoint3f(147.7, 145.6, 40.8))
+        steerPlugIn.set_world_radius(25.0)
     else:
         # valid bamFile
         # restore plug-in: through steer manager
@@ -205,15 +196,14 @@ if __name__ == '__main__':
     app.accept("d", toggleDebugDraw, [steerPlugIn])
 
     # handle addition steer vehicles, models and animations 
-    vehicleData = HandleVehicleData(0.7, 0, "opensteer", sceneNP, 
-                        steerPlugIn, steerVehicles, vehicleAnimCtls)
+    vehicleData = HandleVehicleData(0.007, 2, "opensteer", sceneNP, 
+                        steerPlugIn, steerVehicles, vehicleAnimCtls,
+                        LVector3f(0.0, 0.0, 25.0))
     app.accept("a", handleVehicles, [vehicleData])
-    vehicleDataKinematic = HandleVehicleData(0.7, 1, "kinematic", sceneNP, 
-                        steerPlugIn, steerVehicles, vehicleAnimCtls)
-    app.accept("k", handleVehicles, [vehicleDataKinematic])
 
     # handle obstacle addition
-    obstacleAddition = HandleObstacleData(True, sceneNP, steerPlugIn)
+    obstacleAddition = HandleObstacleData(True, sceneNP, steerPlugIn,
+                        LVecBase3f(0.03, 0.03, 0.24))
     app.accept("o", handleObstacles, [obstacleAddition])
     # handle obstacle removal
     obstacleRemoval = HandleObstacleData(False, sceneNP, steerPlugIn)
@@ -228,7 +218,6 @@ if __name__ == '__main__':
     
     # handle OSSteerVehicle(s)' events
     app.accept("avoid_obstacle", handleVehicleEvent, ["avoid_obstacle"])
-    app.accept("avoid_close_neighbor", handleVehicleEvent, ["avoid_close_neighbor"])
     
     # write to bam file on exit
     app.win.set_close_request_event("close_request_event")
@@ -239,8 +228,8 @@ if __name__ == '__main__':
     
     # place camera
     trackball = app.trackball.node()
-    trackball.set_pos(-128.0, 120.0, -40.0);
-    trackball.set_hpr(0.0, 20.0, 0.0);
+    trackball.set_pos(-128.0, -20.0, -60.0);
+    trackball.set_hpr(8.0, 10.0, 0.0);
    
     # app.run(), equals to do the main loop in C++
     app.run()
