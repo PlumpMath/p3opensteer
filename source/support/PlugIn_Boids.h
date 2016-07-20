@@ -382,6 +382,8 @@ public:
  * - \var worldCenter, worldRadius: specify the "world sphere" boundary.
  * - \fn void nextPD(): cycles through various types of proximity databases
  * (default: LQProximityDatabase).
+ * - \fn void setPD(): sets a proximity database given its index
+ * (0:LQProximityDatabase (default), 1:BruteForceProximityDatabase)
  */
 template<typename Entity>
 class BoidsPlugIn: public PlugIn
@@ -564,6 +566,47 @@ public:
 		delete oldPD;
 	}
 
+	int getPD()
+	{
+		return pdIdx;
+	}
+
+	void setPD(int idx)
+	{
+		// save pointer to old PD
+		ProximityDatabase* oldPD = pd;
+
+		// allocate new PD
+		switch (idx)
+		{
+		case 0:
+		{
+			const Vec3 center;
+			const float div = 10.0f;
+			const Vec3 divisions(div, div, div);
+			const float diameter = worldRadius * 1.1f * 2;
+			const Vec3 dimensions(diameter, diameter, diameter);
+			typedef LQProximityDatabase<AbstractVehicle*> LQPDAV;
+			pd = new LQPDAV(center, dimensions, divisions);
+			pdIdx = 0;
+			break;
+		}
+		case 1:
+		{
+			pd = new BruteForceProximityDatabase<AbstractVehicle*>();
+			pdIdx = 1;
+			break;
+		}
+		}
+
+		// switch each boid to new PD
+		for (iterator i = flock.begin(); i != flock.end(); i++)
+			(**i).newPD(*pd);
+
+		// delete old PD (if any)
+		delete oldPD;
+	}
+
 ///	void handleFunctionKeys(int keyNumber)
 ///	{
 ///		switch (keyNumber)
@@ -704,6 +747,7 @@ public:
 
 	// pointer to database used to accelerate proximity queries
 	ProximityDatabase* pd;
+	int pdIdx;
 
 ///	// keep track of current flock size
 ///	int population;
