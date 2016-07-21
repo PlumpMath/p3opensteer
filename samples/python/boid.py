@@ -196,7 +196,7 @@ if __name__ == '__main__':
     app.accept("d", toggleDebugDraw, [steerPlugIn])
 
     # handle addition steer vehicles, models and animations 
-    vehicleData = HandleVehicleData(0.7, 0, "opensteer", sceneNP, 
+    vehicleData = HandleVehicleData(0.0007, 2, "opensteer", sceneNP, 
                         steerPlugIn, steerVehicles, vehicleAnimCtls,
                         LVector3f(0.0, 0.0, 25.0))
     app.accept("a", handleVehicles, [vehicleData])

@@ -18,14 +18,15 @@ static GeoMipTerrain* terrain;
 static LPoint3f terrainRootNetPos;
 #define DEFAULT_MAXVALUE 1.0
 //models and animations
-string vehicleFile[2] =
-{ "eve.egg", "ralph.egg" };
-string vehicleAnimFiles[2][2] =
+string vehicleFile[3] =
+{ "eve.egg", "ralph.egg", "sparrow.egg" };
+string vehicleAnimFiles[3][2] =
 {
 { "eve-walk.egg", "eve-run.egg" },
-{ "ralph-walk.egg", "ralph-run.egg" } };
-const float rateFactor[2] =
-{ 1.20, 3.40 };
+{ "ralph-walk.egg", "ralph-run.egg" },
+{ "sparrow-flying.egg", "sparrow-flying.egg" }};
+const float rateFactor[3] =
+{ 1.20, 3.40, 1.20 };
 //obstacle model
 string obstacleFile("plants2.egg");
 //bame file

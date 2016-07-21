@@ -22,10 +22,11 @@ terrain = None
 terrainRootNetPos = None
 DEFAULT_MAXVALUE = 1.0
 # models and animations
-vehicleFile = ["eve.egg", "ralph.egg"]
+vehicleFile = ["eve.egg", "ralph.egg", "sparrow.egg"]
 vehicleAnimFiles = [["eve-walk.egg", "eve-run.egg"],
-                  ["ralph-walk.egg", "ralph-run.egg"]]
-rateFactor = [1.20, 3.40]
+                  ["ralph-walk.egg", "ralph-run.egg"],
+                  ["sparrow-flying.egg", "sparrow-flying.egg"]]
+rateFactor = [1.20, 3.40, 1.20]
 # obstacle model
 obstacleFile = "plants2.egg"
 # bame file

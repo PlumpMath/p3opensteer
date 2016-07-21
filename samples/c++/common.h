@@ -29,9 +29,9 @@ extern CollideMask mask;
 extern AsyncTask* updateTask;
 extern bool toggleDebugFlag;
 //models and animations
-extern string vehicleFile[2];
-extern string vehicleAnimFiles[2][2];
-extern const float rateFactor[2];
+extern string vehicleFile[3];
+extern string vehicleAnimFiles[3][2];
+extern const float rateFactor[3];
 //obstacle model
 extern string obstacleFile;
 //bam file
