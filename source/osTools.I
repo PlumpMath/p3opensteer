@@ -291,6 +291,80 @@ INLINE void OSVehicleSettings::set_position(const LPoint3f& value)
 	_vehicleSettings.m_position = ossup::LVecBase3fToOpenSteerVec3(value);
 }
 
+///Flock settings.
+INLINE float OSFlockSettings::get_separation_radius() const
+{
+	return _separationRadius;
+}
+INLINE void OSFlockSettings::set_separation_radius(float value)
+{
+	_separationRadius = value;
+}
+INLINE float OSFlockSettings::get_separation_angle() const
+{
+	return _separationAngle;
+}
+INLINE void OSFlockSettings::set_separation_angle(float value)
+{
+	_separationAngle = value;
+}
+INLINE float OSFlockSettings::get_separation_weight() const
+{
+	return _separationWeight;
+}
+INLINE void OSFlockSettings::set_separation_weight(float value)
+{
+	_separationWeight = value;
+}
+INLINE float OSFlockSettings::get_alignment_radius() const
+{
+	return _alignmentRadius;
+}
+INLINE void OSFlockSettings::set_alignment_radius(float value)
+{
+	_alignmentRadius = value;
+}
+INLINE float OSFlockSettings::get_alignment_angle() const
+{
+	return _alignmentAngle;
+}
+INLINE void OSFlockSettings::set_alignment_angle(float value)
+{
+	_alignmentAngle = value;
+}
+INLINE float OSFlockSettings::get_alignment_weight() const
+{
+	return _alignmentWeight;
+}
+INLINE void OSFlockSettings::set_alignment_weight(float value)
+{
+	_alignmentWeight = value;
+}
+INLINE float OSFlockSettings::get_cohesion_radius() const
+{
+	return _cohesionRadius;
+}
+INLINE void OSFlockSettings::set_cohesion_radius(float value)
+{
+	_cohesionRadius = value;
+}
+INLINE float OSFlockSettings::get_cohesion_angle() const
+{
+	return _cohesionAngle;
+}
+INLINE void OSFlockSettings::set_cohesion_angle(float value)
+{
+	_cohesionAngle = value;
+}
+INLINE float OSFlockSettings::get_cohesion_weight() const
+{
+	return _cohesionWeight;
+}
+INLINE void OSFlockSettings::set_cohesion_weight(float value)
+{
+	_cohesionWeight = value;
+}
+
 ///OSObstacleSettings.
 INLINE bool OSObstacleSettings::operator==(
 		const OSObstacleSettings &other) const

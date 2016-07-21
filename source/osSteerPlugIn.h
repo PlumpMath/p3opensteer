@@ -128,7 +128,7 @@ PUBLISHED:
 	///@}
 
 	/**
-	 * \name Proximity database (PEDESTRIAN, BOID).
+	 * \name PROXIMITY DATABASE SETTINGS (PEDESTRIAN, BOID)
 	 */
 	///@{
 	void set_proximity_database(OSProximityDatabase pd = LQ_PD);
@@ -136,7 +136,7 @@ PUBLISHED:
 	///@}
 
 	/**
-	 * \name World center and radius (BOID).
+	 * \name WORLD SETTINGS (BOID)
 	 */
 	///@{
 	void set_world_center(const LPoint3f& center);
@@ -146,7 +146,7 @@ PUBLISHED:
 	///@}
 
 	/**
-	 * \name Steering speed (LOW_SPEED_TURN).
+	 * \name STEERING SPEED SETTINGS (LOW_SPEED_TURN)
 	 */
 	///@{
 	void set_steering_speed(float steeringSpeed = 1.0);

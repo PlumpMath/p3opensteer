@@ -414,7 +414,7 @@ typedef ossup::VehicleAddOnMixin<ossup::SimpleVehicle, OSSteerVehicle> VehicleAd
 /**
  * Adds a OSSteerVehicle to this OSSteerPlugIn (ie to the underlying OpenSteer
  * management mechanism).
- * Returns a negative number on error.
+ * Returns a negative value on error.
  */
 int OSSteerPlugIn::add_steer_vehicle(NodePath steerVehicleNP)
 {
@@ -485,7 +485,7 @@ int OSSteerPlugIn::add_steer_vehicle(NodePath steerVehicleNP)
 /**
  * Removes a OSSteerVehicle from this OSSteerPlugIn (ie from the OpenSteer
  * handling mechanism).
- * Returns a negative number on error.
+ * Returns a negative value on error.
  */
 int OSSteerPlugIn::remove_steer_vehicle(NodePath steerVehicleNP)
 {
@@ -652,7 +652,7 @@ void OSSteerPlugIn::set_pathway(const ValueList<LPoint3f>& pointList,
  * to the underlying OpenSteer obstacle, and is directly reparented to the
  * reference node. In this case parameters are extracted from the NodePath.
  * objectNP, type and seenFromState parameters must be always specified.\n
- * Returns the obstacle's unique reference (>0), or a negative number on error.
+ * Returns the obstacle's unique reference (>0), or a negative value on error.
  */
 int OSSteerPlugIn::add_obstacle(NodePath& objectNP,
 		const string& type, const string& seenFromState)
@@ -963,7 +963,7 @@ void OSSteerPlugIn::set_proximity_database(OSProximityDatabase pd)
  * Returns the type of proximity database
  * - BruteForceProximityDatabase
  * - LQProximityDatabase (default)
- * or a negative number on error.
+ * or a negative value on error.
  * \note PEDESTRIAN, BOID OSSteerPlugIn only.
  */
 OSSteerPlugIn::OSProximityDatabase OSSteerPlugIn::get_proximity_database() const
@@ -1013,7 +1013,7 @@ void OSSteerPlugIn::set_world_center(const LPoint3f& center)
 	{
 		ossup::BoidsPlugIn<OSSteerVehicle>* plugIn =
 				static_cast<ossup::BoidsPlugIn<OSSteerVehicle>*>(mPlugIn);
-		plugIn->worldCenter = center;
+		plugIn->worldCenter = ossup::LVecBase3fToOpenSteerVec3(center);
 	}
 }
 
@@ -1028,7 +1028,7 @@ LPoint3f OSSteerPlugIn::get_world_center() const
 	{
 		ossup::BoidsPlugIn<OSSteerVehicle>* plugIn =
 				static_cast<ossup::BoidsPlugIn<OSSteerVehicle>*>(mPlugIn);
-		return plugIn->worldCenter;
+		return ossup::OpenSteerVec3ToLVecBase3f(plugIn->worldCenter);
 	}
 	return LPoint3f::zero();
 }
@@ -1078,7 +1078,7 @@ void OSSteerPlugIn::set_steering_speed(float steeringSpeed)
 }
 
 /**
- * Returns steering speed (>=0), a negative number on error.
+ * Returns steering speed (>=0), a negative value on error.
  * \note LOW_SPEED_TURN OSSteerPlugIn only.
  */
 float OSSteerPlugIn::get_steering_speed() const
@@ -1184,7 +1184,7 @@ void OSSteerPlugIn::disable_debug_drawing()
 
 /**
  * Enables/disables debugging.
- * Returns a negative number on error.
+ * Returns a negative value on error.
  */
 int OSSteerPlugIn::toggle_debug_drawing(bool enable)
 {

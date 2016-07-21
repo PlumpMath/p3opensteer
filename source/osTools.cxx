@@ -164,6 +164,57 @@ void OSVehicleSettings::read_datagram(DatagramIterator &scan)
 	set_position(value);
 }
 
+///Flock settings.
+/**
+ *
+ */
+OSFlockSettings::OSFlockSettings():
+		_separationRadius(0.0), _separationAngle(0.0), _separationWeight(0.0),
+		_alignmentRadius(0.0), _alignmentAngle(0.0), _alignmentWeight(0.0),
+		_cohesionRadius(0.0), _cohesionAngle(0.0), _cohesionWeight(0.0)
+{
+}/**
+ *
+ */
+OSFlockSettings::OSFlockSettings(float sR, float sA, float sW, float aR,
+		float aA, float aW, float cR, float cA, float cW) :
+		_separationRadius(sR), _separationAngle(sA), _separationWeight(sW),
+		_alignmentRadius(aR), _alignmentAngle(aA), _alignmentWeight(aW),
+		_cohesionRadius(cR), _cohesionAngle(cA), _cohesionWeight(cW)
+{
+}
+/**
+ * Writes the flock settings into a datagram.
+ */
+void OSFlockSettings::write_datagram(Datagram &dg) const
+{
+	dg.add_stdfloat(get_separation_radius());
+	dg.add_stdfloat(get_separation_angle());
+	dg.add_stdfloat(get_separation_weight());
+	dg.add_stdfloat(get_alignment_radius());
+	dg.add_stdfloat(get_alignment_angle());
+	dg.add_stdfloat(get_alignment_weight());
+	dg.add_stdfloat(get_cohesion_radius());
+	dg.add_stdfloat(get_cohesion_angle());
+	dg.add_stdfloat(get_cohesion_weight());
+}
+
+/**
+ * Restores the flock settings from the datagram.
+ */
+void OSFlockSettings::read_datagram(DatagramIterator &scan)
+{
+	set_separation_radius(scan.get_stdfloat());
+	set_separation_angle(scan.get_stdfloat());
+	set_separation_weight(scan.get_stdfloat());
+	set_alignment_radius(scan.get_stdfloat());
+	set_alignment_angle(scan.get_stdfloat());
+	set_alignment_weight(scan.get_stdfloat());
+	set_cohesion_radius(scan.get_stdfloat());
+	set_cohesion_angle(scan.get_stdfloat());
+	set_cohesion_weight(scan.get_stdfloat());
+}
+
 ///OSObstacleSettings.
 /**
  *

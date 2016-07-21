@@ -338,6 +338,21 @@ public:
 				maxXXX(alignmentRadius, cohesionRadius));
 	}
 
+	void getFlockParameters(float& sR, float& sA, float& sW,
+			float& aR, float& aA,	float& aW,
+			float& cR, float& cA,	float& cW) const
+	{
+		sR = separationRadius;
+		sA = separationAngle;
+		sW = separationWeight;
+		aR = alignmentRadius;
+		aA = alignmentAngle;
+		aW = alignmentWeight;
+		cR = cohesionRadius;
+		cA = cohesionAngle;
+		cW = cohesionWeight;
+	}
+
 ///#ifndef NO_LQ_BIN_STATS
 ///	static size_t minNeighbors, maxNeighbors, totalNeighbors;
 ///#endif // NO_LQ_BIN_STATS

@@ -442,6 +442,53 @@ void OSSteerVehicle::do_finalize()
 }
 
 /**
+ * Sets flock settings.
+ * \note OSSteerVehicle should be not externally updated.
+ * \note BOID OSSteerVehicle only.
+ */
+void OSSteerVehicle::set_flock_settings(const OSFlockSettings& settings)
+{
+	if (mVehicleType == BOID)
+	{
+		static_cast<ossup::Boid<OSSteerVehicle>*>(mVehicle)->setFlockParameters(
+				settings.get_separation_radius(),
+				settings.get_separation_angle(),
+				settings.get_separation_weight(),
+				settings.get_alignment_radius(),
+				settings.get_alignment_angle(),
+				settings.get_alignment_weight(),
+				settings.get_cohesion_radius(),
+				settings.get_cohesion_angle(),
+				settings.get_cohesion_weight());
+	}
+}
+
+/**
+ * Returns flock settings.
+ * Returns an OSFlockSettings with negative values on error.
+ * \note BOID OSSteerVehicle only.
+ */
+OSFlockSettings OSSteerVehicle::get_flock_settings() const
+{
+	OSFlockSettings settings(OS_ERROR, OS_ERROR, OS_ERROR, OS_ERROR, OS_ERROR,
+			OS_ERROR, OS_ERROR, OS_ERROR, OS_ERROR);
+	if (mVehicleType == BOID)
+	{
+		static_cast<ossup::Boid<OSSteerVehicle>*>(mVehicle)->getFlockParameters(
+				settings.separation_radius(),
+				settings.separation_angle(),
+				settings.separation_weight(),
+				settings.alignment_radius(),
+				settings.alignment_angle(),
+				settings.alignment_weight(),
+				settings.cohesion_radius(),
+				settings.cohesion_angle(),
+				settings.cohesion_weight());
+	}
+	return settings;
+}
+
+/**
  * Sets steering speed.
  * \note OSSteerVehicle should be not externally updated.
  * \note LOW_SPEED_TURN OSSteerVehicle only.
@@ -457,13 +504,14 @@ void OSSteerVehicle::set_steering_speed(float steeringSpeed)
 
 /**
  * Returns steering speed.
+ * Returns a negative value on error.
  * \note LOW_SPEED_TURN OSSteerVehicle only.
  */
 float OSSteerVehicle::get_steering_speed() const
 {
 	return mVehicleType == LOW_SPEED_TURN ?
 			static_cast<ossup::LowSpeedTurn<OSSteerVehicle>*>(mVehicle)->steeringSpeed :
-			0.0;
+			OS_ERROR;
 }
 
 /**
@@ -482,7 +530,7 @@ void OSSteerVehicle::set_reverse_at_end_point(bool enable)
 
 /**
  * Returns if OSSteerVehicle reverses direction when it reaches a pathway
- * end-point, or a negative number on error.
+ * end-point, or a negative value on error.
  * \note PEDESTRIAN OSSteerVehicle only.
  */
 bool OSSteerVehicle::get_reverse_at_end_point() const
@@ -506,7 +554,7 @@ void OSSteerVehicle::set_wander_behavior(bool enable)
 }
 
 /**
- * Returns if OSSteerVehicle has wander behavior, or a negative number on error.
+ * Returns if OSSteerVehicle has wander behavior, or a negative value on error.
  * \note PEDESTRIAN OSSteerVehicle only.
  */
 bool OSSteerVehicle::get_wander_behavior() const
@@ -582,7 +630,7 @@ void OSSteerVehicle::set_pathway_direction(OSPathDirection direction)
 
 /**
  * Returns OSSteerVehicle's direction for pathway following, or a negative
- * number on error.
+ * value on error.
  * \note PEDESTRIAN OSSteerVehicle only.
  */
 OSSteerVehicle::OSPathDirection OSSteerVehicle::get_pathway_direction() const
@@ -995,7 +1043,7 @@ void OSSteerVehicle::write_datagram(BamWriter *manager, Datagram &dg)
 	}
 	if(mVehicleType == BOID)
 	{
-		;
+		get_flock_settings().write_datagram(dg);
 	}
 	if(mVehicleType == MP_WANDERER)
 	{
@@ -1093,7 +1141,7 @@ void OSSteerVehicle::finalize(BamReader *manager)
 	}
 	if(mVehicleType == BOID)
 	{
-		;
+		set_flock_settings(mFlockSettings_ser);
 	}
 
 	if(mVehicleType == MP_WANDERER)
@@ -1229,7 +1277,7 @@ void OSSteerVehicle::fillin(DatagramIterator &scan, BamReader *manager)
 	}
 	if(mVehicleType == BOID)
 	{
-		;
+		mFlockSettings_ser.read_datagram(scan);
 	}
 	if(mVehicleType == MP_WANDERER)
 	{

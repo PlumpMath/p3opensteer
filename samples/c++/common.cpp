@@ -433,8 +433,10 @@ void writeToBamFileAndExit(const Event* e, void* data)
 // handle add/remove obstacles
 void handleObstacles(const Event* e, void* data)
 {
-	bool addObstacle = reinterpret_cast<HandleObstacleData*>(data)->addObstacle;
-	NodePath sceneNP = reinterpret_cast<HandleObstacleData*>(data)->sceneNP;
+	HandleObstacleData* obstacleData = reinterpret_cast<HandleObstacleData*>(data);
+	bool addObstacle = obstacleData->addObstacle;
+	NodePath sceneNP = obstacleData->sceneNP;
+	LVecBase3f scale = obstacleData->scale;
 	PT(OSSteerPlugIn)steerPlugIn =
 			reinterpret_cast<HandleObstacleData*>(data)->steerPlugIn;
 	// get the collision entry, if any
@@ -456,7 +458,7 @@ void handleObstacles(const Event* e, void* data)
 					obstacleFile);
 			obstacleNP.set_collide_mask(mask);
 			// set random scale (0.03 - 0.04)
-			float scale = 0.03 + 0.01 * ((float) rd() / (float) rd.max());
+			scale += scale * 0.2 * ((float) rd() / (float) rd.max());
 			obstacleNP.set_scale(scale);
 			// set obstacle position
 			LPoint3f pos = entry0->get_surface_point(sceneNP);
