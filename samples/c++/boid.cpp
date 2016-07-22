@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
 	text->set_text(
             msg + "\n\n"
             "- press \"d\" to toggle debug drawing\n"
-			"- press \"a\" to add 'opensteer' vehicle\n"
+			"- press \"a\" to add 'opensteer' vehicle over the hit point\n"
             "- press \"s\"/\"shift-s\" to increase/decrease last inserted vehicle's max speed\n"
             "- press \"f\"/\"shift-f\" to increase/decrease last inserted vehicle's max force\n"
 			"- press \"o\"/\"shift-o\" to add/remove obstacle\n");
@@ -136,7 +136,7 @@ int main(int argc, char *argv[])
 			(void*) steerPlugIn.p());
 
 	// handle addition steer vehicles, models and animations
-	HandleVehicleData vehicleData(0.07, 2, "opensteer", sceneNP,
+	HandleVehicleData vehicleData(0.007, 2, "opensteer", sceneNP,
 						steerPlugIn, steerVehicles, vehicleAnimCtls,
 						LVector3f(0.0, 0.0, 25.0));
 	framework.define_key("a", "addVehicle", &handleVehicles,
@@ -144,7 +144,7 @@ int main(int argc, char *argv[])
 
 	// handle obstacle addition
 	HandleObstacleData obstacleAddition(true, sceneNP, steerPlugIn,
-			LVecBase3f(0.03, 0.03, 0.3));
+			LVecBase3f(0.03, 0.03, 0.24));
 	framework.define_key("o", "addObstacle", &handleObstacles,
 			(void*) &obstacleAddition);
 	// handle obstacle removal
@@ -179,8 +179,8 @@ int main(int argc, char *argv[])
 
 	// place camera trackball (local coordinate)
 	PT(Trackball)trackball = DCAST(Trackball, window->get_mouse().find("**/+Trackball").node());
-	trackball->set_pos(-128.0, 120.0, -40.0);
-	trackball->set_hpr(0.0, 20.0, 0.0);
+	trackball->set_pos(-128.0, -20.0, -60.0);
+	trackball->set_hpr(8.0, 10.0, 0.0);
 
 	// do the main loop, equals to call app.run() in python
 	framework.main_loop();
@@ -201,9 +201,9 @@ void setParametersBeforeCreation()
 	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "vehicle_type",
 			"boid");
 	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "max_force",
-			"27.0");
+			"5.0");
 	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "max_speed",
-			"20.0");
+			"10.0");
 	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "speed", "3.0");
 
 	// set vehicle throwing events

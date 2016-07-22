@@ -37,9 +37,9 @@ def setParametersBeforeCreation():
     steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "vehicle_type",
             "boid")
     steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "max_force",
-            "27.0")
+            "5.0")
     steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "max_speed",
-            "20.0")
+            "10.0")
     steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "speed", "3.0")
 
     # set vehicle throwing events
@@ -105,7 +105,7 @@ if __name__ == '__main__':
     text.set_text(
             msg + "\n\n"      
             "- press \"d\" to toggle debug drawing\n"
-            "- press \"a\" to add 'opensteer' vehicle\n"
+            "- press \"a\" to add 'opensteer' vehicle over the hit point\n"
             "- press \"s\"/\"shift-s\" to increase/decrease last inserted vehicle's max speed\n"
             "- press \"f\"/\"shift-f\" to increase/decrease last inserted vehicle's max force\n"
             "- press \"o\"/\"shift-o\" to add/remove obstacle\n")
@@ -196,14 +196,14 @@ if __name__ == '__main__':
     app.accept("d", toggleDebugDraw, [steerPlugIn])
 
     # handle addition steer vehicles, models and animations 
-    vehicleData = HandleVehicleData(0.0007, 2, "opensteer", sceneNP, 
+    vehicleData = HandleVehicleData(0.007, 2, "opensteer", sceneNP, 
                         steerPlugIn, steerVehicles, vehicleAnimCtls,
                         LVector3f(0.0, 0.0, 25.0))
     app.accept("a", handleVehicles, [vehicleData])
 
     # handle obstacle addition
     obstacleAddition = HandleObstacleData(True, sceneNP, steerPlugIn,
-                        LVecBase3f(0.03, 0.03, 0.3))
+                        LVecBase3f(0.03, 0.03, 0.24))
     app.accept("o", handleObstacles, [obstacleAddition])
     # handle obstacle removal
     obstacleRemoval = HandleObstacleData(False, sceneNP, steerPlugIn)
@@ -228,8 +228,8 @@ if __name__ == '__main__':
     
     # place camera
     trackball = app.trackball.node()
-    trackball.set_pos(-128.0, 120.0, -40.0);
-    trackball.set_hpr(0.0, 20.0, 0.0);
+    trackball.set_pos(-128.0, -20.0, -60.0);
+    trackball.set_hpr(8.0, 10.0, 0.0);
    
     # app.run(), equals to do the main loop in C++
     app.run()
