@@ -14,7 +14,6 @@ PT(OSSteerPlugIn)steerPlugIn;
 vector<PT(OSSteerVehicle)>steerVehicles;
 //
 void setParametersBeforeCreation();
-void toggleWanderBehavior(const Event*, void*);
 AsyncTask::DoneStatus updatePlugIn(GenericAsyncTask*, void*);
 
 int main(int argc, char *argv[])
@@ -29,7 +28,7 @@ int main(int argc, char *argv[])
 	text->set_text(
             msg + "\n\n"
             "- press \"d\" to toggle debug drawing\n"
-			"- press \"a\" to add 'opensteer' vehicle over the hit point\n"
+			"- press \"a\" to add 'opensteer' vehicle above the hit point\n"
             "- press \"s\"/\"shift-s\" to increase/decrease last inserted vehicle's max speed\n"
             "- press \"f\"/\"shift-f\" to increase/decrease last inserted vehicle's max force\n"
 			"- press \"o\"/\"shift-o\" to add/remove obstacle\n");
@@ -173,10 +172,6 @@ int main(int argc, char *argv[])
 	framework.define_key("close_request_event", "writeToBamFile",
 			&writeToBamFileAndExit, (void*) &bamFileName);
 
-	// 'pedestrian' specific: toggle wander behavior
-	framework.define_key("t", "toggleWanderBehavior", &toggleWanderBehavior,
-			nullptr);
-
 	// place camera trackball (local coordinate)
 	PT(Trackball)trackball = DCAST(Trackball, window->get_mouse().find("**/+Trackball").node());
 	trackball->set_pos(-128.0, -20.0, -60.0);
@@ -197,7 +192,7 @@ void setParametersBeforeCreation()
 	steerMgr->set_parameter_value(OSSteerManager::STEERPLUGIN, "plugin_type",
 			"boid");
 
-	// set vehicle type, force, speed, max speed
+	// set vehicle's type, max force, max speed, speed
 	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "vehicle_type",
 			"boid");
 	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "max_force",
@@ -213,26 +208,6 @@ void setParametersBeforeCreation()
 			"thrown_events", valueList);
 	//
 	printCreationParameters();
-}
-
-// toggle wander behavior of last inserted vehicle
-void toggleWanderBehavior(const Event*, void*)
-{
-    if (steerVehicles.size() == 0)
-    {
-        return;
-    }
-
-	if (steerVehicles.back()->get_wander_behavior())
-	{
-		steerVehicles.back()->set_wander_behavior(false);
-	}
-	else
-	{
-		steerVehicles.back()->set_wander_behavior(true);
-	}
-	cout << *steerVehicles.back() << "'s wander behavior is "
-			<< steerVehicles.back()->get_wander_behavior() << endl;
 }
 
 // custom update task for plug-ins

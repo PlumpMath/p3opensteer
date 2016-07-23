@@ -267,7 +267,7 @@ class HandleVehicleData:
         self.deltaPos = deltaPos
         
 def handleVehicles(data = None):
-    """handle add/remove vehicles""" 
+    """handle add vehicles""" 
     
     global app
     if data == None:
