@@ -22,10 +22,11 @@ terrain = None
 terrainRootNetPos = None
 DEFAULT_MAXVALUE = 1.0
 # models and animations
-vehicleFile = ["eve.egg", "ralph.egg"]
+vehicleFile = ["eve.egg", "ralph.egg", "sparrow.egg"]
 vehicleAnimFiles = [["eve-walk.egg", "eve-run.egg"],
-                  ["ralph-walk.egg", "ralph-run.egg"]]
-rateFactor = [1.20, 3.40]
+                  ["ralph-walk.egg", "ralph-run.egg"],
+                  ["sparrow-flying.egg", "sparrow-flying2.egg"]]
+rateFactor = [1.20, 3.40, 0.90]
 # obstacle model
 obstacleFile = "plants2.egg"
 # bame file
@@ -254,7 +255,8 @@ class HandleVehicleData:
     """ data passed to vehicle's handling callback"""
     
     def __init__(self, meanScale, vehicleFileIdx, moveType, sceneNP, 
-                 steerPlugIn, steerVehicles, vehicleAnimCtls):
+                 steerPlugIn, steerVehicles, vehicleAnimCtls, 
+                 deltaPos = LVector3f.zero()):
         self.meanScale = meanScale
         self.vehicleFileIdx = vehicleFileIdx
         self.moveType = moveType
@@ -262,9 +264,10 @@ class HandleVehicleData:
         self.steerPlugIn = steerPlugIn
         self.steerVehicles = steerVehicles
         self.vehicleAnimCtls = vehicleAnimCtls
+        self.deltaPos = deltaPos
         
 def handleVehicles(data = None):
-    """handle add/remove obstacles""" 
+    """handle add/remove vehicles""" 
     
     global app
     if data == None:
@@ -306,8 +309,8 @@ def getVehicleModelAnims(meanScale, vehicleFileIdx, moveType, sceneNP, steerPlug
     # get some models, with animations, to attach to vehicles
     # get the model
     vehicleNPs = app.loader.load_model(vehicleFile[vehicleFileIdx])
-    # set random scale (0.35 - 0.45)
-    scale = meanScale + 0.1 * random.uniform(0.0, 1.0)
+    # set random scale
+    scale = meanScale * (1 + 0.2 * (2 * random.uniform(0.0, 1.0) - 1))
     vehicleNPs.set_scale(scale)
     # associate an anim with a given anim control
     tmpAnims = AnimControlCollection()
@@ -362,10 +365,12 @@ def writeToBamFileAndExit(fileName):
 class HandleObstacleData:
     """ data passed to obstacle's handling callback"""
     
-    def __init__(self, addObstacle, sceneNP, steerPlugIn):
+    def __init__(self, addObstacle, sceneNP, steerPlugIn,
+                 scale = LVecBase3f(1.0, 1.0, 1.0)):
         self.addObstacle = addObstacle
         self.sceneNP = sceneNP
         self.steerPlugIn = steerPlugIn
+        self.scale = scale
 
 def handleObstacles(data):
     """handle add/remove obstacles"""
@@ -374,9 +379,11 @@ def handleObstacles(data):
     if data == None:
         return
 
-    addObstacle = data.addObstacle
-    sceneNP = data.sceneNP
-    steerPlugIn = data.steerPlugIn
+    obstacleData = data
+    addObstacle = obstacleData.addObstacle
+    sceneNP = obstacleData.sceneNP
+    steerPlugIn = obstacleData.steerPlugIn
+    scale = obstacleData.scale
     # get the collision entry, if any
     entry0 = getCollisionEntryFromCamera()
     if entry0:
@@ -391,8 +398,8 @@ def handleObstacles(data):
             # get a model as obstacle
             obstacleNP = app.loader.load_model(obstacleFile)
             obstacleNP.set_collide_mask(mask)
-            # set random scale (0.03 - 0.04)
-            scale = 0.03 + 0.01 * random.uniform(0.0, 1.0)
+            # set random scale
+            scale = scale * (1 + 0.2 * (2 * random.uniform(0.0, 1.0) - 1))
             obstacleNP.set_scale(scale)
             # set obstacle position
             pos = entry0.get_surface_point(sceneNP)

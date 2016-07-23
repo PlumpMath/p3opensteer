@@ -10,7 +10,7 @@ built on GNU/Linux using these commands within the "c++" folder:
   
 and executed with:
 
-  ./basic
+  ./<EXAMPLE_NAME>
   
 However all the code should also compile successfully on other 
 platforms (after suitably creating/modifying the "data.h" file that 

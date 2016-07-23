@@ -4,7 +4,7 @@ The python code shows the use of the p3opensteer module.
 To run the python samples you should copy the module (p3opensteer) 
 into the "pyhton" folder, and run the command:
 
- python basic.py
+ python <EXAMPLE_NAME>.py
 
 NOTE: it should pointed out that the programming style and structure of 
 the sample programs' code is not really favored by the author, but it 

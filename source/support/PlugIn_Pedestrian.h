@@ -87,7 +87,7 @@ public:
 ///	Pedestrian(ProximityDatabase& pd)
 	Pedestrian()
 	{
-		// allocate a token for this boid in the proximity database
+		// allocate a token for this pedestrian in the proximity database
 		proximityToken = NULL;
 ///		newPD(pd);
 
@@ -98,7 +98,7 @@ public:
 	// destructor
 	virtual ~Pedestrian()
 	{
-		// delete this boid's token in the proximity database
+		// delete this pedestrian's token in the proximity database
 		delete proximityToken;
 	}
 
@@ -375,14 +375,14 @@ public:
 	// switch to new proximity database -- just for demo purposes
 	void newPD(ProximityDatabase& pd)
 	{
-		// delete this boid's token in the old proximity database
+		// delete this pedestrian's token in the old proximity database
 		delete proximityToken;
 
-		// allocate a token for this boid in the proximity database
+		// allocate a token for this pedestrian in the proximity database
 		proximityToken = pd.allocateToken(this);
 	}
 
-	// a pointer to this boid's interface object for the proximity database
+	// a pointer to this pedestrian's interface object for the proximity database
 	ProximityToken* proximityToken;
 
 	// allocate one and share amoung instances just to save memory usage
@@ -725,7 +725,7 @@ public:
 				// randomize 2D heading
 				pedestrian->randomizeHeadingOnXZPlane();
 			}
-			// allocate a token for this boid in the proximity database
+			// allocate a token for this pedestrian in the proximity database
 			pedestrian->newPD(*pd);
 			// notify proximity database that our position has changed
 			pedestrian->proximityToken->updateForNewPosition(
@@ -809,7 +809,7 @@ public:
 		}
 		}
 
-		// switch each boid to new PD
+		// switch each pedestrian to new PD
 		for (iterator i = crowd.begin(); i != crowd.end(); i++)
 			(**i).newPD(*pd);
 
@@ -850,7 +850,7 @@ public:
 		}
 		}
 
-		// switch each boid to new PD
+		// switch each pedestrian to new PD
 		for (iterator i = crowd.begin(); i != crowd.end(); i++)
 			(**i).newPD(*pd);
 

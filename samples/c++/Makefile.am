@@ -16,7 +16,7 @@ LDADD = -lp3framework -lpanda -lpandaexpress -lp3dtool -lp3dtoolconfig \
 
 noinst_HEADERS = common.h
 
-noinst_PROGRAMS = basic low_speed_turn pedestrian
+noinst_PROGRAMS = basic low_speed_turn pedestrian boid
 
 BUILT_SOURCES = data.h
 
@@ -75,5 +75,11 @@ pedestrian_SOURCES = \
 	pedestrian.cpp
 
 nodist_pedestrian_SOURCES = $(common_sources)
+
+#boid
+boid_SOURCES = \
+	boid.cpp
+
+nodist_boid_SOURCES = $(common_sources)
 
 CLEANFILES = data.h

@@ -72,6 +72,7 @@ void DrawMeshDrawer::clear()
 {
 	//reset to initial values
 	m_generatorIdx = 0;
+	m_generatorsSizeLast = 0;
 	m_generatorsSize = 0;
 	m_prim = NULL_PRIM;
 	m_textNodeIdx = 0;

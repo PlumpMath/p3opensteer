@@ -89,7 +89,7 @@ INLINE bool OSSteerPlugIn::get_pathway_closed_cycle() const
  * Adds an obstacle (associated to an empty NodePath) that is only seen by the
  * OpenSteer library.
  * All parameters should be specified.\n
- * Returns the obstacle's unique reference (>0), or a negative number on error.
+ * Returns the obstacle's unique reference (>0), or a negative value on error.
  */
 INLINE int OSSteerPlugIn::add_obstacle(const string& type, const string& seenFromState,
 		float width, float height,	float depth, float radius,
@@ -102,7 +102,7 @@ INLINE int OSSteerPlugIn::add_obstacle(const string& type, const string& seenFro
 
 /**
  * Returns the obstacle's unique reference (>0) given its index into the list of
- * obstacles added by this OSSteerPlugIn, or a negative number on error.
+ * obstacles added by this OSSteerPlugIn, or a negative value on error.
  */
 INLINE int OSSteerPlugIn::get_obstacle(int index) const
 {

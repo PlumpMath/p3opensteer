@@ -113,6 +113,15 @@ PUBLISHED:
 		AVOIDNEIGHBOREVENT      //!< AVOIDNEIGHBOREVENT
 	};
 
+	/**
+	 * PEDESTRIAN OSSteerVehicle path direction.
+	 */
+	enum OSPathDirection
+	{
+		UPSTREAM,
+		DOWNSTREAM
+	};
+
 	virtual ~OSSteerVehicle();
 
 	/**
@@ -126,7 +135,7 @@ PUBLISHED:
 	///@}
 
 	/**
-	 * \name CONFIGURATION SETTINGS
+	 * \name COMMON CONFIGURATION SETTINGS
 	 */
 	///@{
 	INLINE void set_settings(const OSVehicleSettings& settings);
@@ -155,17 +164,9 @@ PUBLISHED:
 	///@}
 
 	/**
-	 * \name PEDESTRIAN SPECIFIC SETTINGS.
+	 * \name WALK MOVEMENT SETTINGS (PEDESTRIAN)
 	 */
 	///@{
-	/**
-	 * PEDESTRIAN OSSteerVehicle path direction.
-	 */
-	enum OSPathDirection
-	{
-		UPSTREAM,
-		DOWNSTREAM
-	};
 	void set_reverse_at_end_point(bool enable = false);
 	bool get_reverse_at_end_point() const;
 	void set_wander_behavior(bool enable = false);
@@ -177,7 +178,15 @@ PUBLISHED:
 	///@}
 
 	/**
-	 * \name LOW SPEED TURN SPECIFIC SETTINGS.
+	 * \name FLOCK SETTINGS (BOID)
+	 */
+	///@{
+	void set_flock_settings(const OSFlockSettings& settings);
+	OSFlockSettings get_flock_settings() const;
+	///@}
+
+	/**
+	 * \name STEERING SPEED SETTINGS (LOW_SPEED_TURN)
 	 */
 	///@{
 	void set_steering_speed(float steeringSpeed = 1.0);
@@ -281,6 +290,8 @@ private:
 	bool mWanderBehavior_ser;
 	ValueList<LPoint3f> mPathwayEndPoints_ser;
 	OSPathDirection mPathwayDirection_ser;
+	//boid
+	OSFlockSettings mFlockSettings_ser;
 	//low speed turn
 	float mSteeringSpeed_ser;
 	///@}

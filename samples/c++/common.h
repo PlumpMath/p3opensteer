@@ -29,9 +29,9 @@ extern CollideMask mask;
 extern AsyncTask* updateTask;
 extern bool toggleDebugFlag;
 //models and animations
-extern string vehicleFile[2];
-extern string vehicleAnimFiles[2][2];
-extern const float rateFactor[2];
+extern string vehicleFile[3];
+extern string vehicleAnimFiles[3][2];
+extern const float rateFactor[3];
 //obstacle model
 extern string obstacleFile;
 //bam file
@@ -59,14 +59,17 @@ void writeToBamFileAndExit(const Event*, void*);
 struct HandleObstacleData
 {
 	HandleObstacleData(bool addObstacle, const NodePath& sceneNP,
-			PT(OSSteerPlugIn)steerPlugIn):
-	addObstacle(addObstacle), sceneNP(sceneNP), steerPlugIn(steerPlugIn)
+			PT(OSSteerPlugIn)steerPlugIn,
+			const LVecBase3f& scale = LVecBase3f(1.0, 1.0, 1.0)):
+	addObstacle(addObstacle), sceneNP(sceneNP), steerPlugIn(steerPlugIn),
+	scale(scale)
 	{
 	}
 	//
 	bool addObstacle;
 	NodePath sceneNP;
 	PT(OSSteerPlugIn)steerPlugIn;
+	LVecBase3f scale;
 };
 void handleObstacles(const Event*, void*);
 // data passed to vehicle's handling callback
@@ -76,10 +79,12 @@ struct HandleVehicleData
 			const string& moveType, const NodePath& sceneNP,
 			PT(OSSteerPlugIn)steerPlugIn,
 			vector<PT(OSSteerVehicle)>&steerVehicles,
-			vector<vector<PT(AnimControl)> >& vehicleAnimCtls):
+			vector<vector<PT(AnimControl)> >& vehicleAnimCtls,
+			const LVector3f& deltaPos = LVector3f::zero()):
 		meanScale(meanScale), vehicleFileIdx(vehicleFileIdx), moveType(moveType),
 		sceneNP(sceneNP), steerPlugIn(steerPlugIn),
-		steerVehicles(steerVehicles), vehicleAnimCtls(vehicleAnimCtls)
+		steerVehicles(steerVehicles), vehicleAnimCtls(vehicleAnimCtls),
+		deltaPos(deltaPos)
 	{
 	}
 	//
@@ -90,6 +95,7 @@ struct HandleVehicleData
 	PT(OSSteerPlugIn) steerPlugIn;
 	vector<PT(OSSteerVehicle)>& steerVehicles;
 	vector<vector<PT(AnimControl)> >& vehicleAnimCtls;
+	LVector3f deltaPos;
 };
 void handleVehicles(const Event*, void*);
 

@@ -18,14 +18,15 @@ static GeoMipTerrain* terrain;
 static LPoint3f terrainRootNetPos;
 #define DEFAULT_MAXVALUE 1.0
 //models and animations
-string vehicleFile[2] =
-{ "eve.egg", "ralph.egg" };
-string vehicleAnimFiles[2][2] =
+string vehicleFile[3] =
+{ "eve.egg", "ralph.egg", "sparrow.egg" };
+string vehicleAnimFiles[3][2] =
 {
 { "eve-walk.egg", "eve-run.egg" },
-{ "ralph-walk.egg", "ralph-run.egg" } };
-const float rateFactor[2] =
-{ 1.20, 3.40 };
+{ "ralph-walk.egg", "ralph-run.egg" },
+{ "sparrow-flying.egg", "sparrow-flying2.egg" }};
+const float rateFactor[3] =
+{ 1.20, 3.40, 0.90 };
 //obstacle model
 string obstacleFile("plants2.egg");
 //bame file
@@ -316,7 +317,7 @@ LPoint3f getRandomPos(NodePath modelNP)
 	return LPoint3f(x, y, gotCollisionZ.get_second());
 }
 
-// handle add/remove obstacles
+// handle add/remove vehicles
 void handleVehicles(const Event* e, void* data)
 {
 	if (not data)
@@ -367,8 +368,8 @@ vector<PT(OSSteerVehicle)>&steerVehicles, vector<vector<PT(AnimControl)> >& vehi
 	// get some models, with animations, to attach to vehicles
 	// get the model
 	NodePath vehicleNPs = window->load_model(framework.get_models(), vehicleFile[vehicleFileIdx]);
-	// set random scale (0.35 - 0.45)
-	float scale = meanScale + 0.1 * ((float) rd() / (float) rd.max());
+	// set random scale
+	float scale = meanScale * (1 + 0.2 * (2 * (float) rd() / (float) rd.max() - 1));
 	vehicleNPs.set_scale(scale);
 	// associate an anim with a given anim control
 	AnimControlCollection tmpAnims;
@@ -433,8 +434,10 @@ void writeToBamFileAndExit(const Event* e, void* data)
 // handle add/remove obstacles
 void handleObstacles(const Event* e, void* data)
 {
-	bool addObstacle = reinterpret_cast<HandleObstacleData*>(data)->addObstacle;
-	NodePath sceneNP = reinterpret_cast<HandleObstacleData*>(data)->sceneNP;
+	HandleObstacleData* obstacleData = reinterpret_cast<HandleObstacleData*>(data);
+	bool addObstacle = obstacleData->addObstacle;
+	NodePath sceneNP = obstacleData->sceneNP;
+	LVecBase3f scale = obstacleData->scale;
 	PT(OSSteerPlugIn)steerPlugIn =
 			reinterpret_cast<HandleObstacleData*>(data)->steerPlugIn;
 	// get the collision entry, if any
@@ -456,7 +459,7 @@ void handleObstacles(const Event* e, void* data)
 					obstacleFile);
 			obstacleNP.set_collide_mask(mask);
 			// set random scale (0.03 - 0.04)
-			float scale = 0.03 + 0.01 * ((float) rd() / (float) rd.max());
+			scale += scale * 0.2 * (2 * (float) rd() / (float) rd.max() - 1);
 			obstacleNP.set_scale(scale);
 			// set obstacle position
 			LPoint3f pos = entry0->get_surface_point(sceneNP);

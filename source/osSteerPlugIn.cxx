@@ -414,7 +414,7 @@ typedef ossup::VehicleAddOnMixin<ossup::SimpleVehicle, OSSteerVehicle> VehicleAd
 /**
  * Adds a OSSteerVehicle to this OSSteerPlugIn (ie to the underlying OpenSteer
  * management mechanism).
- * Returns a negative number on error.
+ * Returns a negative value on error.
  */
 int OSSteerPlugIn::add_steer_vehicle(NodePath steerVehicleNP)
 {
@@ -485,7 +485,7 @@ int OSSteerPlugIn::add_steer_vehicle(NodePath steerVehicleNP)
 /**
  * Removes a OSSteerVehicle from this OSSteerPlugIn (ie from the OpenSteer
  * handling mechanism).
- * Returns a negative number on error.
+ * Returns a negative value on error.
  */
 int OSSteerPlugIn::remove_steer_vehicle(NodePath steerVehicleNP)
 {
@@ -601,6 +601,8 @@ bool OSSteerPlugIn::check_steer_vehicle_compatibility(
  * \note pointList and radiusList should have the same number of elements; in
  * any case, the number of segments is equal to the number of points if the
  * cycle is closed otherwise to the number of points - 1.
+ * \note PEDESTRIAN OSSteerPlugIn supports currently only single radius
+ * pathway.
  */
 void OSSteerPlugIn::set_pathway(const ValueList<LPoint3f>& pointList,
 		const ValueList<float>& radiusList, bool singleRadius, bool closedCycle)
@@ -650,7 +652,7 @@ void OSSteerPlugIn::set_pathway(const ValueList<LPoint3f>& pointList,
  * to the underlying OpenSteer obstacle, and is directly reparented to the
  * reference node. In this case parameters are extracted from the NodePath.
  * objectNP, type and seenFromState parameters must be always specified.\n
- * Returns the obstacle's unique reference (>0), or a negative number on error.
+ * Returns the obstacle's unique reference (>0), or a negative value on error.
  */
 int OSSteerPlugIn::add_obstacle(NodePath& objectNP,
 		const string& type, const string& seenFromState)
@@ -919,7 +921,7 @@ void OSSteerPlugIn::update(float dt)
  * Sets the type of proximity database:
  * - BruteForceProximityDatabase
  * - LQProximityDatabase (default).
- * \note PEDESTRIAN OSSteerPlugIn only.
+ * \note PEDESTRIAN, BOID OSSteerPlugIn only.
  */
 void OSSteerPlugIn::set_proximity_database(OSProximityDatabase pd)
 {
@@ -939,14 +941,30 @@ void OSSteerPlugIn::set_proximity_database(OSProximityDatabase pd)
 			break;
 		}
 	}
+	if (mPlugInType == BOID)
+	{
+		ossup::BoidsPlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::BoidsPlugIn<OSSteerVehicle>*>(mPlugIn);
+		switch (pd)
+		{
+		case LQ_PD:
+			plugIn->setPD(0);
+			break;
+		case BRUTEFORCE_PD:
+			plugIn->setPD(1);
+			break;
+		default:
+			break;
+		}
+	}
 }
 
 /**
  * Returns the type of proximity database
  * - BruteForceProximityDatabase
  * - LQProximityDatabase (default)
- * or a negative number on error.
- * \note PEDESTRIAN OSSteerPlugIn only.
+ * or a negative value on error.
+ * \note PEDESTRIAN, BOID OSSteerPlugIn only.
  */
 OSSteerPlugIn::OSProximityDatabase OSSteerPlugIn::get_proximity_database() const
 {
@@ -954,7 +972,22 @@ OSSteerPlugIn::OSProximityDatabase OSSteerPlugIn::get_proximity_database() const
 	{
 		ossup::PedestrianPlugIn<OSSteerVehicle>* plugIn =
 				static_cast<ossup::PedestrianPlugIn<OSSteerVehicle>*>(mPlugIn);
-
+		switch (plugIn->pdIdx)
+		{
+		case 0:
+			return LQ_PD;
+			break;
+		case 1:
+			return BRUTEFORCE_PD;
+			break;
+		default:
+			break;
+		}
+	}
+	if (mPlugInType == BOID)
+	{
+		ossup::BoidsPlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::BoidsPlugIn<OSSteerVehicle>*>(mPlugIn);
 		switch (plugIn->pdIdx)
 		{
 		case 0:
@@ -971,6 +1004,67 @@ OSSteerPlugIn::OSProximityDatabase OSSteerPlugIn::get_proximity_database() const
 }
 
 /**
+ * Sets the world center point.
+ * \note BOID OSSteerPlugIn only.
+ */
+void OSSteerPlugIn::set_world_center(const LPoint3f& center)
+{
+	if (mPlugInType == BOID)
+	{
+		ossup::BoidsPlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::BoidsPlugIn<OSSteerVehicle>*>(mPlugIn);
+		plugIn->worldCenter = ossup::LVecBase3fToOpenSteerVec3(center);
+	}
+}
+
+/**
+ * Returns the world center point.
+ * Returns LPoint3f::zero() on error.
+ * \note BOID OSSteerPlugIn only.
+ */
+LPoint3f OSSteerPlugIn::get_world_center() const
+{
+	if (mPlugInType == BOID)
+	{
+		ossup::BoidsPlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::BoidsPlugIn<OSSteerVehicle>*>(mPlugIn);
+		return ossup::OpenSteerVec3ToLVecBase3f(plugIn->worldCenter);
+	}
+	return LPoint3f::zero();
+}
+
+
+/**
+ * Sets the world radius.
+ * \note BOID OSSteerPlugIn only.
+ */
+void OSSteerPlugIn::set_world_radius(float radius)
+{
+	if (mPlugInType == BOID)
+	{
+		ossup::BoidsPlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::BoidsPlugIn<OSSteerVehicle>*>(mPlugIn);
+		plugIn->worldRadius = radius;
+	}
+}
+
+/**
+ * Returns the world radius.
+ * Returns a negative on error.
+ * \note BOID OSSteerPlugIn only.
+ */
+float OSSteerPlugIn::get_world_radius() const
+{
+	if (mPlugInType == BOID)
+	{
+		ossup::BoidsPlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::BoidsPlugIn<OSSteerVehicle>*>(mPlugIn);
+		return plugIn->worldRadius;
+	}
+	return OS_ERROR;
+}
+
+/**
  * Sets steering speed (>=0).
  * \note LOW_SPEED_TURN OSSteerPlugIn only.
  */
@@ -984,7 +1078,7 @@ void OSSteerPlugIn::set_steering_speed(float steeringSpeed)
 }
 
 /**
- * Returns steering speed (>=0), a negative number on error.
+ * Returns steering speed (>=0), a negative value on error.
  * \note LOW_SPEED_TURN OSSteerPlugIn only.
  */
 float OSSteerPlugIn::get_steering_speed() const
@@ -1090,7 +1184,7 @@ void OSSteerPlugIn::disable_debug_drawing()
 
 /**
  * Enables/disables debugging.
- * Returns a negative number on error.
+ * Returns a negative value on error.
  */
 int OSSteerPlugIn::toggle_debug_drawing(bool enable)
 {
@@ -1307,7 +1401,9 @@ void OSSteerPlugIn::write_datagram(BamWriter *manager, Datagram &dg)
 	}
 	if(mPlugInType == BOID)
 	{
-		;
+		dg.add_uint8((uint8_t) get_proximity_database());
+		get_world_center().write_datagram(dg);
+		dg.add_stdfloat(get_world_radius());
 	}
 	if(mPlugInType == MULTIPLE_PURSUIT)
 	{
@@ -1437,7 +1533,9 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 	}
 	if(mPlugInType == BOID)
 	{
-		;
+		set_proximity_database(mPD_ser);
+		set_world_center(mWorldCenter_ser);
+		set_world_radius(mWorldRadius_ser);
 	}
 	if(mPlugInType == MULTIPLE_PURSUIT)
 	{
@@ -1571,7 +1669,9 @@ void OSSteerPlugIn::fillin(DatagramIterator &scan, BamReader *manager)
 	}
 	if(mPlugInType == BOID)
 	{
-		;
+		mPD_ser = (OSProximityDatabase) scan.get_uint8();
+		mWorldCenter_ser.read_datagram(scan);
+		mWorldRadius_ser = scan.get_stdfloat();
 	}
 	if(mPlugInType == MULTIPLE_PURSUIT)
 	{
