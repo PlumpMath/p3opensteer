@@ -317,7 +317,7 @@ LPoint3f getRandomPos(NodePath modelNP)
 	return LPoint3f(x, y, gotCollisionZ.get_second());
 }
 
-// handle add/remove vehicles
+// handle add vehicles
 void handleVehicles(const Event* e, void* data)
 {
 	if (not data)

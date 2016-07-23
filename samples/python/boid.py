@@ -33,7 +33,7 @@ def setParametersBeforeCreation():
     steerMgr.set_parameter_value(OSSteerManager.STEERPLUGIN, "plugin_type",
             "boid")
 
-    # set vehicle type, force, speed, max speed
+    # set vehicle's type, max force, max speed, speed
     steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "vehicle_type",
             "boid")
     steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "max_force",
@@ -49,19 +49,6 @@ def setParametersBeforeCreation():
             "thrown_events", valueList)
     #
     printCreationParameters()
-
-def toggleWanderBehavior():
-    """toggle wander behavior of last inserted vehicle"""
-    
-    global steerVehicles
-    if len(steerVehicles) == 0:
-        return
-    
-    if steerVehicles[-1].get_wander_behavior():
-        steerVehicles[-1].set_wander_behavior(False)
-    else:
-        steerVehicles[-1].set_wander_behavior(True)
-    print(str(steerVehicles[-1]) + "'s wander behavior is " + str(steerVehicles[-1].get_wander_behavior()))
 
 def updatePlugIn(steerPlugIn, task):
     """custom update task for plug-ins"""
@@ -105,7 +92,7 @@ if __name__ == '__main__':
     text.set_text(
             msg + "\n\n"      
             "- press \"d\" to toggle debug drawing\n"
-            "- press \"a\" to add 'opensteer' vehicle over the hit point\n"
+            "- press \"a\" to add 'opensteer' vehicle above the hit point\n"
             "- press \"s\"/\"shift-s\" to increase/decrease last inserted vehicle's max speed\n"
             "- press \"f\"/\"shift-f\" to increase/decrease last inserted vehicle's max force\n"
             "- press \"o\"/\"shift-o\" to add/remove obstacle\n")
@@ -222,9 +209,6 @@ if __name__ == '__main__':
     # write to bam file on exit
     app.win.set_close_request_event("close_request_event")
     app.accept("close_request_event", writeToBamFileAndExit, [bamFileName])
-
-    # 'pedestrian' specific: toggle wander behavior
-    app.accept("t", toggleWanderBehavior)
     
     # place camera
     trackball = app.trackball.node()
