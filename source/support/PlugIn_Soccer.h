@@ -142,6 +142,8 @@ class Ball: public VehicleAddOnMixin<SimpleVehicle, Entity>
 {
 public:
 
+	virtual ~Ball(){}
+
 	// type for a ball: an STL vector of Ball pointers
 	typedef typename std::vector<Ball<Entity>*> groupType;
 
@@ -447,6 +449,15 @@ public:
 
 // ----------------------------------------------------------------------------
 // PlugIn for OpenSteerDemo
+/**
+ * \note: Public class members/functions for tweaking:
+ * - \fn void addPlayerToTeam(Player<Entity>* player, bool teamA): adds a
+ * player to teamA or teamB.
+ * - \fn void removePlayerFromTeam(Player<Entity>* player): removes a player
+ * from his/her current team.
+ * - \fn void setSoccerField(const Vec3& min, const Vec3& max): sets the pitch
+ * to play soccer.
+ */
 template<typename Entity>
 class MicTestPlugIn: public PlugIn
 {

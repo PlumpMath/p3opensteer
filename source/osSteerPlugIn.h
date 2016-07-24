@@ -146,6 +146,16 @@ PUBLISHED:
 	///@}
 
 	/**
+	 * \name TEAM PLAY SETTINGS (SOCCER)
+	 */
+	///@{
+	int add_player_to_team(PT(OSSteerVehicle) player, bool teamA);
+	int remove_player_from_team(PT(OSSteerVehicle) player);
+	ValueList<LPoint3f> get_playing_field() const;
+	void set_playing_field(const LPoint3f& min, const LPoint3f& max);
+	///@}
+
+	/**
 	 * \name STEERING SPEED SETTINGS (LOW_SPEED_TURN)
 	 */
 	///@{

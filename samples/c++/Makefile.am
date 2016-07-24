@@ -17,7 +17,7 @@ LDADD = -lp3framework -lpanda -lpandaexpress -lp3dtool -lp3dtoolconfig \
 noinst_HEADERS = common.h
 
 noinst_PROGRAMS = basic low_speed_turn pedestrian boid \
-	multiple_pursuit
+	multiple_pursuit soccer
 
 BUILT_SOURCES = data.h
 
@@ -88,5 +88,11 @@ multiple_pursuit_SOURCES = \
 	multiple_pursuit.cpp
 
 nodist_multiple_pursuit_SOURCES = $(common_sources)
+
+#soccer
+soccer_SOURCES = \
+	soccer.cpp
+
+nodist_soccer_SOURCES = $(common_sources)
 
 CLEANFILES = data.h

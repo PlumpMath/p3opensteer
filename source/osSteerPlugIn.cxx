@@ -1065,6 +1065,67 @@ float OSSteerPlugIn::get_world_radius() const
 }
 
 /**
+ * Adds a player (OSSteerVehicle) to one of two teams: teamA (= true) or teamB
+ * (= false).
+ * Returns a negative value on error.
+ * \note SOCCER OSSteerPlugIn only.
+ */
+int OSSteerPlugIn::add_player_to_team(PT(OSSteerVehicle) player, bool teamA)
+{
+	if (mPlugInType == SOCCER &&
+			player->get_vehicle_type() == OSSteerVehicle::PLAYER)
+	{
+		ossup::MicTestPlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn);
+		plugIn->addPlayerToTeam(
+				&(static_cast<ossup::Player<OSSteerVehicle>&>(
+						player->get_abstract_vehicle())), teamA);
+		return OS_SUCCESS;
+	}
+	return OS_ERROR;
+}
+
+/**
+ * Removes a player (OSSteerVehicle) from his/her current team: teamA or teamB.
+ * Returns a negative value on error.
+ * \note SOCCER OSSteerPlugIn only.
+ */
+int OSSteerPlugIn::remove_player_from_team(PT(OSSteerVehicle) player)
+{
+	if (mPlugInType == SOCCER &&
+			player->get_vehicle_type() == OSSteerVehicle::PLAYER)
+	{
+		ossup::MicTestPlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn);
+		plugIn->removePlayerFromTeam(
+				&(static_cast<ossup::Player<OSSteerVehicle>&>(
+						player->get_abstract_vehicle())));
+		return OS_SUCCESS;
+	}
+	return OS_ERROR;
+}
+
+/**
+ * Returns the two extreme points, with respect to reference node, of a playing
+ * field.
+ * \note SOCCER OSSteerPlugIn only.
+ */
+ValueList<LPoint3f> OSSteerPlugIn::get_playing_field() const
+{
+	ValueList<LPoint3f> points;
+	return points;
+}
+
+/**
+ * Sets a playing field, given two extreme points with respect to reference
+ * node.
+ * \note SOCCER OSSteerPlugIn only.
+ */
+void OSSteerPlugIn::set_playing_field(const LPoint3f& min, const LPoint3f& max)
+{
+}
+
+/**
  * Sets steering speed (>=0).
  * \note LOW_SPEED_TURN OSSteerPlugIn only.
  */
