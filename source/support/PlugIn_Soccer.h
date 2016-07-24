@@ -898,7 +898,8 @@ public:
 		}
 	}
 
-	void setSoccerField(const Vec3& min, const Vec3& max)
+	void setSoccerField(const Vec3& min, const Vec3& max,
+			float goalFraction = 0.5)
 	{
 		//delete old boxes
 		delete m_bbox;
@@ -919,14 +920,21 @@ public:
 		Vec3 newMin = middle - halfDim, newMax = middle + halfDim;
 		//create soccer field
 		m_bbox = new AABBox(newMin, newMax);
+		//check if 0<= goalFraction <= 1.0
+		if (goalFraction < 0.0) goalFraction = -goalFraction;
+		if (goalFraction > 1.0) goalFraction = 1.0;
+		float minFrac = (1.0 - goalFraction) / 2.0;
+		float maxFrac = (1.0 + goalFraction) / 2.0;
 		// goal dims
 		float xGoalDim = xDim * 0.05, zGoalDim = zDim * 0.7;
 		// Red goal
-		m_TeamAGoal = new AABBox(newMax + Vec3(-xGoalDim * 0.25, 0, -(zDim + zGoalDim) / 2.0),
-				newMax + Vec3(xGoalDim * 0.75, 0, -(zDim - zGoalDim) / 2.0));
+		m_TeamAGoal = new AABBox(newMax + Vec3(-xGoalDim * minFrac, 0,
+				-(zDim + zGoalDim) / 2.0), newMax + Vec3(xGoalDim * maxFrac, 0,
+						-(zDim - zGoalDim) / 2.0));
 		// Blue Goal
-		m_TeamBGoal = new AABBox(newMin + Vec3(-xGoalDim * 0.75, 0, (zDim - zGoalDim) / 2.0),
-				newMin + Vec3(xGoalDim * 0.25, 0, (zDim + zGoalDim) / 2.0));
+		m_TeamBGoal = new AABBox(newMin + Vec3(-xGoalDim * maxFrac, 0,
+				(zDim - zGoalDim) / 2.0), newMin + Vec3(xGoalDim * minFrac, 0,
+						(zDim + zGoalDim) / 2.0));
 		// update the ball's AABB if any
 		if (m_Ball)
 		{

@@ -152,7 +152,9 @@ PUBLISHED:
 	int add_player_to_team(PT(OSSteerVehicle) player, bool teamA);
 	int remove_player_from_team(PT(OSSteerVehicle) player);
 	ValueList<LPoint3f> get_playing_field() const;
-	void set_playing_field(const LPoint3f& min, const LPoint3f& max);
+	void set_playing_field(const LPoint3f& min, const LPoint3f& max,
+			float goalFraction = 0.5);
+	float get_goal_fraction() const;
 	///@}
 
 	/**
@@ -243,6 +245,9 @@ private:
 	//boid
 	LPoint3f mWorldCenter_ser;
 	float mWorldRadius_ser;
+	//soccer
+	LPoint3f mFieldMinPoint_ser, mFieldMaxPoint_ser;
+	float mGoalFraction_ser;
 	//low speed turn
 	float mSteeringSpeed_ser;
 	///@}

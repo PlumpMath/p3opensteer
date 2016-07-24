@@ -1113,16 +1113,60 @@ int OSSteerPlugIn::remove_player_from_team(PT(OSSteerVehicle) player)
 ValueList<LPoint3f> OSSteerPlugIn::get_playing_field() const
 {
 	ValueList<LPoint3f> points;
+	if (mPlugInType == SOCCER)
+	{
+		ossup::MicTestPlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn);
+		points.add_value(
+				ossup::OpenSteerVec3ToLVecBase3f(plugIn->m_bbox->getMin()));
+		points.add_value(
+				ossup::OpenSteerVec3ToLVecBase3f(plugIn->m_bbox->getMax()));
+	}
 	return points;
 }
 
 /**
  * Sets a playing field, given two extreme points with respect to reference
- * node.
+ * node and the goal fraction.
+ * \note The field will be planar and axis aligned (xy plane), and placed at
+ * medium z-height of the two points; the goal fraction is specified with
+ * respect to the field's y-dimension. By default a field with dimensions 40x20
+ * and placed at (0,0,0) is created, and minimum field's dimensions are 40x20
+ * anyway.
  * \note SOCCER OSSteerPlugIn only.
  */
-void OSSteerPlugIn::set_playing_field(const LPoint3f& min, const LPoint3f& max)
+void OSSteerPlugIn::set_playing_field(const LPoint3f& min, const LPoint3f& max,
+		float goalFraction)
 {
+	if (mPlugInType == SOCCER)
+	{
+		ossup::MicTestPlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn);
+		plugIn->setSoccerField(ossup::LVecBase3fToOpenSteerVec3(min),
+				ossup::LVecBase3fToOpenSteerVec3(max), goalFraction);
+	}
+}
+
+/**
+ * Returns the goal fraction, with respect to the field's y-dimension, of a
+ * playing field, or a negative value on error.
+ * \note SOCCER OSSteerPlugIn only.
+ */
+float OSSteerPlugIn::get_goal_fraction() const
+{
+	float fraction = OS_ERROR;
+	if (mPlugInType == SOCCER)
+	{
+		ossup::MicTestPlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn);
+		float fieldYdim = abs(
+				plugIn->m_bbox->getMax().z - plugIn->m_bbox->getMin().z);
+		float goalYdim = abs(
+				plugIn->m_TeamAGoal->getMax().z
+						- plugIn->m_TeamAGoal->getMin().z);
+		fraction = goalYdim / fieldYdim;
+	}
+	return fraction;
 }
 
 /**
@@ -1468,11 +1512,14 @@ void OSSteerPlugIn::write_datagram(BamWriter *manager, Datagram &dg)
 	}
 	if(mPlugInType == MULTIPLE_PURSUIT)
 	{
-		;
+		/*do nothing*/;
 	}
 	if(mPlugInType == SOCCER)
 	{
-		;
+		ValueList<LPoint3f> points = get_playing_field();
+		points[0].write_datagram(dg);
+		points[1].write_datagram(dg);
+		dg.add_stdfloat(get_goal_fraction());
 	}
 	if(mPlugInType == CAPTURE_THE_FLAG)
 	{
@@ -1600,11 +1647,12 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 	}
 	if(mPlugInType == MULTIPLE_PURSUIT)
 	{
-		;
+		/*do nothing*/;
 	}
 	if(mPlugInType == SOCCER)
 	{
-		;
+		set_playing_field(mFieldMinPoint_ser, mFieldMaxPoint_ser,
+				mGoalFraction_ser);
 	}
 	if(mPlugInType == CAPTURE_THE_FLAG)
 	{
@@ -1736,11 +1784,13 @@ void OSSteerPlugIn::fillin(DatagramIterator &scan, BamReader *manager)
 	}
 	if(mPlugInType == MULTIPLE_PURSUIT)
 	{
-		;
+		/*do nothing*/;
 	}
 	if(mPlugInType == SOCCER)
 	{
-		;
+		mFieldMinPoint_ser.read_datagram(scan);
+		mFieldMaxPoint_ser.read_datagram(scan);
+		mGoalFraction_ser = scan.get_stdfloat();
 	}
 	if(mPlugInType == CAPTURE_THE_FLAG)
 	{
