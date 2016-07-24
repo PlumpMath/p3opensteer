@@ -218,7 +218,7 @@ AsyncTask::DoneStatus updatePlugIn(GenericAsyncTask* task, void* data)
 			}
 			// On amin (0:walk, 1:run)
 			vehicleAnimCtls[i][animOnIdx]->set_play_rate(
-					currentVelSize / rateFactor[animOnIdx]);
+					currentVelSize / animRateFactor[animOnIdx]);
 			if (! vehicleAnimCtls[i][animOnIdx]->is_playing())
 			{
 				vehicleAnimCtls[i][animOnIdx]->loop(true);

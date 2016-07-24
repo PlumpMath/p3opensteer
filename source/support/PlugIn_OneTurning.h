@@ -172,9 +172,9 @@ public:
 			annote << std::setprecision(2) << std::setiosflags(std::ios::fixed);
 			annote << "      speed: " << (*iter)->speed() << std::ends;
 
-			draw2dTextAt3dLocation(annote, (*iter)->position(), gRed, 0.0, 0.0);
-			draw2dTextAt3dLocation(*"start", (*iter)->getStart(), gGreen, 0.0,
-					0.0);
+			draw2dTextAt3dLocation(annote, (*iter)->position(), gRed, 1.0, 1.0);
+			draw2dTextAt3dLocation(*"start", (*iter)->getStart(), gGreen, 1.0,
+					1.0);
 		}
 #endif
 	}

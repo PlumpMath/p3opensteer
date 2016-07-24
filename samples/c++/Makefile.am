@@ -17,7 +17,8 @@ LDADD = -lp3framework -lpanda -lpandaexpress -lp3dtool -lp3dtoolconfig \
 noinst_HEADERS = common.h
 
 noinst_PROGRAMS = basic low_speed_turn pedestrian boid \
-	multiple_pursuit soccer
+	multiple_pursuit \
+	soccer #soccer_gprof soccer_gcov
 
 BUILT_SOURCES = data.h
 
@@ -94,5 +95,26 @@ soccer_SOURCES = \
 	soccer.cpp
 
 nodist_soccer_SOURCES = $(common_sources)
+
+###PROFILE BUILDS###
+PROFILE_CPPFLAGS = $(AM_CPPFLAGS) -UOS_DEBUG
+GPROF_CXXFLAGS = $(AM_CXXFLAGS) -pg -g -Wextra
+GCOV_CXXFLAGS = $(AM_CXXFLAGS) -fprofile-arcs -ftest-coverage
+GCOV_LDADD = $(LDADD) -lgcov
+
+#soccer_gprof soccer_gcov
+soccer_gprof_CPPFLAGS = $(PROFILE_CPPFLAGS)
+soccer_gcov_CPPFLAGS = $(PROFILE_CPPFLAGS)
+soccer_gprof_CXXFLAGS = $(GPROF_CXXFLAGS)
+soccer_gcov_CXXFLAGS = $(GCOV_CXXFLAGS)
+soccer_gcov_LDADD = $(GCOV_LDADD)
+
+soccer_gprof_SOURCES = \
+	soccer.cpp
+soccer_gcov_SOURCES = \
+	soccer.cpp
+
+nodist_soccer_gprof_SOURCES = $(common_sources)
+nodist_soccer_gcov_SOURCES = $(common_sources)
 
 CLEANFILES = data.h

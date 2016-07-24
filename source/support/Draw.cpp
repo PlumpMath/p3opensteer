@@ -741,9 +741,14 @@ void drawAllDeferredCirclesOrDisks(void)
 void draw2dTextAt3dLocation(const char& text, const Vec3& location,
 		const Color& color, float w, float h)
 {
+	if ( h == 0.0)
+		return;
+	float s = gDrawer3d->getTextScale();
+	gDrawer3d->setTextScale(w / h * s);
 	gDrawer3d->drawText(std::string(&text),
 			ossup::OpenSteerVec3ToLVecBase3f(location),
 			ossup::OpenSteerColorToLVecBase4f(color));
+	gDrawer3d->setTextScale(s);
 }
 
 void draw2dTextAt3dLocation(const std::ostringstream& text,
@@ -755,9 +760,14 @@ void draw2dTextAt3dLocation(const std::ostringstream& text,
 void draw2dTextAt2dLocation(const char& text, const Vec3 location,
 		const Color& color, float w, float h)
 {
+	if ( h == 0.0)
+		return;
+	float s = gDrawer2d->getTextScale();
+	gDrawer2d->setTextScale(w / h * s);
 	gDrawer2d->drawText(std::string(&text),
 			ossup::OpenSteerVec3ToLVecBase3f(location),
 			ossup::OpenSteerColorToLVecBase4f(color));
+	gDrawer2d->setTextScale(s);
 }
 
 void draw2dTextAt2dLocation(const std::ostringstream& text,

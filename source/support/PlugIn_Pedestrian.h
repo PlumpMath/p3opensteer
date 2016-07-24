@@ -319,7 +319,7 @@ public:
 		{
 //			draw2dTextAt3dLocation(*string, location, color,
 //					drawGetWindowWidth(), drawGetWindowHeight());
-			draw2dTextAt3dLocation(*string, location, color, 0.0, 0.0);
+			draw2dTextAt3dLocation(*string, location, color, 1.0, 1.0);
 		}
 #endif
 
@@ -536,7 +536,7 @@ public:
 			annote << spacer << "2: no third thing" << std::ends;
 /////			draw2dTextAt3dLocation(annote, textPosition, color,
 /////					drawGetWindowWidth(), drawGetWindowHeight());
-			draw2dTextAt3dLocation(annote, textPosition, color, 0.0, 0.0);
+			draw2dTextAt3dLocation(annote, textPosition, color, 1.0, 1.0);
 		}
 
 		// display status in the upper left corner of the window
@@ -568,7 +568,7 @@ public:
 		const Vec3 screenLocation(-1.0, 0.9, 0);
 /////		draw2dTextAt2dLocation(status, screenLocation, gGray80,
 /////			drawGetWindowWidth(), drawGetWindowHeight());
-		draw2dTextAt2dLocation(status, screenLocation, gGray80, 0.0, 0.0);
+		draw2dTextAt2dLocation(status, screenLocation, gGray80, 1.0, 1.0);
 #endif
 	}
 
@@ -598,7 +598,7 @@ public:
 					const Vec3 textPos = vehicle->position() + textOffset;
 /////					draw2dTextAt3dLocation(sn, textPos, textColor,
 /////							drawGetWindowWidth(), drawGetWindowHeight());
-					draw2dTextAt3dLocation(sn, textPos, textColor, 0.0, 0.0);
+					draw2dTextAt3dLocation(sn, textPos, textColor, 1.0, 1.0);
 				}
 			}
 		}

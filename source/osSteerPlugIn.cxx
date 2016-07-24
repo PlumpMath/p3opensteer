@@ -523,6 +523,7 @@ int OSSteerPlugIn::remove_steer_vehicle(NodePath steerVehicleNP)
 
 /**
  * Checks if an OSSteerVehicle could be handled by this OSSteerPlugIn.
+ * \note The check is done by effective type comparison.
  */
 bool OSSteerPlugIn::check_steer_vehicle_compatibility(
 		NodePath steerVehicleNP) const
@@ -532,65 +533,60 @@ bool OSSteerPlugIn::check_steer_vehicle_compatibility(
 					&& (steerVehicleNP.node()->is_of_type(
 							OSSteerVehicle::get_class_type())), false)
 
-	OSSteerVehicle::OSSteerVehicleType vehicleType = DCAST(OSSteerVehicle,
-			steerVehicleNP.node())->get_vehicle_type();
+	OpenSteer::AbstractVehicle* vehicle = &DCAST(OSSteerVehicle,
+			steerVehicleNP.node())->get_abstract_vehicle();
 
+	// ONE_TURNING:
 	bool result = false;
-	switch (mPlugInType)
+	if (dynamic_cast<ossup::OneTurningPlugIn<OSSteerVehicle>*>(mPlugIn) &&
+			dynamic_cast<ossup::OneTurning<OSSteerVehicle>*>(vehicle))
 	{
-	case ONE_TURNING:
-		if (vehicleType == OSSteerVehicle::ONE_TURNING)
-		{
-			result = true;
-		}
-		break;
-	case PEDESTRIAN:
-		if (vehicleType == OSSteerVehicle::PEDESTRIAN)
-		{
-			result = true;
-		}
-		break;
-	case BOID:
-		if (vehicleType == OSSteerVehicle::BOID)
-		{
-			result = true;
-		}
-		break;
-	case MULTIPLE_PURSUIT:
-		if ((vehicleType == OSSteerVehicle::MP_WANDERER)
-				|| (vehicleType == OSSteerVehicle::MP_PURSUER))
-		{
-			result = true;
-		}
-		break;
-	case SOCCER:
-		if ((vehicleType == OSSteerVehicle::PLAYER)
-				|| (vehicleType == OSSteerVehicle::BALL))
-		{
-			result = true;
-		}
-		break;
-	case CAPTURE_THE_FLAG:
-		if ((vehicleType == OSSteerVehicle::CTF_SEEKER)
-				|| (vehicleType == OSSteerVehicle::CTF_ENEMY))
-		{
-			result = true;
-		}
-		break;
-	case LOW_SPEED_TURN:
-		if (vehicleType == OSSteerVehicle::LOW_SPEED_TURN)
-		{
-			result = true;
-		}
-		break;
-	case MAP_DRIVE:
-		if (vehicleType == OSSteerVehicle::MAP_DRIVER)
-		{
-			result = true;
-		}
-		break;
-	default:
-		break;
+		result = true;
+	}
+	// PEDESTRIAN:
+	else if (dynamic_cast<ossup::PedestrianPlugIn<OSSteerVehicle>*>(mPlugIn) &&
+			dynamic_cast<ossup::Pedestrian<OSSteerVehicle>*>(vehicle))
+	{
+		result = true;
+	}
+	// BOID:
+	else if (dynamic_cast<ossup::BoidsPlugIn<OSSteerVehicle>*>(mPlugIn) &&
+			dynamic_cast<ossup::Boid<OSSteerVehicle>*>(vehicle))
+	{
+		result = true;
+	}
+	// MULTIPLE_PURSUIT:
+	else if (dynamic_cast<ossup::MpPlugIn<OSSteerVehicle>*>(mPlugIn) &&
+			(dynamic_cast<ossup::MpWanderer<OSSteerVehicle>*>(vehicle) ||
+			dynamic_cast<ossup::MpPursuer<OSSteerVehicle>*>(vehicle)))
+	{
+		result = true;
+	}
+	// SOCCER:
+	else if (dynamic_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn) &&
+			(dynamic_cast<ossup::Player<OSSteerVehicle>*>(vehicle) ||
+			dynamic_cast<ossup::Ball<OSSteerVehicle>*>(vehicle)))
+	{
+		result = true;
+	}
+	// CAPTURE_THE_FLAG:
+	else if (dynamic_cast<ossup::CtfPlugIn<OSSteerVehicle>*>(mPlugIn) &&
+			(dynamic_cast<ossup::CtfSeeker<OSSteerVehicle>*>(vehicle) ||
+			dynamic_cast<ossup::CtfEnemy<OSSteerVehicle>*>(vehicle)))
+	{
+		result = true;
+	}
+	// LOW_SPEED_TURN:
+	else if (dynamic_cast<ossup::LowSpeedTurnPlugIn<OSSteerVehicle>*>(mPlugIn) &&
+			dynamic_cast<ossup::LowSpeedTurn<OSSteerVehicle>*>(vehicle))
+	{
+		result = true;
+	}
+	// MAP_DRIVE:
+	else if (dynamic_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn) &&
+			dynamic_cast<ossup::MapDriver<OSSteerVehicle>*>(vehicle))
+	{
+		result = true;
 	}
 	//
 	return result;
@@ -1070,16 +1066,20 @@ float OSSteerPlugIn::get_world_radius() const
  * Returns a negative value on error.
  * \note SOCCER OSSteerPlugIn only.
  */
-int OSSteerPlugIn::add_player_to_team(PT(OSSteerVehicle) player, bool teamA)
+int OSSteerPlugIn::add_player_to_team(PT(OSSteerVehicle) player,
+		OSPlayingTeam team)
 {
-	if (mPlugInType == SOCCER &&
-			player->get_vehicle_type() == OSSteerVehicle::PLAYER)
+	if ((mPlugInType == SOCCER) &&
+			(player->get_vehicle_type() == OSSteerVehicle::PLAYER) &&
+			(team != NO_TEAM))
 	{
 		ossup::MicTestPlugIn<OSSteerVehicle>* plugIn =
 				static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn);
 		plugIn->addPlayerToTeam(
 				&(static_cast<ossup::Player<OSSteerVehicle>&>(
-						player->get_abstract_vehicle())), teamA);
+						player->get_abstract_vehicle())), team == TEAM_A);
+		//update internal reference
+		player->mPlayingTeam_ser = team;
 		return OS_SUCCESS;
 	}
 	return OS_ERROR;
@@ -1100,6 +1100,8 @@ int OSSteerPlugIn::remove_player_from_team(PT(OSSteerVehicle) player)
 		plugIn->removePlayerFromTeam(
 				&(static_cast<ossup::Player<OSSteerVehicle>&>(
 						player->get_abstract_vehicle())));
+		//update internal reference
+		player->mPlayingTeam_ser = NO_TEAM;
 		return OS_SUCCESS;
 	}
 	return OS_ERROR;
@@ -1113,16 +1115,92 @@ int OSSteerPlugIn::remove_player_from_team(PT(OSSteerVehicle) player)
 ValueList<LPoint3f> OSSteerPlugIn::get_playing_field() const
 {
 	ValueList<LPoint3f> points;
+	if (mPlugInType == SOCCER)
+	{
+		ossup::MicTestPlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn);
+		points.add_value(
+				ossup::OpenSteerVec3ToLVecBase3f(plugIn->m_bbox->getMin()));
+		points.add_value(
+				ossup::OpenSteerVec3ToLVecBase3f(plugIn->m_bbox->getMax()));
+	}
 	return points;
 }
 
 /**
  * Sets a playing field, given two extreme points with respect to reference
- * node.
+ * node and the goal fraction.
+ * \note The field will be planar and axis aligned (xy plane), and placed at
+ * medium z-height of the two points; the goal fraction is specified with
+ * respect to the field's y-dimension. By default a field with dimensions 40x20
+ * and placed at (0,0,0) is created, and minimum field's dimensions are 40x20
+ * anyway.
  * \note SOCCER OSSteerPlugIn only.
  */
-void OSSteerPlugIn::set_playing_field(const LPoint3f& min, const LPoint3f& max)
+void OSSteerPlugIn::set_playing_field(const LPoint3f& min, const LPoint3f& max,
+		float goalFraction)
 {
+	if (mPlugInType == SOCCER)
+	{
+		ossup::MicTestPlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn);
+		plugIn->setSoccerField(ossup::LVecBase3fToOpenSteerVec3(min),
+				ossup::LVecBase3fToOpenSteerVec3(max), goalFraction);
+	}
+}
+
+/**
+ * Returns the goal fraction, with respect to the field's y-dimension, of a
+ * playing field, or a negative value on error.
+ * \note SOCCER OSSteerPlugIn only.
+ */
+float OSSteerPlugIn::get_goal_fraction() const
+{
+	float fraction = OS_ERROR;
+	if (mPlugInType == SOCCER)
+	{
+		ossup::MicTestPlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn);
+		float fieldYdim = abs(
+				plugIn->m_bbox->getMax().z - plugIn->m_bbox->getMin().z);
+		float goalYdim = abs(
+				plugIn->m_TeamAGoal->getMax().z
+						- plugIn->m_TeamAGoal->getMin().z);
+		fraction = goalYdim / fieldYdim;
+	}
+	return fraction;
+}
+
+/**
+ * Returns the current score of TEAM_A, or a negative value on error.
+ * \note SOCCER OSSteerPlugIn only.
+ */
+int OSSteerPlugIn::get_score_team_a() const
+{
+	int score = OS_ERROR;
+	if (mPlugInType == SOCCER)
+	{
+		ossup::MicTestPlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn);
+		score = plugIn->m_redScore;
+	}
+	return score;
+}
+
+/**
+ * Returns the current score of TEAM_B, or a negative value on error.
+ * \note SOCCER OSSteerPlugIn only.
+ */
+int OSSteerPlugIn::get_score_team_b() const
+{
+	int score = OS_ERROR;
+	if (mPlugInType == SOCCER)
+	{
+		ossup::MicTestPlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn);
+		score = plugIn->m_blueScore;
+	}
+	return score;
 }
 
 /**
@@ -1468,11 +1546,18 @@ void OSSteerPlugIn::write_datagram(BamWriter *manager, Datagram &dg)
 	}
 	if(mPlugInType == MULTIPLE_PURSUIT)
 	{
-		;
+		/*do nothing*/;
 	}
 	if(mPlugInType == SOCCER)
 	{
-		;
+		ValueList<LPoint3f> points = get_playing_field();
+		points[0].write_datagram(dg);
+		points[1].write_datagram(dg);
+		dg.add_stdfloat(get_goal_fraction());
+		ossup::MicTestPlugIn<OSSteerVehicle>* plugIn =
+						static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn);
+		dg.add_int32(plugIn->m_redScore);
+		dg.add_int32(plugIn->m_blueScore);
 	}
 	if(mPlugInType == CAPTURE_THE_FLAG)
 	{
@@ -1549,13 +1634,15 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 		pvector<PT(OSSteerVehicle)>::iterator iter;
 		for (iter = mSteerVehicles.begin(); iter != mSteerVehicles.end(); ++iter)
 		{
-			//first check vehicle's compatibility, because it might
-			//not have gained its final type
-			if (check_steer_vehicle_compatibility(NodePath::any_path((*iter))))
+			// check if vehicle has gained its final type (i.e. finalized)
+			if (check_steer_vehicle_compatibility(
+					NodePath::any_path((*iter))))
 			{
+				OSVehicleSettings settings = (*iter)->get_settings();
 				//do add to real update list
 				static_cast<ossup::PlugIn*>(mPlugIn)->addVehicle(
 						&(*iter)->get_abstract_vehicle());
+				(*iter)->set_settings(settings);
 			}
 		}
 	}
@@ -1600,11 +1687,26 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 	}
 	if(mPlugInType == MULTIPLE_PURSUIT)
 	{
-		;
+		/*do nothing*/;
 	}
 	if(mPlugInType == SOCCER)
 	{
-		;
+		set_playing_field(mFieldMinPoint_ser, mFieldMaxPoint_ser,
+				mGoalFraction_ser);
+		pvector<PT(OSSteerVehicle)>::iterator iter;
+		for (iter = mSteerVehicles.begin(); iter != mSteerVehicles.end(); ++iter)
+		{
+			// check if vehicle has gained its final type (i.e. finalized)
+			if (dynamic_cast<ossup::Player<OSSteerVehicle>*>(
+					&(*iter)->get_abstract_vehicle()))
+			{
+				add_player_to_team((*iter), (*iter)->mPlayingTeam_ser);
+			}
+		}
+		ossup::MicTestPlugIn<OSSteerVehicle>* plugIn =
+						static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn);
+		plugIn->m_redScore = mScoreTeamA_ser;
+		plugIn->m_blueScore = mScoreTeamB_ser;
 	}
 	if(mPlugInType == CAPTURE_THE_FLAG)
 	{
@@ -1736,11 +1838,15 @@ void OSSteerPlugIn::fillin(DatagramIterator &scan, BamReader *manager)
 	}
 	if(mPlugInType == MULTIPLE_PURSUIT)
 	{
-		;
+		/*do nothing*/;
 	}
 	if(mPlugInType == SOCCER)
 	{
-		;
+		mFieldMinPoint_ser.read_datagram(scan);
+		mFieldMaxPoint_ser.read_datagram(scan);
+		mGoalFraction_ser = scan.get_stdfloat();
+		mScoreTeamA_ser = scan.get_int32();
+		mScoreTeamB_ser = scan.get_int32();
 	}
 	if(mPlugInType == CAPTURE_THE_FLAG)
 	{
