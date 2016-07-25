@@ -71,6 +71,16 @@ PUBLISHED:
 		BRUTEFORCE_PD
 	};
 
+	/**
+	 * OSSteerPlugIn playing teams.
+	 */
+	enum OSPlayingTeam
+	{
+		TEAM_A,
+		TEAM_B,
+		NO_TEAM
+	};
+
 	virtual ~OSSteerPlugIn();
 
 	/**
@@ -149,7 +159,7 @@ PUBLISHED:
 	 * \name TEAM PLAY SETTINGS (SOCCER)
 	 */
 	///@{
-	int add_player_to_team(PT(OSSteerVehicle) player, bool teamA);
+	int add_player_to_team(PT(OSSteerVehicle) player, OSPlayingTeam team);
 	int remove_player_from_team(PT(OSSteerVehicle) player);
 	ValueList<LPoint3f> get_playing_field() const;
 	void set_playing_field(const LPoint3f& min, const LPoint3f& max,

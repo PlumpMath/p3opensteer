@@ -489,6 +489,37 @@ OSFlockSettings OSSteerVehicle::get_flock_settings() const
 }
 
 /**
+ * Returns the OSSteerVehicle's current playing team, or a negative value on
+ * error.
+ * \note The team can only be changed through OSSteerPlugIn API.
+ * \note SOCCER OSSteerVehicle only.
+ */
+OSSteerPlugIn::OSPlayingTeam OSSteerVehicle::get_playing_team() const
+{
+	if (mVehicleType == PLAYER)
+	{
+		if (static_cast<ossup::Player<OSSteerVehicle>*>(mVehicle)->m_TeamAssigned)
+		{
+			OSSteerPlugIn::OSPlayingTeam team =
+					(static_cast<ossup::Player<OSSteerVehicle>*>(mVehicle)->b_ImTeamA ?
+							OSSteerPlugIn::TEAM_A : OSSteerPlugIn::TEAM_B);
+			nassertr_always(mPlayingTeam_ser == team,
+					(OSSteerPlugIn::OSPlayingTeam)OS_ERROR)
+
+			return team;
+		}
+		else
+		{
+			nassertr_always(mPlayingTeam_ser == OSSteerPlugIn::NO_TEAM,
+					(OSSteerPlugIn::OSPlayingTeam)OS_ERROR)
+
+			return OSSteerPlugIn::NO_TEAM;
+		}
+	}
+	return (OSSteerPlugIn::OSPlayingTeam) OS_ERROR;
+}
+
+/**
  * Sets steering speed.
  * \note OSSteerVehicle should be not externally updated.
  * \note LOW_SPEED_TURN OSSteerVehicle only.
@@ -1047,19 +1078,19 @@ void OSSteerVehicle::write_datagram(BamWriter *manager, Datagram &dg)
 	}
 	if(mVehicleType == MP_WANDERER)
 	{
-		;
+		/*do nothing*/;
 	}
 	if(mVehicleType == MP_PURSUER)
 	{
-		;
+		/*do nothing*/;
 	}
 	if(mVehicleType == PLAYER)
 	{
-		;
+		dg.add_uint8((uint8_t) get_playing_team());
 	}
 	if(mVehicleType == BALL)
 	{
-		;
+		/*do nothing*/;
 	}
 	if(mVehicleType == CTF_SEEKER)
 	{
@@ -1146,19 +1177,23 @@ void OSSteerVehicle::finalize(BamReader *manager)
 
 	if(mVehicleType == MP_WANDERER)
 	{
-		;
+		/*do nothing*/;
 	}
 	if(mVehicleType == MP_PURSUER)
 	{
-		;
+		/*do nothing*/;
 	}
 	if(mVehicleType == PLAYER)
 	{
-		;
+		if (mSteerPlugIn
+				&& (mSteerPlugIn->get_plug_in_type() == OSSteerPlugIn::SOCCER))
+		{
+			mSteerPlugIn->add_player_to_team(this, mPlayingTeam_ser);
+		}
 	}
 	if(mVehicleType == BALL)
 	{
-		;
+		/*do nothing*/;
 	}
 	if(mVehicleType == CTF_SEEKER)
 	{
@@ -1281,19 +1316,19 @@ void OSSteerVehicle::fillin(DatagramIterator &scan, BamReader *manager)
 	}
 	if(mVehicleType == MP_WANDERER)
 	{
-		;
+		/*do nothing*/;
 	}
 	if(mVehicleType == MP_PURSUER)
 	{
-		;
+		/*do nothing*/;
 	}
 	if(mVehicleType == PLAYER)
 	{
-		;
+		mPlayingTeam_ser = (OSSteerPlugIn::OSPlayingTeam)scan.get_uint8();
 	}
 	if(mVehicleType == BALL)
 	{
-		;
+		/*do nothing*/;
 	}
 	if(mVehicleType == CTF_SEEKER)
 	{

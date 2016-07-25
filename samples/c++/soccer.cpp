@@ -14,8 +14,10 @@ PT(OSSteerPlugIn)steerPlugIn;
 vector<PT(OSSteerVehicle)>steerVehicles;
 //
 void setParametersBeforeCreation();
-void toggleWanderBehavior(const Event*, void*);
 AsyncTask::DoneStatus updatePlugIn(GenericAsyncTask*, void*);
+void addPlayerA(const Event*, void*);
+void addPlayerB(const Event*, void*);
+void addBall(const Event*, void*);
 
 int main(int argc, char *argv[])
 {
@@ -146,24 +148,18 @@ int main(int argc, char *argv[])
 			(void*) steerPlugIn.p());
 
 	// handle addition steer vehicles, models and animations
-	HandleVehicleData vehicleData(0.7, 0, "opensteer", sceneNP,
+	HandleVehicleData playerAData(0.7, 0, "kinematic", sceneNP,
 						steerPlugIn, steerVehicles, vehicleAnimCtls);
-	framework.define_key("a", "addVehicle", &handleVehicles,
-			(void*) &vehicleData);
-	HandleVehicleData vehicleDataKinematic(0.7, 1, "kinematic", sceneNP,
+	framework.define_key("a", "addPlayerA", &addPlayerA,
+			(void*) &playerAData);
+	HandleVehicleData playerBData(0.7, 1, "kinematic", sceneNP,
+						steerPlugIn, steerVehicles, vehicleAnimCtls);
+	framework.define_key("b", "addPlayerB", &addPlayerB,
+			(void*) &playerBData);
+	HandleVehicleData ballData(0.7, 1, "kinematic", sceneNP,
 			steerPlugIn, steerVehicles, vehicleAnimCtls);
-	framework.define_key("k", "addVehicle", &handleVehicles,
-			(void*) &vehicleDataKinematic);
-
-	// handle obstacle addition
-	HandleObstacleData obstacleAddition(true, sceneNP, steerPlugIn,
-			LVecBase3f(0.03, 0.03, 0.03));
-	framework.define_key("o", "addObstacle", &handleObstacles,
-			(void*) &obstacleAddition);
-	// handle obstacle removal
-	HandleObstacleData obstacleRemoval(false, sceneNP, steerPlugIn);
-	framework.define_key("shift-o", "removeObstacle", &handleObstacles,
-			(void*) &obstacleRemoval);
+	framework.define_key("p", "addBall", &addBall,
+			(void*) &ballData);
 
 	// increase/decrease last inserted vehicle's max speed
 	framework.define_key("s", "changeVehicleMaxSpeed", &changeVehicleMaxSpeed,
@@ -177,9 +173,7 @@ int main(int argc, char *argv[])
 			&changeVehicleMaxForce, (void*) &steerVehicles);
 
 	// handle OSSteerVehicle(s)' events
-	framework.define_key("avoid_obstacle", "handleVehicleEvent",
-			&handleVehicleEvent, nullptr);
-	framework.define_key("avoid_close_neighbor", "handleVehicleEvent",
+	framework.define_key("avoid_neighbor", "handleVehicleEvent",
 			&handleVehicleEvent, nullptr);
 
 	// write to bam file on exit
@@ -187,10 +181,6 @@ int main(int argc, char *argv[])
 			"close_request_event");
 	framework.define_key("close_request_event", "writeToBamFile",
 			&writeToBamFileAndExit, (void*) &bamFileName);
-
-	// 'pedestrian' specific: toggle wander behavior
-	framework.define_key("t", "toggleWanderBehavior", &toggleWanderBehavior,
-			nullptr);
 
 	// place camera trackball (local coordinate)
 	PT(Trackball)trackball = DCAST(Trackball, window->get_mouse().find("**/+Trackball").node());
@@ -212,40 +202,13 @@ void setParametersBeforeCreation()
 	steerMgr->set_parameter_value(OSSteerManager::STEERPLUGIN, "plugin_type",
 			"soccer");
 
-	// set vehicle's type, mass, speed
-	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "vehicle_type",
-			"pedestrian");
-	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "mass", "2.0");
-	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "speed",
-			"0.01");
-
 	// set vehicle throwing events
 	valueList.clear();
-	valueList.add_value("avoid_obstacle@avoid_obstacle@1.0:avoid_close_neighbor@avoid_close_neighbor@");
+	valueList.add_value("avoid_neighbor@avoid_neighbor@");
 	steerMgr->set_parameter_values(OSSteerManager::STEERVEHICLE,
 			"thrown_events", valueList);
 	//
 	printCreationParameters();
-}
-
-// toggle wander behavior of last inserted vehicle
-void toggleWanderBehavior(const Event*, void*)
-{
-    if (steerVehicles.size() == 0)
-    {
-        return;
-    }
-
-	if (steerVehicles.back()->get_wander_behavior())
-	{
-		steerVehicles.back()->set_wander_behavior(false);
-	}
-	else
-	{
-		steerVehicles.back()->set_wander_behavior(true);
-	}
-	cout << *steerVehicles.back() << "'s wander behavior is "
-			<< steerVehicles.back()->get_wander_behavior() << endl;
 }
 
 // custom update task for plug-ins
@@ -287,4 +250,53 @@ AsyncTask::DoneStatus updatePlugIn(GenericAsyncTask* task, void* data)
 	}
 	//
 	return AsyncTask::DS_cont;
+}
+
+// adds a teamA's player
+void addPlayerA(const Event* e, void* data)
+{
+	if (not data)
+	{
+		return;
+	}
+
+	// set vehicle's type == player
+	OSSteerManager::get_global_ptr()->set_parameter_value(OSSteerManager::STEERVEHICLE, "vehicle_type",
+			"player");
+	// handle vehicle's addition
+	handleVehicles(NULL, data);
+	// add to teamA
+	steerPlugIn->add_player_to_team(steerVehicles.back(), OSSteerPlugIn::TEAM_A);
+}
+
+// adds a teamB's player
+void addPlayerB(const Event* e, void* data)
+{
+	if (not data)
+	{
+		return;
+	}
+
+	// set vehicle's type == player
+	OSSteerManager::get_global_ptr()->set_parameter_value(OSSteerManager::STEERVEHICLE, "vehicle_type",
+			"player");
+	// handle vehicle's addition
+	handleVehicles(NULL, data);
+	// add to teamB
+	steerPlugIn->add_player_to_team(steerVehicles.back(), OSSteerPlugIn::TEAM_B);
+}
+
+// adds a ball
+void addBall(const Event* e, void* data)
+{
+	if (not data)
+	{
+		return;
+	}
+
+	// set vehicle's type == mp_pursuer
+	OSSteerManager::get_global_ptr()->set_parameter_value(OSSteerManager::STEERVEHICLE, "vehicle_type",
+			"mp_pursuer");
+	// handle vehicle's addition
+	handleVehicles(NULL, data);
 }

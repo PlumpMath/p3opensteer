@@ -237,6 +237,10 @@ public:
 	}
 };
 
+/**
+* - \var b_ImTeamA: true/false if team assigned is teamA/teamB.
+* - \var m_TeamAssigned: true if team is assigned to Player, false otherwise.
+*/
 template<typename Entity>
 class Player: public VehicleAddOnMixin<SimpleVehicle, Entity>
 {

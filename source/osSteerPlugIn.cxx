@@ -1070,16 +1070,20 @@ float OSSteerPlugIn::get_world_radius() const
  * Returns a negative value on error.
  * \note SOCCER OSSteerPlugIn only.
  */
-int OSSteerPlugIn::add_player_to_team(PT(OSSteerVehicle) player, bool teamA)
+int OSSteerPlugIn::add_player_to_team(PT(OSSteerVehicle) player,
+		OSPlayingTeam team)
 {
-	if (mPlugInType == SOCCER &&
-			player->get_vehicle_type() == OSSteerVehicle::PLAYER)
+	if ((mPlugInType == SOCCER) &&
+			(player->get_vehicle_type() == OSSteerVehicle::PLAYER) &&
+			(team != NO_TEAM))
 	{
 		ossup::MicTestPlugIn<OSSteerVehicle>* plugIn =
 				static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn);
 		plugIn->addPlayerToTeam(
 				&(static_cast<ossup::Player<OSSteerVehicle>&>(
-						player->get_abstract_vehicle())), teamA);
+						player->get_abstract_vehicle())), team == TEAM_A);
+		//update internal reference
+		player->mPlayingTeam_ser = team;
 		return OS_SUCCESS;
 	}
 	return OS_ERROR;
@@ -1100,6 +1104,8 @@ int OSSteerPlugIn::remove_player_from_team(PT(OSSteerVehicle) player)
 		plugIn->removePlayerFromTeam(
 				&(static_cast<ossup::Player<OSSteerVehicle>&>(
 						player->get_abstract_vehicle())));
+		//update internal reference
+		player->mPlayingTeam_ser = NO_TEAM;
 		return OS_SUCCESS;
 	}
 	return OS_ERROR;
@@ -1653,6 +1659,16 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 	{
 		set_playing_field(mFieldMinPoint_ser, mFieldMaxPoint_ser,
 				mGoalFraction_ser);
+		pvector<PT(OSSteerVehicle)>::iterator iter;
+		for (iter = mSteerVehicles.begin(); iter != mSteerVehicles.end(); ++iter)
+		{
+			//first check vehicle's compatibility, because it might
+			//not have gained its final type
+			if ((*iter)->get_vehicle_type() == OSSteerVehicle::PLAYER)
+			{
+				add_player_to_team((*iter), (*iter)->mPlayingTeam_ser);
+			}
+		}
 	}
 	if(mPlugInType == CAPTURE_THE_FLAG)
 	{

@@ -33,34 +33,13 @@ def setParametersBeforeCreation():
     steerMgr.set_parameter_value(OSSteerManager.STEERPLUGIN, "plugin_type",
             "soccer")
 
-    # set vehicle's type, mass, speed
-    steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "vehicle_type",
-            "pedestrian")
-    steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "mass",
-            "2.0")
-    steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "speed",
-            "0.01")
-
     # set vehicle throwing events
     valueList.clear()
-    valueList.add_value("avoid_obstacle@avoid_obstacle@1.0:avoid_close_neighbor@avoid_close_neighbor@")
+    valueList.add_value("avoid_neighbor@avoid_neighbor@")
     steerMgr.set_parameter_values(OSSteerManager.STEERVEHICLE,
             "thrown_events", valueList)
     #
     printCreationParameters()
-
-def toggleWanderBehavior():
-    """toggle wander behavior of last inserted vehicle"""
-    
-    global steerVehicles
-    if len(steerVehicles) == 0:
-        return
-    
-    if steerVehicles[-1].get_wander_behavior():
-        steerVehicles[-1].set_wander_behavior(False)
-    else:
-        steerVehicles[-1].set_wander_behavior(True)
-    print(str(steerVehicles[-1]) + "'s wander behavior is " + str(steerVehicles[-1].get_wander_behavior()))
 
 def updatePlugIn(steerPlugIn, task):
     """custom update task for plug-ins"""
@@ -92,6 +71,46 @@ def updatePlugIn(steerPlugIn, task):
             vehicleAnimCtls[i][1].stop()
     #
     return task.cont
+
+def addPlayerA(data=None):
+    """adds a teamA's player""" 
+    
+    if data == None:
+        return
+
+    # set vehicle's type == player
+    OSSteerManager.get_global_ptr().set_parameter_value(OSSteerManager.STEERVEHICLE, "vehicle_type",
+            "player")
+    # handle vehicle
+    handleVehicles(data)
+    # add to teamA
+    steerPlugIn.add_player_to_team(steerVehicles.back(), OSSteerPlugIn.TEAM_A)
+
+def addPlayerB(data=None):
+    """adds a teamB's player""" 
+    
+    if data == None:
+        return
+
+    # set vehicle's type == player
+    OSSteerManager.get_global_ptr().set_parameter_value(OSSteerManager.STEERVEHICLE, "vehicle_type",
+            "player")
+    # handle vehicle
+    handleVehicles(data)
+    # add to teamB
+    steerPlugIn.add_player_to_team(steerVehicles.back(), OSSteerPlugIn.TEAM_B)
+
+def addBall(data = None):
+    """adds a ball""" 
+    
+    if data == None:
+        return
+
+    # set vehicle's type == mp_pursuer
+    OSSteerManager.get_global_ptr().set_parameter_value(OSSteerManager.STEERVEHICLE, "vehicle_type",
+            "mp_pursuer")
+    # handle vehicle
+    handleVehicles(data)
         
 if __name__ == '__main__':
 
@@ -205,20 +224,15 @@ if __name__ == '__main__':
     app.accept("d", toggleDebugDraw, [steerPlugIn])
 
     # handle addition steer vehicles, models and animations 
-    vehicleData = HandleVehicleData(0.7, 0, "opensteer", sceneNP, 
+    playerAData = HandleVehicleData(0.7, 0, "kinematic", sceneNP, 
                         steerPlugIn, steerVehicles, vehicleAnimCtls)
-    app.accept("a", handleVehicles, [vehicleData])
-    vehicleDataKinematic = HandleVehicleData(0.7, 1, "kinematic", sceneNP, 
+    app.accept("a", addPlayerA, [playerAData])
+    playerBData = HandleVehicleData(0.7, 1, "kinematic", sceneNP, 
                         steerPlugIn, steerVehicles, vehicleAnimCtls)
-    app.accept("k", handleVehicles, [vehicleDataKinematic])
-
-    # handle obstacle addition
-    obstacleAddition = HandleObstacleData(True, sceneNP, steerPlugIn,
-                        LVecBase3f(0.03, 0.03, 0.03))
-    app.accept("o", handleObstacles, [obstacleAddition])
-    # handle obstacle removal
-    obstacleRemoval = HandleObstacleData(False, sceneNP, steerPlugIn)
-    app.accept("shift-o", handleObstacles, [obstacleRemoval]);
+    app.accept("b", addPlayerB, [playerBData])
+    ballData = HandleVehicleData(0.7, 1, "kinematic", sceneNP, 
+                        steerPlugIn, steerVehicles, vehicleAnimCtls)
+    app.accept("p", addBall, [ballData])
 
     # increase/decrease last inserted vehicle's max speed
     app.accept("s", changeVehicleMaxSpeed, ["s", steerVehicles])
@@ -228,15 +242,11 @@ if __name__ == '__main__':
     app.accept("shift-f", changeVehicleMaxForce, ["shift-f", steerVehicles])
     
     # handle OSSteerVehicle(s)' events
-    app.accept("avoid_obstacle", handleVehicleEvent, ["avoid_obstacle"])
-    app.accept("avoid_close_neighbor", handleVehicleEvent, ["avoid_close_neighbor"])
+    app.accept("avoid_neighbor", handleVehicleEvent, ["avoid_neighbor"])
     
     # write to bam file on exit
     app.win.set_close_request_event("close_request_event")
     app.accept("close_request_event", writeToBamFileAndExit, [bamFileName])
-
-    # 'pedestrian' specific: toggle wander behavior
-    app.accept("t", toggleWanderBehavior)
     
     # place camera
     trackball = app.trackball.node()

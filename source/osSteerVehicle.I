@@ -261,6 +261,8 @@ inline void OSSteerVehicle::do_reset()
 			mANCallbackCalled = false;
 	mMove = mSteady = mPathFollowing = mAvoidObstacle = mAvoidCloseNeighbor =
 			mAvoidNeighbor = ThrowEventData();
+	//specifics
+	mPlayingTeam_ser = OSSteerPlugIn::NO_TEAM;
 }
 
 INLINE ostream &operator <<(ostream &out, const OSSteerVehicle& steerVehicle)
