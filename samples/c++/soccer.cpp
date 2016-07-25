@@ -72,18 +72,9 @@ int main(int argc, char *argv[])
 		NodePath plugInNP = steerMgr->create_steer_plug_in();
 		steerPlugIn = DCAST(OSSteerPlugIn, plugInNP.node());
 
-		// set the pathway
-		ValueList<LPoint3f> pointList;
-		pointList.add_value(LPoint3f(79.474, 51.7236, 2.0207));
-		pointList.add_value(LPoint3f(108.071, 51.1972, 2.7246));
-		pointList.add_value(LPoint3f(129.699, 30.1742, 0.720501));
-		pointList.add_value(LPoint3f(141.597, 73.496, 2.14218));
-		pointList.add_value(LPoint3f(105.917, 107.032, 3.06428));
-		pointList.add_value(LPoint3f(61.2637, 109.622, 3.03588));
-		// note: pedestrian handles single radius pathway only
-		ValueList<float> radiusList;
-		radiusList.add_value(4);
-		steerPlugIn->set_pathway(pointList, radiusList, true, true);
+		// set playing field
+		steerPlugIn->set_playing_field(LPoint3f(20.0, 20.0, 7.0),
+                LPoint3f(100.0, 70.0, 0.2), 0.3);
 	}
 	else
 	{
@@ -184,8 +175,8 @@ int main(int argc, char *argv[])
 
 	// place camera trackball (local coordinate)
 	PT(Trackball)trackball = DCAST(Trackball, window->get_mouse().find("**/+Trackball").node());
-	trackball->set_pos(-128.0, 120.0, -40.0);
-	trackball->set_hpr(0.0, 20.0, 0.0);
+	trackball->set_pos(-55.0, 80.0, -18.0);
+	trackball->set_hpr(10.0, 10.0, 0.0);
 
 	// do the main loop, equals to call app.run() in python
 	framework.main_loop();

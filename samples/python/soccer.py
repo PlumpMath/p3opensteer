@@ -6,7 +6,7 @@ Created on Jun 26, 2016
 
 import panda3d.core
 from p3opensteer import OSSteerManager, ValueList_string, ValueList_LPoint3f, \
-        ValueList_float
+        ValueList_float, OSSteerPlugIn
 from panda3d.core import TextNode, ClockObject, AnimControlCollection, \
         auto_bind, LPoint3f, LVecBase3f
 #
@@ -79,12 +79,15 @@ def addPlayerA(data=None):
         return
 
     # set vehicle's type == player
-    OSSteerManager.get_global_ptr().set_parameter_value(OSSteerManager.STEERVEHICLE, "vehicle_type",
-            "player")
+    OSSteerManager.get_global_ptr().set_parameter_value(
+                    OSSteerManager.STEERVEHICLE, "vehicle_type", "player")
     # handle vehicle
     handleVehicles(data)
     # add to teamA
-    steerPlugIn.add_player_to_team(steerVehicles.back(), OSSteerPlugIn.TEAM_A)
+    steerVehicles[-1].set_max_force(1.0)
+    steerVehicles[-1].set_max_speed(6.0)
+    steerVehicles[-1].enable_up_axis_fixed(True)
+    steerPlugIn.add_player_to_team(steerVehicles[-1], OSSteerPlugIn.TEAM_A)
 
 def addPlayerB(data=None):
     """adds a teamB's player""" 
@@ -93,12 +96,16 @@ def addPlayerB(data=None):
         return
 
     # set vehicle's type == player
-    OSSteerManager.get_global_ptr().set_parameter_value(OSSteerManager.STEERVEHICLE, "vehicle_type",
-            "player")
+    OSSteerManager.get_global_ptr().set_parameter_value(
+                    OSSteerManager.STEERVEHICLE, "vehicle_type", "player")
+#     OSSteerManager.get_global_ptr().set_parameter_value(
+#                     OSSteerManager.STEERVEHICLE, "max_force", "200.0")
+#     OSSteerManager.get_global_ptr().set_parameter_value(
+#                     OSSteerManager.STEERVEHICLE, "max_speed", "10.0")
     # handle vehicle
     handleVehicles(data)
     # add to teamB
-    steerPlugIn.add_player_to_team(steerVehicles.back(), OSSteerPlugIn.TEAM_B)
+    steerPlugIn.add_player_to_team(steerVehicles[-1], OSSteerPlugIn.TEAM_B)
 
 def addBall(data = None):
     """adds a ball""" 
@@ -163,18 +170,9 @@ if __name__ == '__main__':
         plugInNP = steerMgr.create_steer_plug_in()
         steerPlugIn = plugInNP.node()
     
-        # set the pathway
-        pointList = ValueList_LPoint3f()
-        pointList.add_value(LPoint3f(79.474, 51.7236, 2.0207))
-        pointList.add_value(LPoint3f(108.071, 51.1972, 2.7246))
-        pointList.add_value(LPoint3f(129.699, 30.1742, 0.720501))
-        pointList.add_value(LPoint3f(141.597, 73.496, 2.14218))
-        pointList.add_value(LPoint3f(105.917, 107.032, 3.06428))
-        pointList.add_value(LPoint3f(61.2637, 109.622, 3.03588))
-        # note: pedestrian handles single radius pathway only 
-        radiusList = ValueList_float()
-        radiusList.add_value(4)
-        steerPlugIn.set_pathway(pointList, radiusList, True, True)
+        # set playing field
+        steerPlugIn.set_playing_field(LPoint3f(20.0, 20.0, 7.0),
+                LPoint3f(100.0, 70.0, 0.2), 0.3)
     else:
         # valid bamFile
         # restore plug-in: through steer manager
@@ -250,8 +248,8 @@ if __name__ == '__main__':
     
     # place camera
     trackball = app.trackball.node()
-    trackball.set_pos(-128.0, 120.0, -40.0);
-    trackball.set_hpr(0.0, 20.0, 0.0);
+    trackball.set_pos(-55.0, 80.0, -18.0);
+    trackball.set_hpr(10.0, 10.0, 0.0);
    
     # app.run(), equals to do the main loop in C++
     app.run()
