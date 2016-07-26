@@ -721,6 +721,8 @@ void OSSteerVehicle::do_update_steer_vehicle(const float currentTime,
 		{
 			//updatedPos.z needs correction
 			updatedPos.set_z(gotCollisionZ.second());
+			//correct vehicle position
+			mVehicle->setPosition(ossup::LVecBase3fToOpenSteerVec3(updatedPos));
 		}
 	}
 	thisNP.set_pos(updatedPos);
@@ -1146,6 +1148,7 @@ void OSSteerVehicle::finalize(BamReader *manager)
 	do_create_vehicle(mVehicleType);
 	//set the new OpenSteer vehicle's settings
 	set_settings(mVehicleSettings);
+	//XXX
 	//3: add the new OpenSteer vehicle to real update list (if needed), by
 	//checking plugin's compatibility, because it might not have gained
 	//its final type
@@ -1185,8 +1188,10 @@ void OSSteerVehicle::finalize(BamReader *manager)
 	}
 	if(mVehicleType == PLAYER)
 	{
+		// check if plug-in has gained its final type (i.e. finalized)
 		if (mSteerPlugIn
-				&& (mSteerPlugIn->get_plug_in_type() == OSSteerPlugIn::SOCCER))
+				&& dynamic_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(
+						&mSteerPlugIn->get_abstract_plug_in()))
 		{
 			mSteerPlugIn->add_player_to_team(this, mPlayingTeam_ser);
 		}

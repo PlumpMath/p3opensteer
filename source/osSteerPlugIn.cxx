@@ -1602,6 +1602,7 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 		pvector<PT(OSSteerVehicle)>::iterator iter;
 		for (iter = mSteerVehicles.begin(); iter != mSteerVehicles.end(); ++iter)
 		{
+			//XXX
 			//first check vehicle's compatibility, because it might
 			//not have gained its final type
 			if (check_steer_vehicle_compatibility(NodePath::any_path((*iter))))
@@ -1662,9 +1663,9 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 		pvector<PT(OSSteerVehicle)>::iterator iter;
 		for (iter = mSteerVehicles.begin(); iter != mSteerVehicles.end(); ++iter)
 		{
-			//first check vehicle's compatibility, because it might
-			//not have gained its final type
-			if ((*iter)->get_vehicle_type() == OSSteerVehicle::PLAYER)
+			// check if vehicle has gained its final type (i.e. finalized)
+			if (dynamic_cast<ossup::Player<OSSteerVehicle>*>(
+					&(*iter)->get_abstract_vehicle()))
 			{
 				add_player_to_team((*iter), (*iter)->mPlayingTeam_ser);
 			}

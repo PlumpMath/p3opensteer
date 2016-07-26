@@ -29,9 +29,9 @@ extern CollideMask mask;
 extern AsyncTask* updateTask;
 extern bool toggleDebugFlag;
 //models and animations
-extern string vehicleFile[3];
-extern string vehicleAnimFiles[3][2];
-extern const float rateFactor[3];
+extern string vehicleFile[4];
+extern string vehicleAnimFiles[4][2];
+extern const float rateFactor[4];
 //obstacle model
 extern string obstacleFile;
 //bam file
@@ -42,7 +42,8 @@ extern random_device rd;
 ///functions' declarations
 void startFramework(int argc, char *argv[], const string&);
 NodePath loadPlane(const string&);
-NodePath loadTerrain(const string&);
+NodePath loadTerrain(const string&, float widthScale = 0.5,
+		float heightScale = 10.0);
 PT(CollisionEntry)getCollisionEntryFromCamera();
 void printCreationParameters();
 void handleVehicleEvent(const Event*, void*);

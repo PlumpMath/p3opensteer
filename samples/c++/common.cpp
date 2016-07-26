@@ -18,15 +18,16 @@ static GeoMipTerrain* terrain;
 static LPoint3f terrainRootNetPos;
 #define DEFAULT_MAXVALUE 1.0
 //models and animations
-string vehicleFile[3] =
-{ "eve.egg", "ralph.egg", "sparrow.egg" };
-string vehicleAnimFiles[3][2] =
+string vehicleFile[4] =
+{ "eve.egg", "ralph.egg", "sparrow.egg", "ball.egg" };
+string vehicleAnimFiles[4][2] =
 {
 { "eve-walk.egg", "eve-run.egg" },
 { "ralph-walk.egg", "ralph-run.egg" },
-{ "sparrow-flying.egg", "sparrow-flying2.egg" }};
-const float rateFactor[3] =
-{ 1.20, 3.40, 0.90 };
+{ "sparrow-flying.egg", "sparrow-flying2.egg" },
+{ "", "" }};
+const float rateFactor[4] =
+{ 1.20, 3.40, 0.90, 1.0 };
 //obstacle model
 string obstacleFile("plants2.egg");
 //bame file
@@ -94,13 +95,12 @@ static AsyncTask::DoneStatus terrainUpdate(GenericAsyncTask* task, void* data)
 }
 
 // load terrain stuff
-NodePath loadTerrain(const string& name)
+NodePath loadTerrain(const string& name, float widthScale, float heightScale)
 {
 	GeoMipTerrain *terrain = new GeoMipTerrain("terrain");
 	PNMImage heightField(Filename(dataDir + string("/heightfield.png")));
 	terrain->set_heightfield(heightField);
 	//sizing
-	float widthScale = 0.5, heightScale = 10.0;
 	float environmentWidthX = (heightField.get_x_size() - 1) * widthScale;
 	float environmentWidthY = (heightField.get_y_size() - 1) * widthScale;
 	float environmentWidth = (environmentWidthX + environmentWidthY) / 2.0;
@@ -374,22 +374,26 @@ vector<PT(OSSteerVehicle)>&steerVehicles, vector<vector<PT(AnimControl)> >& vehi
 	// associate an anim with a given anim control
 	AnimControlCollection tmpAnims;
 	NodePath vehicleAnimNP[2];
-	// first anim -> modelAnimCtls[i][0]
-	vehicleAnimNP[0] = window->load_model(vehicleNPs, vehicleAnimFiles[vehicleFileIdx][0]);
-	auto_bind(vehicleNPs.node(), tmpAnims);
 	vehicleAnimCtls.push_back(vector<PT(AnimControl)>(2));
-	vehicleAnimCtls.back()[0] = tmpAnims.get_anim(0);
-	tmpAnims.clear_anims();
-	vehicleAnimNP[0].detach_node();
-	// second anim -> modelAnimCtls[i][1]
-	vehicleAnimNP[1] = window->load_model(vehicleNPs, vehicleAnimFiles[vehicleFileIdx][1]);
-	auto_bind(vehicleNPs.node(), tmpAnims);
-	vehicleAnimCtls.back()[1] = tmpAnims.get_anim(0);
-	tmpAnims.clear_anims();
-	vehicleAnimNP[1].detach_node();
-	// reparent all node paths
-	vehicleAnimNP[0].reparent_to(vehicleNPs);
-	vehicleAnimNP[1].reparent_to(vehicleNPs);
+	if((!vehicleAnimFiles[vehicleFileIdx][0].empty()) &&
+			(!vehicleAnimFiles[vehicleFileIdx][1].empty()))
+	{
+		// first anim -> modelAnimCtls[i][0]
+		vehicleAnimNP[0] = window->load_model(vehicleNPs, vehicleAnimFiles[vehicleFileIdx][0]);
+		auto_bind(vehicleNPs.node(), tmpAnims);
+		vehicleAnimCtls.back()[0] = tmpAnims.get_anim(0);
+		tmpAnims.clear_anims();
+		vehicleAnimNP[0].detach_node();
+		// second anim -> modelAnimCtls[i][1]
+		vehicleAnimNP[1] = window->load_model(vehicleNPs, vehicleAnimFiles[vehicleFileIdx][1]);
+		auto_bind(vehicleNPs.node(), tmpAnims);
+		vehicleAnimCtls.back()[1] = tmpAnims.get_anim(0);
+		tmpAnims.clear_anims();
+		vehicleAnimNP[1].detach_node();
+		// reparent all node paths
+		vehicleAnimNP[0].reparent_to(vehicleNPs);
+		vehicleAnimNP[1].reparent_to(vehicleNPs);
+	}
 	// set parameter for vehicle's move type (OPENSTEER or OPENSTEER_KINEMATIC)
 	WPT(OSSteerManager) steerMgr = OSSteerManager::get_global_ptr();
 	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "mov_type",

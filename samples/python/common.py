@@ -22,11 +22,12 @@ terrain = None
 terrainRootNetPos = None
 DEFAULT_MAXVALUE = 1.0
 # models and animations
-vehicleFile = ["eve.egg", "ralph.egg", "sparrow.egg"]
+vehicleFile = ["eve.egg", "ralph.egg", "sparrow.egg", "ball.egg"]
 vehicleAnimFiles = [["eve-walk.egg", "eve-run.egg"],
                   ["ralph-walk.egg", "ralph-run.egg"],
-                  ["sparrow-flying.egg", "sparrow-flying2.egg"]]
-rateFactor = [1.20, 3.40, 0.90]
+                  ["sparrow-flying.egg", "sparrow-flying2.egg"],
+                  ["", ""]]
+rateFactor = [1.20, 3.40, 0.90, 1.0]
 # obstacle model
 obstacleFile = "plants2.egg"
 # bame file
@@ -69,7 +70,7 @@ def loadPlane(name):
     plane.set_name(name)
     return plane
 
-def loadTerrain(name):
+def loadTerrain(name, widthScale = 0.5, heightScale = 10.0):
     """load terrain stuff"""
 
     global app, terrain, terrainRootNetPos
@@ -80,7 +81,6 @@ def loadTerrain(name):
     heightField = PNMImage(Filename(dataDir + "/heightfield.png"))
     terrain.set_heightfield(heightField)
     # sizing
-    widthScale, heightScale = (0.5, 10.0)
     environmentWidthX = (heightField.get_x_size() - 1) * widthScale
     environmentWidthY = (heightField.get_y_size() - 1) * widthScale
     environmentWidth = (environmentWidthX + environmentWidthY) / 2.0
@@ -315,24 +315,26 @@ def getVehicleModelAnims(meanScale, vehicleFileIdx, moveType, sceneNP, steerPlug
     # associate an anim with a given anim control
     tmpAnims = AnimControlCollection()
     vehicleAnimNP = [None, None]
-    # first anim -> modelAnimCtls[i][0]
-    vehicleAnimNP[0] = app.loader.load_model(vehicleAnimFiles[vehicleFileIdx][0])
-    vehicleAnimNP[0].reparent_to(vehicleNPs)
-    auto_bind(vehicleNPs.node(), tmpAnims)
     vehicleAnimCtls.append([None, None])
-    vehicleAnimCtls[-1][0] = tmpAnims.get_anim(0)
-    tmpAnims.clear_anims()
-    vehicleAnimNP[0].detach_node()
-    # second anim -> modelAnimCtls[i][1]
-    vehicleAnimNP[1] = app.loader.load_model(vehicleAnimFiles[vehicleFileIdx][1])
-    vehicleAnimNP[1].reparent_to(vehicleNPs)
-    auto_bind(vehicleNPs.node(), tmpAnims)
-    vehicleAnimCtls[-1][1] = tmpAnims.get_anim(0)
-    tmpAnims.clear_anims()
-    vehicleAnimNP[1].detach_node()
-    # reparent all node paths
-    vehicleAnimNP[0].reparent_to(vehicleNPs)
-    vehicleAnimNP[1].reparent_to(vehicleNPs)
+    if(len(vehicleAnimFiles[vehicleFileIdx][0]) != 0) and \
+            (len(vehicleAnimFiles[vehicleFileIdx][1]) != 0):
+        # first anim -> modelAnimCtls[i][0]
+        vehicleAnimNP[0] = app.loader.load_model(vehicleAnimFiles[vehicleFileIdx][0])
+        vehicleAnimNP[0].reparent_to(vehicleNPs)
+        auto_bind(vehicleNPs.node(), tmpAnims)
+        vehicleAnimCtls[-1][0] = tmpAnims.get_anim(0)
+        tmpAnims.clear_anims()
+        vehicleAnimNP[0].detach_node()
+        # second anim -> modelAnimCtls[i][1]
+        vehicleAnimNP[1] = app.loader.load_model(vehicleAnimFiles[vehicleFileIdx][1])
+        vehicleAnimNP[1].reparent_to(vehicleNPs)
+        auto_bind(vehicleNPs.node(), tmpAnims)
+        vehicleAnimCtls[-1][1] = tmpAnims.get_anim(0)
+        tmpAnims.clear_anims()
+        vehicleAnimNP[1].detach_node()
+        # reparent all node paths
+        vehicleAnimNP[0].reparent_to(vehicleNPs)
+        vehicleAnimNP[1].reparent_to(vehicleNPs)
     # set parameter for vehicle's move type (OPENSTEER or OPENSTEER_KINEMATIC)
     steerMgr = OSSteerManager.get_global_ptr()
     steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "mov_type",
