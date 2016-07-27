@@ -1148,10 +1148,8 @@ void OSSteerVehicle::finalize(BamReader *manager)
 	do_create_vehicle(mVehicleType);
 	//set the new OpenSteer vehicle's settings
 	set_settings(mVehicleSettings);
-	//XXX
 	//3: add the new OpenSteer vehicle to real update list (if needed), by
-	//checking plugin's compatibility, because it might not have gained
-	//its final type
+	//checking if plug-in has gained its final type (i.e. finalized)
 	if (mSteerPlugIn
 			&& (mSteerPlugIn->check_steer_vehicle_compatibility(
 					NodePath::any_path(this))))

@@ -523,6 +523,7 @@ int OSSteerPlugIn::remove_steer_vehicle(NodePath steerVehicleNP)
 
 /**
  * Checks if an OSSteerVehicle could be handled by this OSSteerPlugIn.
+ * \note The check is done by effective type comparison.
  */
 bool OSSteerPlugIn::check_steer_vehicle_compatibility(
 		NodePath steerVehicleNP) const
@@ -532,65 +533,60 @@ bool OSSteerPlugIn::check_steer_vehicle_compatibility(
 					&& (steerVehicleNP.node()->is_of_type(
 							OSSteerVehicle::get_class_type())), false)
 
-	OSSteerVehicle::OSSteerVehicleType vehicleType = DCAST(OSSteerVehicle,
-			steerVehicleNP.node())->get_vehicle_type();
+	OpenSteer::AbstractVehicle* vehicle = &DCAST(OSSteerVehicle,
+			steerVehicleNP.node())->get_abstract_vehicle();
 
+	// ONE_TURNING:
 	bool result = false;
-	switch (mPlugInType)
+	if (dynamic_cast<ossup::OneTurningPlugIn<OSSteerVehicle>*>(mPlugIn) &&
+			dynamic_cast<ossup::OneTurning<OSSteerVehicle>*>(vehicle))
 	{
-	case ONE_TURNING:
-		if (vehicleType == OSSteerVehicle::ONE_TURNING)
-		{
-			result = true;
-		}
-		break;
-	case PEDESTRIAN:
-		if (vehicleType == OSSteerVehicle::PEDESTRIAN)
-		{
-			result = true;
-		}
-		break;
-	case BOID:
-		if (vehicleType == OSSteerVehicle::BOID)
-		{
-			result = true;
-		}
-		break;
-	case MULTIPLE_PURSUIT:
-		if ((vehicleType == OSSteerVehicle::MP_WANDERER)
-				|| (vehicleType == OSSteerVehicle::MP_PURSUER))
-		{
-			result = true;
-		}
-		break;
-	case SOCCER:
-		if ((vehicleType == OSSteerVehicle::PLAYER)
-				|| (vehicleType == OSSteerVehicle::BALL))
-		{
-			result = true;
-		}
-		break;
-	case CAPTURE_THE_FLAG:
-		if ((vehicleType == OSSteerVehicle::CTF_SEEKER)
-				|| (vehicleType == OSSteerVehicle::CTF_ENEMY))
-		{
-			result = true;
-		}
-		break;
-	case LOW_SPEED_TURN:
-		if (vehicleType == OSSteerVehicle::LOW_SPEED_TURN)
-		{
-			result = true;
-		}
-		break;
-	case MAP_DRIVE:
-		if (vehicleType == OSSteerVehicle::MAP_DRIVER)
-		{
-			result = true;
-		}
-		break;
-	default:
-		break;
+		result = true;
+	}
+	// PEDESTRIAN:
+	else if (dynamic_cast<ossup::PedestrianPlugIn<OSSteerVehicle>*>(mPlugIn) &&
+			dynamic_cast<ossup::Pedestrian<OSSteerVehicle>*>(vehicle))
+	{
+		result = true;
+	}
+	// BOID:
+	else if (dynamic_cast<ossup::BoidsPlugIn<OSSteerVehicle>*>(mPlugIn) &&
+			dynamic_cast<ossup::Boid<OSSteerVehicle>*>(vehicle))
+	{
+		result = true;
+	}
+	// MULTIPLE_PURSUIT:
+	else if (dynamic_cast<ossup::MpPlugIn<OSSteerVehicle>*>(mPlugIn) &&
+			(dynamic_cast<ossup::MpWanderer<OSSteerVehicle>*>(vehicle) ||
+			dynamic_cast<ossup::MpPursuer<OSSteerVehicle>*>(vehicle)))
+	{
+		result = true;
+	}
+	// SOCCER:
+	else if (dynamic_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn) &&
+			(dynamic_cast<ossup::Player<OSSteerVehicle>*>(vehicle) ||
+			dynamic_cast<ossup::Ball<OSSteerVehicle>*>(vehicle)))
+	{
+		result = true;
+	}
+	// CAPTURE_THE_FLAG:
+	else if (dynamic_cast<ossup::CtfPlugIn<OSSteerVehicle>*>(mPlugIn) &&
+			(dynamic_cast<ossup::CtfSeeker<OSSteerVehicle>*>(vehicle) ||
+			dynamic_cast<ossup::CtfEnemy<OSSteerVehicle>*>(vehicle)))
+	{
+		result = true;
+	}
+	// LOW_SPEED_TURN:
+	else if (dynamic_cast<ossup::LowSpeedTurnPlugIn<OSSteerVehicle>*>(mPlugIn) &&
+			dynamic_cast<ossup::LowSpeedTurn<OSSteerVehicle>*>(vehicle))
+	{
+		result = true;
+	}
+	// MAP_DRIVE:
+	else if (dynamic_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn) &&
+			dynamic_cast<ossup::MapDriver<OSSteerVehicle>*>(vehicle))
+	{
+		result = true;
 	}
 	//
 	return result;
@@ -1602,10 +1598,9 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 		pvector<PT(OSSteerVehicle)>::iterator iter;
 		for (iter = mSteerVehicles.begin(); iter != mSteerVehicles.end(); ++iter)
 		{
-			//XXX
-			//first check vehicle's compatibility, because it might
-			//not have gained its final type
-			if (check_steer_vehicle_compatibility(NodePath::any_path((*iter))))
+			// check if vehicle has gained its final type (i.e. finalized)
+			if (check_steer_vehicle_compatibility(
+					NodePath::any_path((*iter))))
 			{
 				//do add to real update list
 				static_cast<ossup::PlugIn*>(mPlugIn)->addVehicle(
