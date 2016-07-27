@@ -67,10 +67,10 @@ void startFramework(int argc, char *argv[], const string& msg)
 }
 
 // load plane stuff
-NodePath loadPlane(const string& name)
+NodePath loadPlane(const string& name, float widthX, float widthY)
 {
 	CardMaker cm("plane");
-	cm.set_frame(-15, 15, -15, 15);
+	cm.set_frame(-widthX / 2.0, widthX / 2.0, -widthY / 2.0, widthY / 2.0);
 	NodePath plane(cm.generate());
 	plane.set_p(-90.0);
 	plane.set_z(0.0);

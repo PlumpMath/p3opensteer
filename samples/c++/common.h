@@ -41,7 +41,7 @@ extern random_device rd;
 
 ///functions' declarations
 void startFramework(int argc, char *argv[], const string&);
-NodePath loadPlane(const string&);
+NodePath loadPlane(const string&, float widthX = 30.0, float widthY = 30.0);
 NodePath loadTerrain(const string&, float widthScale = 0.5,
 		float heightScale = 10.0);
 PT(CollisionEntry)getCollisionEntryFromCamera();

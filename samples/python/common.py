@@ -57,11 +57,11 @@ def startFramework(msg):
     #
     return app
 
-def loadPlane(name):
+def loadPlane(name, widthX = 30.0, widthY = 30.0):
     """load plane stuff"""
     
     cm = CardMaker("plane")
-    cm.set_frame(-15, 15, -15, 15)
+    cm.set_frame(-widthX / 2.0, widthX / 2.0, -widthY / 2.0, widthY / 2.0)
     plane = NodePath(cm.generate())
     plane.set_p(-90.0)
     plane.set_z(0.0)
