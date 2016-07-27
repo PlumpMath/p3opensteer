@@ -173,6 +173,18 @@ public:
 #endif
 	}
 
+	// place in the center
+	void placeInCenter(void)
+	{
+		//reset only position (and clear debug draw)
+		this->setPosition(m_home);
+		this->setSpeed(0.0);
+#ifdef OS_DEBUG
+		this->clearTrailHistory();    // prevent long streaks due to teleportation
+		this->setTrailParameters(100, 6000);
+#endif
+	}
+
 	// per frame simulation update
 	void update(const float currentTime, const float elapsedTime)
 	{
@@ -541,13 +553,15 @@ public:
 		if (m_TeamAGoal->InsideX(m_Ball->position())
 				&& m_TeamAGoal->InsideZ(m_Ball->position()))
 		{
-			m_Ball->reset();	// Ball in blue teams goal, red scores
+///			m_Ball->reset();	// Ball in blue teams goal, red scores
+			m_Ball->placeInCenter();
 			m_redScore++;
 		}
 		if (m_TeamBGoal->InsideX(m_Ball->position())
 				&& m_TeamBGoal->InsideZ(m_Ball->position()))
 		{
-			m_Ball->reset();	// Ball in red teams goal, blue scores
+///			m_Ball->reset();	// Ball in red teams goal, blue scores
+			m_Ball->placeInCenter();
 			m_blueScore++;
 		}
 
