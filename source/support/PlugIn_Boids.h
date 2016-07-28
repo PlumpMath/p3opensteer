@@ -515,7 +515,7 @@ public:
 		const Vec3 screenLocation(-1.0, 0.9, 0);
 /////		draw2dTextAt2dLocation(status, screenLocation, gGray80,
 /////				drawGetWindowWidth(), drawGetWindowHeight());
-		draw2dTextAt2dLocation(status, screenLocation, gGray80, 0.0, 0.0);
+		draw2dTextAt2dLocation(status, screenLocation, gGray80, 1.0, 1.0);
 
 		///FIXME: delegated to external plugin initialization
 ///		drawObstacles();

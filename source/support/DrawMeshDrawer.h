@@ -120,6 +120,10 @@ public:
 	{
 		m_textScale = textScale;
 	}
+	float getTextScale()
+	{
+		return m_textScale;
+	}
 };
 
 /// Panda3d debug draw implementation.

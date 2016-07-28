@@ -165,6 +165,8 @@ PUBLISHED:
 	void set_playing_field(const LPoint3f& min, const LPoint3f& max,
 			float goalFraction = 0.5);
 	float get_goal_fraction() const;
+	int get_score_team_a() const;
+	int get_score_team_b() const;
 	///@}
 
 	/**
@@ -258,6 +260,7 @@ private:
 	//soccer
 	LPoint3f mFieldMinPoint_ser, mFieldMaxPoint_ser;
 	float mGoalFraction_ser;
+	int mScoreTeamA_ser, mScoreTeamB_ser;
 	//low speed turn
 	float mSteeringSpeed_ser;
 	///@}

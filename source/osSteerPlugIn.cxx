@@ -1172,6 +1172,38 @@ float OSSteerPlugIn::get_goal_fraction() const
 }
 
 /**
+ * Returns the current score of TEAM_A, or a negative value on error.
+ * \note SOCCER OSSteerPlugIn only.
+ */
+int OSSteerPlugIn::get_score_team_a() const
+{
+	int score = OS_ERROR;
+	if (mPlugInType == SOCCER)
+	{
+		ossup::MicTestPlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn);
+		score = plugIn->m_redScore;
+	}
+	return score;
+}
+
+/**
+ * Returns the current score of TEAM_B, or a negative value on error.
+ * \note SOCCER OSSteerPlugIn only.
+ */
+int OSSteerPlugIn::get_score_team_b() const
+{
+	int score = OS_ERROR;
+	if (mPlugInType == SOCCER)
+	{
+		ossup::MicTestPlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn);
+		score = plugIn->m_blueScore;
+	}
+	return score;
+}
+
+/**
  * Sets steering speed (>=0).
  * \note LOW_SPEED_TURN OSSteerPlugIn only.
  */
@@ -1522,6 +1554,10 @@ void OSSteerPlugIn::write_datagram(BamWriter *manager, Datagram &dg)
 		points[0].write_datagram(dg);
 		points[1].write_datagram(dg);
 		dg.add_stdfloat(get_goal_fraction());
+		ossup::MicTestPlugIn<OSSteerVehicle>* plugIn =
+						static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn);
+		dg.add_int32(plugIn->m_redScore);
+		dg.add_int32(plugIn->m_blueScore);
 	}
 	if(mPlugInType == CAPTURE_THE_FLAG)
 	{
@@ -1665,6 +1701,10 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 				add_player_to_team((*iter), (*iter)->mPlayingTeam_ser);
 			}
 		}
+		ossup::MicTestPlugIn<OSSteerVehicle>* plugIn =
+						static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn);
+		plugIn->m_redScore = mScoreTeamA_ser;
+		plugIn->m_blueScore = mScoreTeamB_ser;
 	}
 	if(mPlugInType == CAPTURE_THE_FLAG)
 	{
@@ -1803,6 +1843,8 @@ void OSSteerPlugIn::fillin(DatagramIterator &scan, BamReader *manager)
 		mFieldMinPoint_ser.read_datagram(scan);
 		mFieldMaxPoint_ser.read_datagram(scan);
 		mGoalFraction_ser = scan.get_stdfloat();
+		mScoreTeamA_ser = scan.get_int32();
+		mScoreTeamB_ser = scan.get_int32();
 	}
 	if(mPlugInType == CAPTURE_THE_FLAG)
 	{

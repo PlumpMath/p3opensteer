@@ -130,6 +130,10 @@ public:
 	{
 		return m_max;
 	}
+	float getMidY()
+	{
+		return m_mid_y;
+	}
 private:
 	Vec3 m_min;
 	Vec3 m_max;
@@ -473,6 +477,7 @@ public:
  * from his/her current team.
  * - \fn void setSoccerField(const Vec3& min, const Vec3& max): sets the pitch
  * to play soccer.
+ * - \var m_redScore/m_blueScore: current score of the teamA/teamB.
  */
 template<typename Entity>
 class MicTestPlugIn: public PlugIn
@@ -588,14 +593,18 @@ public:
 		///FIXME: delegated to external plugin initialization
 ///		drawPlayField();
 
+		float textZ = (m_bbox->getMax().z + m_bbox->getMin().z) * 0.5;
+		float textY = m_bbox->getMidY()
+				+ (m_bbox->getMax().z - m_bbox->getMin().z) * 0.5 * 0.1;
 		{
 			std::ostringstream annote;
 			annote << "Red: " << m_redScore;
 /////			draw2dTextAt3dLocation(annote, Vec3(23, 0, 0),
 /////					Color(1.0f, 0.7f, 0.7f), drawGetWindowWidth(),
 /////					drawGetWindowHeight());
-			draw2dTextAt3dLocation(annote, Vec3(23, 0, 0),
-					Color(1.0f, 0.7f, 0.7f), 0.0, 0.0);
+			draw2dTextAt3dLocation(annote,
+					Vec3(m_bbox->getMax().x, textY, textZ),
+					Color(1.0f, 0.7f, 0.7f), 40.0, 1.0);
 		}
 		{
 			std::ostringstream annote;
@@ -603,8 +612,9 @@ public:
 /////			draw2dTextAt3dLocation(annote, Vec3(-23, 0, 0),
 /////					Color(0.7f, 0.7f, 1.0f), drawGetWindowWidth(),
 /////					drawGetWindowHeight());
-			draw2dTextAt3dLocation(annote, Vec3(-23, 0, 0),
-					Color(0.7f, 0.7f, 1.0f), 0.0, 0.0);
+			draw2dTextAt3dLocation(annote,
+					Vec3(m_bbox->getMin().x, textY, textZ),
+					Color(0.7f, 0.7f, 1.0f), 40.0, 1.0);
 		}
 
 		// textual annotation (following the test vehicle's screen position)
@@ -620,9 +630,9 @@ public:
 /////						drawGetWindowWidth(), drawGetWindowHeight());
 /////				draw2dTextAt3dLocation(*"start", Vec3::zero, gGreen,
 /////						drawGetWindowWidth(), drawGetWindowHeight());
-				draw2dTextAt3dLocation(annote, m_AllPlayers[i]->position(), gRed, 0.0,
-						0.0);
-				draw2dTextAt3dLocation(*"start", Vec3::zero, gGreen, 0.0, 0.0);
+				draw2dTextAt3dLocation(annote, m_AllPlayers[i]->position(), gRed, 40.0,
+						1.0);
+				draw2dTextAt3dLocation(*"start", Vec3::zero, gGreen, 40.0, 1.0);
 			}
 #endif
 	}
@@ -934,21 +944,26 @@ public:
 			zDim = 20;
 		}
 		//new min/max: middle point -/+ half dim
-		Vec3 middle = (max + min) / 2.0, halfDim = Vec3(xDim / 2.0, 0, zDim / 2.0);
+		Vec3 middle = (max + min) / 2.0, halfDim = Vec3(xDim / 2.0, 0,
+				zDim / 2.0);
 		Vec3 newMin = middle - halfDim, newMax = middle + halfDim;
 		//create soccer field
 		m_bbox = new AABBox(newMin, newMax);
 		//check if 0<= goalFraction <= 1.0
-		if (goalFraction < 0.0) goalFraction = -goalFraction;
-		if (goalFraction > 1.0) goalFraction = 1.0;
+		if (goalFraction < 0.0)
+			goalFraction = -goalFraction;
+		if (goalFraction > 1.0)
+			goalFraction = 1.0;
 		// goal dims
 		float xGoalDim = xDim * 0.05, zGoalDim = zDim * goalFraction;
 		// Red goal
-		m_TeamAGoal = new AABBox(newMax + Vec3(-xGoalDim * 0.25, 0, -(zDim + zGoalDim) / 2.0),
-				newMax + Vec3(xGoalDim * 0.75, 0, -(zDim - zGoalDim) / 2.0));
-		// Blue Goal
-		m_TeamBGoal = new AABBox(newMin + Vec3(-xGoalDim * 0.75, 0, (zDim - zGoalDim) / 2.0),
+		m_TeamAGoal = new AABBox(
+				newMin + Vec3(-xGoalDim * 0.75, 0, (zDim - zGoalDim) / 2.0),
 				newMin + Vec3(xGoalDim * 0.25, 0, (zDim + zGoalDim) / 2.0));
+		// Blue Goal
+		m_TeamBGoal = new AABBox(
+				newMax + Vec3(-xGoalDim * 0.25, 0, -(zDim + zGoalDim) / 2.0),
+				newMax + Vec3(xGoalDim * 0.75, 0, -(zDim - zGoalDim) / 2.0));
 		// update the ball's AABB if any
 		if (m_Ball)
 		{

@@ -15,7 +15,7 @@ from common import startFramework, toggleDebugFlag, toggleDebugDraw, mask, \
         changeVehicleMaxForce, changeVehicleMaxSpeed, getVehicleModelAnims, \
         rateFactor, writeToBamFileAndExit, readFromBamFile, bamFileName, \
         getCollisionEntryFromCamera, obstacleFile, HandleObstacleData, \
-        handleObstacles, HandleVehicleData, handleVehicles
+        handleObstacles, HandleVehicleData, handleVehicles, loadPlane
 import sys, random
         
 # # specific data/functions declarations/definitions
@@ -167,7 +167,7 @@ if __name__ == '__main__':
     
         # get a sceneNP, naming it with "SceneNP" to ease restoring from bam 
         # file
-        sceneNP = loadTerrain("SceneNP", 0.5, 2.0)
+        sceneNP = loadPlane("SceneNP", 300, 300)
         # and reparent to the reference node
         sceneNP.reparent_to(steerMgr.get_reference_node_path())
         
@@ -183,8 +183,8 @@ if __name__ == '__main__':
         steerPlugIn = plugInNP.node()
     
         # set playing field
-        steerPlugIn.set_playing_field(LPoint3f(20.0, 50.0, 0.2),
-                LPoint3f(100.0, 100.0, 1.0), 0.3)
+        steerPlugIn.set_playing_field(LPoint3f(20.0, 50.0, 0.0),
+                LPoint3f(100.0, 100.0, 0.0), 0.7)
     else:
         # valid bamFile
         # restore plug-in: through steer manager

@@ -3146,7 +3146,7 @@ public:
 			const Color color(0.15f, 0.15f, 0.5f);
 /////		draw2dTextAt2dLocation(status, screenLocation, color,
 /////				drawGetWindowWidth(), drawGetWindowHeight());
-			draw2dTextAt2dLocation(status, screenLocation, color, 0.0, 0.0);
+			draw2dTextAt2dLocation(status, screenLocation, color, 1.0, 1.0);
 
 			{
 				const float v = 5;
