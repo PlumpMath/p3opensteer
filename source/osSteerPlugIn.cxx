@@ -1638,9 +1638,11 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 			if (check_steer_vehicle_compatibility(
 					NodePath::any_path((*iter))))
 			{
+				OSVehicleSettings settings = (*iter)->get_settings();
 				//do add to real update list
 				static_cast<ossup::PlugIn*>(mPlugIn)->addVehicle(
 						&(*iter)->get_abstract_vehicle());
+				(*iter)->set_settings(settings);
 			}
 		}
 	}

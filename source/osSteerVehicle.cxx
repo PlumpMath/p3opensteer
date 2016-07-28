@@ -1146,8 +1146,6 @@ void OSSteerVehicle::finalize(BamReader *manager)
 	//2: (re)set type
 	//create the new OpenSteer vehicle
 	do_create_vehicle(mVehicleType);
-	//set the new OpenSteer vehicle's settings
-	set_settings(mVehicleSettings);
 	//3: add the new OpenSteer vehicle to real update list (if needed), by
 	//checking if plug-in has gained its final type (i.e. finalized)
 	if (mSteerPlugIn
@@ -1157,6 +1155,8 @@ void OSSteerVehicle::finalize(BamReader *manager)
 		static_cast<ossup::PlugIn*>(&mSteerPlugIn->get_abstract_plug_in())->addVehicle(
 				mVehicle);
 	}
+	//4: set the new OpenSteer vehicle's settings
+	set_settings(mVehicleSettings);
 
 	///SPECIFICS
 	if(mVehicleType == ONE_TURNING)

@@ -169,7 +169,8 @@ public:
 ///		setSpeed(0.0f);         // speed along Forward direction.
 ///		setMaxForce(9.0f);      // steering force is clipped to this magnitude
 ///		setMaxSpeed(9.0f);         // velocity is clipped to this magnitude
-		this->setPosition(m_home);
+
+///		setPosition(0,0,0);
 
 #ifdef OS_DEBUG
 		this->clearTrailHistory();    // prevent long streaks due to teleportation
@@ -707,6 +708,7 @@ public:
 			// update the ball home: the field center
 			m_Ball->m_home = (m_bbox->getMin() + m_bbox->getMax()) / 2.0;
 			m_Ball->reset();
+			m_Ball->placeInCenter();
 			//update each player's ball
 			setAllPlayersBall();
 			//that's all

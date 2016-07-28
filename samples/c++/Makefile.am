@@ -17,7 +17,8 @@ LDADD = -lp3framework -lpanda -lpandaexpress -lp3dtool -lp3dtoolconfig \
 noinst_HEADERS = common.h
 
 noinst_PROGRAMS = basic low_speed_turn pedestrian boid \
-	multiple_pursuit soccer soccer_gprof soccer_gcov
+	multiple_pursuit \
+	soccer #soccer_gprof soccer_gcov
 
 BUILT_SOURCES = data.h
 
