@@ -12,7 +12,7 @@ from panda3d.core import TextNode, ClockObject, AnimControlCollection, \
 from common import startFramework, toggleDebugFlag, toggleDebugDraw, mask, \
         loadPlane, printCreationParameters, handleVehicleEvent, \
         changeVehicleMaxForce, changeVehicleMaxSpeed, getVehicleModelAnims, \
-        rateFactor, writeToBamFileAndExit, readFromBamFile, bamFileName
+        animRateFactor, writeToBamFileAndExit, readFromBamFile, bamFileName
 import sys
         
 # # specific data/functions declarations/definitions
@@ -78,7 +78,7 @@ def updatePlugIn(steerPlugIn, task):
             if vehicleAnimCtls[i][animOffIdx].is_playing():
                 vehicleAnimCtls[i][animOffIdx].stop()
             # On amin (0:walk, 1:run)
-            vehicleAnimCtls[i][animOnIdx].set_play_rate(currentVelSize / rateFactor[animOnIdx])
+            vehicleAnimCtls[i][animOnIdx].set_play_rate(currentVelSize / animRateFactor[animOnIdx])
             if not vehicleAnimCtls[i][animOnIdx].is_playing():
                 vehicleAnimCtls[i][animOnIdx].loop(True)
         else:
