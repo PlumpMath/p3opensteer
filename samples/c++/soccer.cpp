@@ -15,10 +15,13 @@ vector<PT(OSSteerVehicle)>steerVehicles;
 //
 void setParametersBeforeCreation();
 AsyncTask::DoneStatus updatePlugIn(GenericAsyncTask*, void*);
+void addPlayerA(const Event*, void*);
+void addPlayerB(const Event*, void*);
+void addBall(const Event*, void*);
 
 int main(int argc, char *argv[])
 {
-	string msg("'boid'");
+	string msg("'soccer'");
 	startFramework(argc, argv, msg);
 
 	/// here is room for your own code
@@ -28,12 +31,10 @@ int main(int argc, char *argv[])
 	text->set_text(
             msg + "\n\n"
             "- press \"d\" to toggle debug drawing\n"
-			"- press \"a\" to add 'opensteer' vehicle above the hit point\n"
-            "- press \"s\"/\"shift-s\" to increase/decrease last inserted vehicle's max speed\n"
-            "- press \"f\"/\"shift-f\" to increase/decrease last inserted vehicle's max force\n"
-			"- press \"o\"/\"shift-o\" to add/remove obstacle\n");
+            "- press \"a\"/\"b\" to add a player to teamA/teamB\n"
+            "- press \"p\" to add a ball\n");
 	NodePath textNodePath = window->get_aspect_2d().attach_new_node(text);
-	textNodePath.set_pos(-1.25, 0.0, -0.5);
+	textNodePath.set_pos(-1.25, 0.0, 0.90);
 	textNodePath.set_scale(0.035);
 
 	// create a steer manager; set root and mask to manage 'kinematic' vehicles
@@ -53,7 +54,10 @@ int main(int argc, char *argv[])
 
 		// get a sceneNP, naming it with "SceneNP" to ease restoring from bam
 		// file
-		sceneNP = loadTerrain("SceneNP");
+		sceneNP = loadPlane("SceneNP", 128, 128);
+		PT(Texture) tex =
+				TexturePool::load_texture(Filename(string("soccer-field.png")));
+        sceneNP.set_texture(tex);
 		// and reparent to the reference node
 		sceneNP.reparent_to(steerMgr->get_reference_node_path());
 
@@ -68,9 +72,9 @@ int main(int argc, char *argv[])
 		NodePath plugInNP = steerMgr->create_steer_plug_in();
 		steerPlugIn = DCAST(OSSteerPlugIn, plugInNP.node());
 
-		// set world's center and radius
-		steerPlugIn->set_world_center(LPoint3f(147.7, 145.6, 40.8));
-		steerPlugIn->set_world_radius(25.0);
+		// set playing field
+		steerPlugIn->set_playing_field(LPoint3f(-45.5, -35.5, 0.1),
+                LPoint3f(45.5, 35.5, 0.1), 0.279);
 	}
 	else
 	{
@@ -135,35 +139,21 @@ int main(int argc, char *argv[])
 			(void*) steerPlugIn.p());
 
 	// handle addition steer vehicles, models and animations
-	HandleVehicleData vehicleData(0.007, 2, "opensteer", sceneNP,
-						steerPlugIn, steerVehicles, vehicleAnimCtls,
-						LVector3f(0.0, 0.0, 25.0));
-	framework.define_key("a", "addVehicle", &handleVehicles,
-			(void*) &vehicleData);
-
-	// handle obstacle addition
-	HandleObstacleData obstacleAddition(true, sceneNP, steerPlugIn,
-			LVecBase3f(0.03, 0.03, 0.24));
-	framework.define_key("o", "addObstacle", &handleObstacles,
-			(void*) &obstacleAddition);
-	// handle obstacle removal
-	HandleObstacleData obstacleRemoval(false, sceneNP, steerPlugIn);
-	framework.define_key("shift-o", "removeObstacle", &handleObstacles,
-			(void*) &obstacleRemoval);
-
-	// increase/decrease last inserted vehicle's max speed
-	framework.define_key("s", "changeVehicleMaxSpeed", &changeVehicleMaxSpeed,
-			(void*) &steerVehicles);
-	framework.define_key("shift-s", "changeVehicleMaxSpeed",
-			&changeVehicleMaxSpeed, (void*) &steerVehicles);
-	// increase/decrease last inserted vehicle's max force
-	framework.define_key("f", "changeVehicleMaxForce", &changeVehicleMaxForce,
-			(void*) &steerVehicles);
-	framework.define_key("shift-f", "changeVehicleMaxForce",
-			&changeVehicleMaxForce, (void*) &steerVehicles);
+	HandleVehicleData playerAData(0.7, 0, "kinematic", sceneNP,
+						steerPlugIn, steerVehicles, vehicleAnimCtls);
+	framework.define_key("a", "addPlayerA", &addPlayerA,
+			(void*) &playerAData);
+	HandleVehicleData playerBData(0.7, 1, "kinematic", sceneNP,
+						steerPlugIn, steerVehicles, vehicleAnimCtls);
+	framework.define_key("b", "addPlayerB", &addPlayerB,
+			(void*) &playerBData);
+	HandleVehicleData ballData(0.7, 3, "kinematic", sceneNP,
+			steerPlugIn, steerVehicles, vehicleAnimCtls);
+	framework.define_key("p", "addBall", &addBall,
+			(void*) &ballData);
 
 	// handle OSSteerVehicle(s)' events
-	framework.define_key("avoid_obstacle", "handleVehicleEvent",
+	framework.define_key("avoid_neighbor", "handleVehicleEvent",
 			&handleVehicleEvent, nullptr);
 
 	// write to bam file on exit
@@ -174,8 +164,8 @@ int main(int argc, char *argv[])
 
 	// place camera trackball (local coordinate)
 	PT(Trackball)trackball = DCAST(Trackball, window->get_mouse().find("**/+Trackball").node());
-	trackball->set_pos(-128.0, -20.0, -60.0);
-	trackball->set_hpr(8.0, 10.0, 0.0);
+	trackball->set_pos(0.0, 180.0, -15.0);
+	trackball->set_hpr(0.0, 15.0, 0.0);
 
 	// do the main loop, equals to call app.run() in python
 	framework.main_loop();
@@ -190,20 +180,11 @@ void setParametersBeforeCreation()
 	ValueList<string> valueList;
 	// set plug-in type
 	steerMgr->set_parameter_value(OSSteerManager::STEERPLUGIN, "plugin_type",
-			"boid");
-
-	// set vehicle's type, max force, max speed, speed
-	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "vehicle_type",
-			"boid");
-	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "max_force",
-			"5.0");
-	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "max_speed",
-			"10.0");
-	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "speed", "3.0");
+			"soccer");
 
 	// set vehicle throwing events
 	valueList.clear();
-	valueList.add_value("avoid_obstacle@avoid_obstacle@");
+	valueList.add_value("avoid_neighbor@avoid_neighbor@");
 	steerMgr->set_parameter_values(OSSteerManager::STEERVEHICLE,
 			"thrown_events", valueList);
 	//
@@ -220,33 +201,114 @@ AsyncTask::DoneStatus updatePlugIn(GenericAsyncTask* task, void* data)
 	// handle vehicle's animation
 	for (int i = 0; i < (int)vehicleAnimCtls.size(); ++i)
 	{
-		// get current velocity size
-		float currentVelSize = steerVehicles[i]->get_speed();
-		if (currentVelSize > 0.0)
+		if ((!vehicleAnimCtls[i][0].is_null()) &&
+				(!vehicleAnimCtls[i][1].is_null()))
 		{
-			int animOnIdx, animOffIdx;
-			currentVelSize < 4.0 ? animOnIdx = 0: animOnIdx = 1;
-			animOffIdx = (animOnIdx + 1) % 2;
-			// Off anim (0:walk, 1:run)
-			if (vehicleAnimCtls[i][animOffIdx]->is_playing())
+			// get current velocity size
+			float currentVelSize = steerVehicles[i]->get_speed();
+			if (currentVelSize > 0.0)
 			{
-				vehicleAnimCtls[i][animOffIdx]->stop();
+				int animOnIdx, animOffIdx;
+				currentVelSize < 4.0 ? animOnIdx = 0: animOnIdx = 1;
+				animOffIdx = (animOnIdx + 1) % 2;
+				// Off anim (0:walk, 1:run)
+				if (vehicleAnimCtls[i][animOffIdx]->is_playing())
+				{
+					vehicleAnimCtls[i][animOffIdx]->stop();
+				}
+				// On amin (0:walk, 1:run)
+				vehicleAnimCtls[i][animOnIdx]->set_play_rate(
+						currentVelSize / animRateFactor[animOnIdx]);
+				if (! vehicleAnimCtls[i][animOnIdx]->is_playing())
+				{
+					vehicleAnimCtls[i][animOnIdx]->loop(true);
+				}
 			}
-			// On amin (0:walk, 1:run)
-			vehicleAnimCtls[i][animOnIdx]->set_play_rate(
-					currentVelSize / animRateFactor[animOnIdx]);
-			if (! vehicleAnimCtls[i][animOnIdx]->is_playing())
+			else
 			{
-				vehicleAnimCtls[i][animOnIdx]->loop(true);
+				// stop any animation
+				vehicleAnimCtls[i][0]->stop();
+				vehicleAnimCtls[i][1]->stop();
 			}
-		}
-		else
-		{
-			// stop any animation
-			vehicleAnimCtls[i][0]->stop();
-			vehicleAnimCtls[i][1]->stop();
 		}
 	}
 	//
 	return AsyncTask::DS_cont;
+}
+
+// creates a generic vehicle for soccer plug-in
+static bool createSoccerVehicle(const Event* e, void* data,
+		OSSteerVehicle::OSSteerVehicleType vehicleType)
+{
+	// set vehicle's type == player
+	string typeStr = "player";
+    float maxForce = 3000.7;
+    float maxSpeed = 10.0;
+    float speed = 0.0;
+	if (vehicleType == OSSteerVehicle::BALL)
+	{
+		typeStr = "ball";
+        maxForce = 9.0;
+        maxSpeed = 9.0;
+        speed = 1.0;
+	}
+	OSSteerManager::get_global_ptr()->set_parameter_value(
+			OSSteerManager::STEERVEHICLE, "vehicle_type", typeStr);
+
+	unsigned int oldPlayerNum = steerVehicles.size();
+	// handle vehicle
+	handleVehicles(e, data);
+	if (steerVehicles.size() > oldPlayerNum)
+	{
+		// set player's parameters
+		steerVehicles.back()->set_max_force(maxForce);
+		steerVehicles.back()->set_max_speed(maxSpeed);
+		steerVehicles.back()->set_speed(speed);
+		steerVehicles.back()->enable_up_axis_fixed(true);
+		return true;
+	}
+	return false;
+}
+
+// adds last created player to teamA
+void addPlayerA(const Event* e, void* data)
+{
+	if (not data)
+	{
+		return;
+	}
+
+	if (createSoccerVehicle(e, data, OSSteerVehicle::PLAYER))
+	{
+		// add to teamA
+		steerPlugIn->add_player_to_team(steerVehicles.back(),
+				OSSteerPlugIn::TEAM_A);
+	}
+}
+
+// adds last created player to teamA
+void addPlayerB(const Event* e, void* data)
+{
+	if (not data)
+	{
+		return;
+	}
+
+	if (createSoccerVehicle(e, data, OSSteerVehicle::PLAYER))
+	{
+		// add to teamB
+		steerPlugIn->add_player_to_team(steerVehicles.back(),
+				OSSteerPlugIn::TEAM_B);
+	}
+}
+
+// adds a ball
+void addBall(const Event* e, void* data)
+{
+	if (not data)
+	{
+		return;
+	}
+
+	createSoccerVehicle(e, data, OSSteerVehicle::BALL);
 }

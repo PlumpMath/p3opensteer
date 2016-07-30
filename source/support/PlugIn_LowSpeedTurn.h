@@ -226,7 +226,7 @@ public:
 					<< agent.speed() << std::ends;
 /////			draw2dTextAt3dLocation(annote, textPosition, textColor,
 /////					drawGetWindowWidth(), drawGetWindowHeight());
-			draw2dTextAt3dLocation(annote, textPosition, textColor, 0.0, 0.0);
+			draw2dTextAt3dLocation(annote, textPosition, textColor, 1.0, 1.0);
 		}
 #endif
 	}

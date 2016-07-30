@@ -489,6 +489,37 @@ OSFlockSettings OSSteerVehicle::get_flock_settings() const
 }
 
 /**
+ * Returns the OSSteerVehicle's current playing team, or a negative value on
+ * error.
+ * \note The team can only be changed through OSSteerPlugIn API.
+ * \note SOCCER OSSteerVehicle only.
+ */
+OSSteerPlugIn::OSPlayingTeam OSSteerVehicle::get_playing_team() const
+{
+	if (mVehicleType == PLAYER)
+	{
+		if (static_cast<ossup::Player<OSSteerVehicle>*>(mVehicle)->m_TeamAssigned)
+		{
+			OSSteerPlugIn::OSPlayingTeam team =
+					(static_cast<ossup::Player<OSSteerVehicle>*>(mVehicle)->b_ImTeamA ?
+							OSSteerPlugIn::TEAM_A : OSSteerPlugIn::TEAM_B);
+			nassertr_always(mPlayingTeam_ser == team,
+					(OSSteerPlugIn::OSPlayingTeam)OS_ERROR)
+
+			return team;
+		}
+		else
+		{
+			nassertr_always(mPlayingTeam_ser == OSSteerPlugIn::NO_TEAM,
+					(OSSteerPlugIn::OSPlayingTeam)OS_ERROR)
+
+			return OSSteerPlugIn::NO_TEAM;
+		}
+	}
+	return (OSSteerPlugIn::OSPlayingTeam) OS_ERROR;
+}
+
+/**
  * Sets steering speed.
  * \note OSSteerVehicle should be not externally updated.
  * \note LOW_SPEED_TURN OSSteerVehicle only.
@@ -690,6 +721,8 @@ void OSSteerVehicle::do_update_steer_vehicle(const float currentTime,
 		{
 			//updatedPos.z needs correction
 			updatedPos.set_z(gotCollisionZ.second());
+			//correct vehicle position
+			mVehicle->setPosition(ossup::LVecBase3fToOpenSteerVec3(updatedPos));
 		}
 	}
 	thisNP.set_pos(updatedPos);
@@ -1047,19 +1080,19 @@ void OSSteerVehicle::write_datagram(BamWriter *manager, Datagram &dg)
 	}
 	if(mVehicleType == MP_WANDERER)
 	{
-		;
+		/*do nothing*/;
 	}
 	if(mVehicleType == MP_PURSUER)
 	{
-		;
+		/*do nothing*/;
 	}
 	if(mVehicleType == PLAYER)
 	{
-		;
+		dg.add_uint8((uint8_t) get_playing_team());
 	}
 	if(mVehicleType == BALL)
 	{
-		;
+		/*do nothing*/;
 	}
 	if(mVehicleType == CTF_SEEKER)
 	{
@@ -1113,11 +1146,8 @@ void OSSteerVehicle::finalize(BamReader *manager)
 	//2: (re)set type
 	//create the new OpenSteer vehicle
 	do_create_vehicle(mVehicleType);
-	//set the new OpenSteer vehicle's settings
-	set_settings(mVehicleSettings);
 	//3: add the new OpenSteer vehicle to real update list (if needed), by
-	//checking plugin's compatibility, because it might not have gained
-	//its final type
+	//checking if plug-in has gained its final type (i.e. finalized)
 	if (mSteerPlugIn
 			&& (mSteerPlugIn->check_steer_vehicle_compatibility(
 					NodePath::any_path(this))))
@@ -1125,6 +1155,8 @@ void OSSteerVehicle::finalize(BamReader *manager)
 		static_cast<ossup::PlugIn*>(&mSteerPlugIn->get_abstract_plug_in())->addVehicle(
 				mVehicle);
 	}
+	//4: set the new OpenSteer vehicle's settings
+	set_settings(mVehicleSettings);
 
 	///SPECIFICS
 	if(mVehicleType == ONE_TURNING)
@@ -1146,19 +1178,25 @@ void OSSteerVehicle::finalize(BamReader *manager)
 
 	if(mVehicleType == MP_WANDERER)
 	{
-		;
+		/*do nothing*/;
 	}
 	if(mVehicleType == MP_PURSUER)
 	{
-		;
+		/*do nothing*/;
 	}
 	if(mVehicleType == PLAYER)
 	{
-		;
+		// check if plug-in has gained its final type (i.e. finalized)
+		if (mSteerPlugIn
+				&& dynamic_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(
+						&mSteerPlugIn->get_abstract_plug_in()))
+		{
+			mSteerPlugIn->add_player_to_team(this, mPlayingTeam_ser);
+		}
 	}
 	if(mVehicleType == BALL)
 	{
-		;
+		/*do nothing*/;
 	}
 	if(mVehicleType == CTF_SEEKER)
 	{
@@ -1281,19 +1319,19 @@ void OSSteerVehicle::fillin(DatagramIterator &scan, BamReader *manager)
 	}
 	if(mVehicleType == MP_WANDERER)
 	{
-		;
+		/*do nothing*/;
 	}
 	if(mVehicleType == MP_PURSUER)
 	{
-		;
+		/*do nothing*/;
 	}
 	if(mVehicleType == PLAYER)
 	{
-		;
+		mPlayingTeam_ser = (OSSteerPlugIn::OSPlayingTeam)scan.get_uint8();
 	}
 	if(mVehicleType == BALL)
 	{
-		;
+		/*do nothing*/;
 	}
 	if(mVehicleType == CTF_SEEKER)
 	{

@@ -186,6 +186,13 @@ PUBLISHED:
 	///@}
 
 	/**
+	 * \name TEAM PLAY SETTINGS (PLAYER)
+	 */
+	///@{
+	OSSteerPlugIn::OSPlayingTeam get_playing_team() const;
+	///@}
+
+	/**
 	 * \name STEERING SPEED SETTINGS (LOW_SPEED_TURN)
 	 */
 	///@{
@@ -292,6 +299,8 @@ private:
 	OSPathDirection mPathwayDirection_ser;
 	//boid
 	OSFlockSettings mFlockSettings_ser;
+	//soccer
+	OSSteerPlugIn::OSPlayingTeam  mPlayingTeam_ser;
 	//low speed turn
 	float mSteeringSpeed_ser;
 	///@}

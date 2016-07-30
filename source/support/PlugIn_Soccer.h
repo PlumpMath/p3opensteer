@@ -130,6 +130,10 @@ public:
 	{
 		return m_max;
 	}
+	float getMidY()
+	{
+		return m_mid_y;
+	}
 private:
 	Vec3 m_min;
 	Vec3 m_max;
@@ -141,6 +145,8 @@ template<typename Entity>
 class Ball: public VehicleAddOnMixin<SimpleVehicle, Entity>
 {
 public:
+
+	virtual ~Ball(){}
 
 	// type for a ball: an STL vector of Ball pointers
 	typedef typename std::vector<Ball<Entity>*> groupType;
@@ -163,8 +169,21 @@ public:
 ///		setSpeed(0.0f);         // speed along Forward direction.
 ///		setMaxForce(9.0f);      // steering force is clipped to this magnitude
 ///		setMaxSpeed(9.0f);         // velocity is clipped to this magnitude
-		this->setPosition(m_home);
 
+///		setPosition(0,0,0);
+
+#ifdef OS_DEBUG
+		this->clearTrailHistory();    // prevent long streaks due to teleportation
+		this->setTrailParameters(100, 6000);
+#endif
+	}
+
+	// place in the center
+	void placeInCenter(void)
+	{
+		//reset only position (and clear debug draw)
+		this->setPosition(m_home);
+		this->setSpeed(0.0);
 #ifdef OS_DEBUG
 		this->clearTrailHistory();    // prevent long streaks due to teleportation
 		this->setTrailParameters(100, 6000);
@@ -235,6 +254,10 @@ public:
 	}
 };
 
+/**
+* - \var b_ImTeamA: true/false if team assigned is teamA/teamB.
+* - \var m_TeamAssigned: true if team is assigned to Player, false otherwise.
+*/
 template<typename Entity>
 class Player: public VehicleAddOnMixin<SimpleVehicle, Entity>
 {
@@ -447,6 +470,16 @@ public:
 
 // ----------------------------------------------------------------------------
 // PlugIn for OpenSteerDemo
+/**
+ * \note: Public class members/functions for tweaking:
+ * - \fn void addPlayerToTeam(Player<Entity>* player, bool teamA): adds a
+ * player to teamA or teamB.
+ * - \fn void removePlayerFromTeam(Player<Entity>* player): removes a player
+ * from his/her current team.
+ * - \fn void setSoccerField(const Vec3& min, const Vec3& max): sets the pitch
+ * to play soccer.
+ * - \var m_redScore/m_blueScore: current score of the teamA/teamB.
+ */
 template<typename Entity>
 class MicTestPlugIn: public PlugIn
 {
@@ -526,13 +559,15 @@ public:
 		if (m_TeamAGoal->InsideX(m_Ball->position())
 				&& m_TeamAGoal->InsideZ(m_Ball->position()))
 		{
-			m_Ball->reset();	// Ball in blue teams goal, red scores
+///			m_Ball->reset();	// Ball in blue teams goal, red scores
+			m_Ball->placeInCenter();
 			m_redScore++;
 		}
 		if (m_TeamBGoal->InsideX(m_Ball->position())
 				&& m_TeamBGoal->InsideZ(m_Ball->position()))
 		{
-			m_Ball->reset();	// Ball in red teams goal, blue scores
+///			m_Ball->reset();	// Ball in red teams goal, blue scores
+			m_Ball->placeInCenter();
 			m_blueScore++;
 		}
 
@@ -559,14 +594,18 @@ public:
 		///FIXME: delegated to external plugin initialization
 ///		drawPlayField();
 
+		float textZ = (m_bbox->getMax().z + m_bbox->getMin().z) * 0.5;
+		float textY = m_bbox->getMidY()
+				+ (m_bbox->getMax().z - m_bbox->getMin().z) * 0.5 * 0.1;
 		{
 			std::ostringstream annote;
 			annote << "Red: " << m_redScore;
 /////			draw2dTextAt3dLocation(annote, Vec3(23, 0, 0),
 /////					Color(1.0f, 0.7f, 0.7f), drawGetWindowWidth(),
 /////					drawGetWindowHeight());
-			draw2dTextAt3dLocation(annote, Vec3(23, 0, 0),
-					Color(1.0f, 0.7f, 0.7f), 0.0, 0.0);
+			draw2dTextAt3dLocation(annote,
+					Vec3(m_bbox->getMax().x, textY, textZ),
+					Color(1.0f, 0.7f, 0.7f), 40.0, 1.0);
 		}
 		{
 			std::ostringstream annote;
@@ -574,8 +613,9 @@ public:
 /////			draw2dTextAt3dLocation(annote, Vec3(-23, 0, 0),
 /////					Color(0.7f, 0.7f, 1.0f), drawGetWindowWidth(),
 /////					drawGetWindowHeight());
-			draw2dTextAt3dLocation(annote, Vec3(-23, 0, 0),
-					Color(0.7f, 0.7f, 1.0f), 0.0, 0.0);
+			draw2dTextAt3dLocation(annote,
+					Vec3(m_bbox->getMin().x, textY, textZ),
+					Color(0.7f, 0.7f, 1.0f), 40.0, 1.0);
 		}
 
 		// textual annotation (following the test vehicle's screen position)
@@ -591,9 +631,9 @@ public:
 /////						drawGetWindowWidth(), drawGetWindowHeight());
 /////				draw2dTextAt3dLocation(*"start", Vec3::zero, gGreen,
 /////						drawGetWindowWidth(), drawGetWindowHeight());
-				draw2dTextAt3dLocation(annote, m_AllPlayers[i]->position(), gRed, 0.0,
-						0.0);
-				draw2dTextAt3dLocation(*"start", Vec3::zero, gGreen, 0.0, 0.0);
+				draw2dTextAt3dLocation(annote, m_AllPlayers[i]->position(), gRed, 40.0,
+						1.0);
+				draw2dTextAt3dLocation(*"start", Vec3::zero, gGreen, 40.0, 1.0);
 			}
 #endif
 	}
@@ -668,6 +708,7 @@ public:
 			// update the ball home: the field center
 			m_Ball->m_home = (m_bbox->getMin() + m_bbox->getMax()) / 2.0;
 			m_Ball->reset();
+			m_Ball->placeInCenter();
 			//update each player's ball
 			setAllPlayersBall();
 			//that's all
@@ -887,7 +928,8 @@ public:
 		}
 	}
 
-	void setSoccerField(const Vec3& min, const Vec3& max)
+	void setSoccerField(const Vec3& min, const Vec3& max,
+			float goalFraction = 0.5)
 	{
 		//delete old boxes
 		delete m_bbox;
@@ -904,18 +946,26 @@ public:
 			zDim = 20;
 		}
 		//new min/max: middle point -/+ half dim
-		Vec3 middle = (max + min) / 2.0, halfDim = Vec3(xDim / 2.0, 0, zDim / 2.0);
+		Vec3 middle = (max + min) / 2.0, halfDim = Vec3(xDim / 2.0, 0,
+				zDim / 2.0);
 		Vec3 newMin = middle - halfDim, newMax = middle + halfDim;
 		//create soccer field
 		m_bbox = new AABBox(newMin, newMax);
+		//check if 0<= goalFraction <= 1.0
+		if (goalFraction < 0.0)
+			goalFraction = -goalFraction;
+		if (goalFraction > 1.0)
+			goalFraction = 1.0;
 		// goal dims
-		float xGoalDim = xDim * 0.05, zGoalDim = zDim * 0.7;
+		float xGoalDim = xDim * 0.05, zGoalDim = zDim * goalFraction;
 		// Red goal
-		m_TeamAGoal = new AABBox(newMax + Vec3(-xGoalDim * 0.25, 0, -(zDim + zGoalDim) / 2.0),
-				newMax + Vec3(xGoalDim * 0.75, 0, -(zDim - zGoalDim) / 2.0));
-		// Blue Goal
-		m_TeamBGoal = new AABBox(newMin + Vec3(-xGoalDim * 0.75, 0, (zDim - zGoalDim) / 2.0),
+		m_TeamAGoal = new AABBox(
+				newMin + Vec3(-xGoalDim * 0.75, 0, (zDim - zGoalDim) / 2.0),
 				newMin + Vec3(xGoalDim * 0.25, 0, (zDim + zGoalDim) / 2.0));
+		// Blue Goal
+		m_TeamBGoal = new AABBox(
+				newMax + Vec3(-xGoalDim * 0.25, 0, -(zDim + zGoalDim) / 2.0),
+				newMax + Vec3(xGoalDim * 0.75, 0, -(zDim - zGoalDim) / 2.0));
 		// update the ball's AABB if any
 		if (m_Ball)
 		{
