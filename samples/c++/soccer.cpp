@@ -54,7 +54,10 @@ int main(int argc, char *argv[])
 
 		// get a sceneNP, naming it with "SceneNP" to ease restoring from bam
 		// file
-		sceneNP = loadPlane("SceneNP", 300, 300);
+		sceneNP = loadPlane("SceneNP", 128, 128);
+		PT(Texture) tex =
+				TexturePool::load_texture(Filename(string("soccer-field.png")));
+        sceneNP.set_texture(tex);
 		// and reparent to the reference node
 		sceneNP.reparent_to(steerMgr->get_reference_node_path());
 
@@ -70,8 +73,8 @@ int main(int argc, char *argv[])
 		steerPlugIn = DCAST(OSSteerPlugIn, plugInNP.node());
 
 		// set playing field
-		steerPlugIn->set_playing_field(LPoint3f(20.0, 50.0, 0.0),
-                LPoint3f(100.0, 100.0, 0.0), 0.7);
+		steerPlugIn->set_playing_field(LPoint3f(-45.5, -35.5, 0.1),
+                LPoint3f(45.5, 35.5, 0.1), 0.279);
 	}
 	else
 	{
@@ -161,8 +164,8 @@ int main(int argc, char *argv[])
 
 	// place camera trackball (local coordinate)
 	PT(Trackball)trackball = DCAST(Trackball, window->get_mouse().find("**/+Trackball").node());
-	trackball->set_pos(-55.0, 80.0, -22.0);
-	trackball->set_hpr(10.0, 10.0, 0.0);
+	trackball->set_pos(0.0, 180.0, -15.0);
+	trackball->set_hpr(0.0, 15.0, 0.0);
 
 	// do the main loop, equals to call app.run() in python
 	framework.main_loop();
@@ -215,7 +218,7 @@ AsyncTask::DoneStatus updatePlugIn(GenericAsyncTask* task, void* data)
 				}
 				// On amin (0:walk, 1:run)
 				vehicleAnimCtls[i][animOnIdx]->set_play_rate(
-						currentVelSize / rateFactor[animOnIdx]);
+						currentVelSize / animRateFactor[animOnIdx]);
 				if (! vehicleAnimCtls[i][animOnIdx]->is_playing())
 				{
 					vehicleAnimCtls[i][animOnIdx]->loop(true);

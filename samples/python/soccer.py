@@ -167,7 +167,9 @@ if __name__ == '__main__':
     
         # get a sceneNP, naming it with "SceneNP" to ease restoring from bam 
         # file
-        sceneNP = loadPlane("SceneNP", 300, 300)
+        sceneNP = loadPlane("SceneNP", 128, 128)
+        tex = loader.loadTexture("soccer-field.png")
+        sceneNP.setTexture(tex)
         # and reparent to the reference node
         sceneNP.reparent_to(steerMgr.get_reference_node_path())
         
@@ -183,8 +185,8 @@ if __name__ == '__main__':
         steerPlugIn = plugInNP.node()
     
         # set playing field
-        steerPlugIn.set_playing_field(LPoint3f(20.0, 50.0, 0.0),
-                LPoint3f(100.0, 100.0, 0.0), 0.7)
+        steerPlugIn.set_playing_field(LPoint3f(-45.5, -35.5, 0.1),
+                LPoint3f(45.5, 35.5, 0.1), 0.279)
     else:
         # valid bamFile
         # restore plug-in: through steer manager
@@ -253,8 +255,8 @@ if __name__ == '__main__':
     
     # place camera
     trackball = app.trackball.node()
-    trackball.set_pos(-55.0, 80.0, -22.0)
-    trackball.set_hpr(10.0, 10.0, 0.0)
+    trackball.set_pos(0.0, 180.0, -15.0)
+    trackball.set_hpr(0.0, 15.0, 0.0)
    
     # app.run(), equals to do the main loop in C++
     app.run()

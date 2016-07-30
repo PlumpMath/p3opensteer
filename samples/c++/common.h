@@ -31,7 +31,7 @@ extern bool toggleDebugFlag;
 //models and animations
 extern string vehicleFile[4];
 extern string vehicleAnimFiles[4][2];
-extern const float rateFactor[4];
+extern const float animRateFactor[2];
 //obstacle model
 extern string obstacleFile;
 //bam file

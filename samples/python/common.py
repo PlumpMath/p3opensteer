@@ -27,7 +27,7 @@ vehicleAnimFiles = [["eve-walk.egg", "eve-run.egg"],
                   ["ralph-walk.egg", "ralph-run.egg"],
                   ["sparrow-flying.egg", "sparrow-flying2.egg"],
                   ["", ""]]
-rateFactor = [1.20, 3.40, 0.90, 1.0]
+animRateFactor = [1.20, 4.80]
 # obstacle model
 obstacleFile = "plants2.egg"
 # bame file

@@ -26,8 +26,8 @@ string vehicleAnimFiles[4][2] =
 { "ralph-walk.egg", "ralph-run.egg" },
 { "sparrow-flying.egg", "sparrow-flying2.egg" },
 { "", "" }};
-const float rateFactor[4] =
-{ 1.20, 3.40, 0.90, 1.0 };
+const float animRateFactor[2] =
+{ 1.20, 4.80 };
 //obstacle model
 string obstacleFile("plants2.egg");
 //bame file
