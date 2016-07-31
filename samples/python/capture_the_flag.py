@@ -106,7 +106,7 @@ def addSeeker(data=None):
     if data == None:
         return
 
-    createCtfVehicle(data, OSSteerVehicle.PLAYER)
+    createCtfVehicle(data, OSSteerVehicle.CTF_SEEKER)
 
 def addEnemy(data=None):
     """adds an enemy"""
@@ -115,7 +115,7 @@ def addEnemy(data=None):
     if data == None:
         return
 
-    createCtfVehicle(data, OSSteerVehicle.PLAYER)
+    createCtfVehicle(data, OSSteerVehicle.CTF_ENEMY)
 
 def setHomeBaseCenter():
     """set home base center"""
