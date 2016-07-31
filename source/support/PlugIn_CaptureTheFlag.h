@@ -101,8 +101,8 @@ struct CtfPlugInData
 {
 	Vec3 gHomeBaseCenter; //Vec3(0, 0, 0)
 	float gHomeBaseRadius; //1.5
-	float gMinStartRadius; //30.0
-	float gMaxStartRadius; //40.0
+///	float gMinStartRadius; //30.0
+///	float gMaxStartRadius; //40.0
 	float gBrakingRate; //0.75
 	float gAvoidancePredictTimeMin; //0.9
 	float gAvoidancePredictTimeMax; //2.0 (>=gAvoidancePredictTimeMin)
@@ -840,6 +840,10 @@ template<typename Entity> inline Vec3 CtfSeeker<Entity>::XXXsteerToEvadeAllDefen
 // ----------------------------------------------------------------------------
 // PlugIn for OpenSteerDemo
 
+/**
+ * \note: Public class members for tweaking:
+ * - \var CtfPlugInData: common plug-in data shared among seeker and enemies.
+ */
 template<typename Entity>
 class CtfPlugIn: public PlugIn
 {
@@ -863,8 +867,8 @@ public:
 	{
 		m_CtfPlugInData.gHomeBaseCenter = Vec3(0, 0, 0);
 		m_CtfPlugInData.gHomeBaseRadius = 1.5;
-		m_CtfPlugInData.gMinStartRadius = 30;
-		m_CtfPlugInData.gMaxStartRadius = 40;
+///		m_CtfPlugInData.gMinStartRadius = 30;
+///		m_CtfPlugInData.gMaxStartRadius = 40;
 		m_CtfPlugInData.gBrakingRate = 0.75;
 		m_CtfPlugInData.gAvoidancePredictTimeMin = 0.9f;
 		m_CtfPlugInData.gAvoidancePredictTimeMax = 2;

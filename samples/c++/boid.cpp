@@ -1,5 +1,5 @@
 /**
- * \file main.cpp
+ * \file boid.cpp
  *
  * \date 2016-05-26
  * \author consultit

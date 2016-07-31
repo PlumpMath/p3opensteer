@@ -1,5 +1,5 @@
 /**
- * \file soccer.cpp
+ * \file capture_the_flag.cpp
  *
  * \date 2016-05-26
  * \author consultit
@@ -15,13 +15,13 @@ vector<PT(OSSteerVehicle)>steerVehicles;
 //
 void setParametersBeforeCreation();
 AsyncTask::DoneStatus updatePlugIn(GenericAsyncTask*, void*);
-void addPlayerA(const Event*, void*);
-void addPlayerB(const Event*, void*);
-void addBall(const Event*, void*);
+void addSeeker(const Event*, void*);
+void addEnemy(const Event*, void*);
+void setHomeBaseCenter(const Event*, void*);
 
 int main(int argc, char *argv[])
 {
-	string msg("'soccer'");
+	string msg("'capture_the_flag'");
 	startFramework(argc, argv, msg);
 
 	/// here is room for your own code
@@ -31,10 +31,13 @@ int main(int argc, char *argv[])
 	text->set_text(
             msg + "\n\n"
             "- press \"d\" to toggle debug drawing\n"
-            "- press \"a\"/\"b\" to add a player to teamA/teamB\n"
-            "- press \"p\" to add a ball\n");
+            "- press \"a\"/\"e\" to add a seeker/enemy\n"
+            "- press \"h\" to set home base center\n"
+            "- press \"s\"/\"shift-s\" to increase/decrease last inserted vehicle's max speed\n"
+            "- press \"f\"/\"shift-f\" to increase/decrease last inserted vehicle's max force\n"
+            "- press \"o\"/\"shift-o\" to add/remove obstacle\n");
 	NodePath textNodePath = window->get_aspect_2d().attach_new_node(text);
-	textNodePath.set_pos(-1.25, 0.0, 0.90);
+	textNodePath.set_pos(-1.25, 0.0, 0.8);
 	textNodePath.set_scale(0.035);
 
 	// create a steer manager; set root and mask to manage 'kinematic' vehicles
@@ -54,10 +57,7 @@ int main(int argc, char *argv[])
 
 		// get a sceneNP, naming it with "SceneNP" to ease restoring from bam
 		// file
-		sceneNP = loadPlane("SceneNP", 128, 128);
-		PT(Texture) tex =
-				TexturePool::load_texture(Filename(string("soccer-field.png")));
-        sceneNP.set_texture(tex);
+		sceneNP = loadTerrainLowPoly("SceneNP", 128, 64);
 		// and reparent to the reference node
 		sceneNP.reparent_to(steerMgr->get_reference_node_path());
 
@@ -72,9 +72,11 @@ int main(int argc, char *argv[])
 		NodePath plugInNP = steerMgr->create_steer_plug_in();
 		steerPlugIn = DCAST(OSSteerPlugIn, plugInNP.node());
 
-		// set playing field
-		steerPlugIn->set_playing_field(LPoint3f(-45.5, -35.5, 0.1),
-                LPoint3f(45.5, 35.5, 0.1), 0.279);
+		// set the capture the flag common settings
+		steerPlugIn->set_home_base_radius(6.0);
+		steerPlugIn->set_braking_rate(0.75);
+		steerPlugIn->set_avoidance_predict_time_min(0.9);
+		steerPlugIn->set_avoidance_predict_time_max(2.0);
 	}
 	else
 	{
@@ -139,21 +141,40 @@ int main(int argc, char *argv[])
 			(void*) steerPlugIn.p());
 
 	// handle addition steer vehicles, models and animations
-	HandleVehicleData playerAData(0.7, 0, "kinematic", sceneNP,
+	HandleVehicleData seekerData(0.7, 0, "kinematic", sceneNP,
 						steerPlugIn, steerVehicles, vehicleAnimCtls);
-	framework.define_key("a", "addPlayerA", &addPlayerA,
-			(void*) &playerAData);
-	HandleVehicleData playerBData(0.7, 1, "kinematic", sceneNP,
+	framework.define_key("a", "addSeeker", &addSeeker,
+			(void*) &seekerData);
+	HandleVehicleData enemyData(0.7, 1, "kinematic", sceneNP,
 						steerPlugIn, steerVehicles, vehicleAnimCtls);
-	framework.define_key("b", "addPlayerB", &addPlayerB,
-			(void*) &playerBData);
-	HandleVehicleData ballData(0.7, 3, "kinematic", sceneNP,
-			steerPlugIn, steerVehicles, vehicleAnimCtls);
-	framework.define_key("p", "addBall", &addBall,
-			(void*) &ballData);
+	framework.define_key("e", "addEnemy", &addEnemy,
+			(void*) &enemyData);
+	// set home base center
+	framework.define_key("h", "setHomeBaseCenter", &setHomeBaseCenter, NULL);
+
+	// handle obstacle addition
+	HandleObstacleData obstacleAddition(true, sceneNP, steerPlugIn,
+			LVecBase3f(0.03, 0.03, 0.03));
+	framework.define_key("o", "addObstacle", &handleObstacles,
+			(void*) &obstacleAddition);
+	// handle obstacle removal
+	HandleObstacleData obstacleRemoval(false, sceneNP, steerPlugIn);
+	framework.define_key("shift-o", "removeObstacle", &handleObstacles,
+			(void*) &obstacleRemoval);
+
+	// increase/decrease last inserted vehicle's max speed
+	framework.define_key("s", "changeVehicleMaxSpeed", &changeVehicleMaxSpeed,
+			(void*) &steerVehicles);
+	framework.define_key("shift-s", "changeVehicleMaxSpeed",
+			&changeVehicleMaxSpeed, (void*) &steerVehicles);
+	// increase/decrease last inserted vehicle's max force
+	framework.define_key("f", "changeVehicleMaxForce", &changeVehicleMaxForce,
+			(void*) &steerVehicles);
+	framework.define_key("shift-f", "changeVehicleMaxForce",
+			&changeVehicleMaxForce, (void*) &steerVehicles);
 
 	// handle OSSteerVehicle(s)' events
-	framework.define_key("avoid_neighbor", "handleVehicleEvent",
+	framework.define_key("avoid_obstacle", "handleVehicleEvent",
 			&handleVehicleEvent, nullptr);
 
 	// write to bam file on exit
@@ -164,8 +185,8 @@ int main(int argc, char *argv[])
 
 	// place camera trackball (local coordinate)
 	PT(Trackball)trackball = DCAST(Trackball, window->get_mouse().find("**/+Trackball").node());
-	trackball->set_pos(0.0, 180.0, -15.0);
-	trackball->set_hpr(0.0, 15.0, 0.0);
+	trackball->set_pos(0.0, 320.0, -10.0);
+	trackball->set_hpr(0.0, 20.0, 0.0);
 
 	// do the main loop, equals to call app.run() in python
 	framework.main_loop();
@@ -180,11 +201,11 @@ void setParametersBeforeCreation()
 	ValueList<string> valueList;
 	// set plug-in type
 	steerMgr->set_parameter_value(OSSteerManager::STEERPLUGIN, "plugin_type",
-			"soccer");
+			"capture_the_flag");
 
 	// set vehicle throwing events
 	valueList.clear();
-	valueList.add_value("avoid_neighbor@avoid_neighbor@");
+	valueList.add_value("avoid_obstacle@avoid_obstacle@1.0");
 	steerMgr->set_parameter_values(OSSteerManager::STEERVEHICLE,
 			"thrown_events", valueList);
 	//
@@ -201,56 +222,50 @@ AsyncTask::DoneStatus updatePlugIn(GenericAsyncTask* task, void* data)
 	// handle vehicle's animation
 	for (int i = 0; i < (int)vehicleAnimCtls.size(); ++i)
 	{
-		if ((!vehicleAnimCtls[i][0].is_null()) &&
-				(!vehicleAnimCtls[i][1].is_null()))
+		// get current velocity size
+		float currentVelSize = steerVehicles[i]->get_speed();
+		if (currentVelSize > 0.0)
 		{
-			// get current velocity size
-			float currentVelSize = steerVehicles[i]->get_speed();
-			if (currentVelSize > 0.0)
+			int animOnIdx, animOffIdx;
+			currentVelSize < 4.0 ? animOnIdx = 0: animOnIdx = 1;
+			animOffIdx = (animOnIdx + 1) % 2;
+			// Off anim (0:walk, 1:run)
+			if (vehicleAnimCtls[i][animOffIdx]->is_playing())
 			{
-				int animOnIdx, animOffIdx;
-				currentVelSize < 4.0 ? animOnIdx = 0: animOnIdx = 1;
-				animOffIdx = (animOnIdx + 1) % 2;
-				// Off anim (0:walk, 1:run)
-				if (vehicleAnimCtls[i][animOffIdx]->is_playing())
-				{
-					vehicleAnimCtls[i][animOffIdx]->stop();
-				}
-				// On amin (0:walk, 1:run)
-				vehicleAnimCtls[i][animOnIdx]->set_play_rate(
-						currentVelSize / animRateFactor[animOnIdx]);
-				if (! vehicleAnimCtls[i][animOnIdx]->is_playing())
-				{
-					vehicleAnimCtls[i][animOnIdx]->loop(true);
-				}
+				vehicleAnimCtls[i][animOffIdx]->stop();
 			}
-			else
+			// On amin (0:walk, 1:run)
+			vehicleAnimCtls[i][animOnIdx]->set_play_rate(
+					currentVelSize / animRateFactor[animOnIdx]);
+			if (! vehicleAnimCtls[i][animOnIdx]->is_playing())
 			{
-				// stop any animation
-				vehicleAnimCtls[i][0]->stop();
-				vehicleAnimCtls[i][1]->stop();
+				vehicleAnimCtls[i][animOnIdx]->loop(true);
 			}
+		}
+		else
+		{
+			// stop any animation
+			vehicleAnimCtls[i][0]->stop();
+			vehicleAnimCtls[i][1]->stop();
 		}
 	}
 	//
 	return AsyncTask::DS_cont;
 }
 
-// creates a generic vehicle for soccer plug-in
-static bool createSoccerVehicle(const Event* e, void* data,
+// creates a generic vehicle for ctf plug-in
+static bool createCtfVehicle(const Event* e, void* data,
 		OSSteerVehicle::OSSteerVehicleType vehicleType)
 {
-	// set vehicle's type == player
-	string typeStr = "player";
-    float maxForce = 3000.7;
-    float maxSpeed = 10.0;
-    float speed = 0.0;
-	if (vehicleType == OSSteerVehicle::BALL)
+    float maxForce = 1.0;
+    float maxSpeed = 5.0;
+	// set vehicle's type == ctf_enemy
+	string typeStr = "ctf_enemy";
+    float speed = 1.0;
+	if (vehicleType == OSSteerVehicle::CTF_SEEKER)
 	{
-		typeStr = "ball";
-        maxForce = 9.0;
-        maxSpeed = 9.0;
-        speed = 1.0;
+		typeStr = "ctf_seeker";
+        speed = 0.0;
 	}
 	OSSteerManager::get_global_ptr()->set_parameter_value(
 			OSSteerManager::STEERVEHICLE, "vehicle_type", typeStr);
@@ -270,45 +285,46 @@ static bool createSoccerVehicle(const Event* e, void* data,
 	return false;
 }
 
-// adds last created player to teamA
-void addPlayerA(const Event* e, void* data)
+// adds a seeker
+void addSeeker(const Event* e, void* data)
 {
 	if (not data)
 	{
 		return;
 	}
 
-	if (createSoccerVehicle(e, data, OSSteerVehicle::PLAYER))
-	{
-		// add to teamA
-		steerPlugIn->add_player_to_team(steerVehicles.back(),
-				OSSteerPlugIn::TEAM_A);
-	}
+	createCtfVehicle(e, data, OSSteerVehicle::CTF_SEEKER);
 }
 
-// adds last created player to teamA
-void addPlayerB(const Event* e, void* data)
+// adds an enemy
+void addEnemy(const Event* e, void* data)
 {
 	if (not data)
 	{
 		return;
 	}
 
-	if (createSoccerVehicle(e, data, OSSteerVehicle::PLAYER))
-	{
-		// add to teamB
-		steerPlugIn->add_player_to_team(steerVehicles.back(),
-				OSSteerPlugIn::TEAM_B);
-	}
+	createCtfVehicle(e, data, OSSteerVehicle::CTF_ENEMY);
 }
 
-// adds a ball
-void addBall(const Event* e, void* data)
+// set home base center
+void setHomeBaseCenter(const Event*, void* data)
 {
-	if (not data)
+	if (steerPlugIn.is_null())
 	{
 		return;
 	}
+	// get the collision entry, if any
+	PT(CollisionEntry)entry0 = getCollisionEntryFromCamera();
+	if (entry0)
+	{
+		// get the hit object
+		NodePath hitObject = entry0->get_into_node_path();
+		cout << "hit " << hitObject << " object" << endl;
 
-	createSoccerVehicle(e, data, OSSteerVehicle::BALL);
+		// set home base center's position
+		LPoint3f center = entry0->get_surface_point(window->get_render());
+		steerPlugIn->set_home_base_center(center);
+		cout << "set home base center at: " << center << endl;
+	}
 }

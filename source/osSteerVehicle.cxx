@@ -520,6 +520,22 @@ OSSteerPlugIn::OSPlayingTeam OSSteerVehicle::get_playing_team() const
 }
 
 /**
+ * Returns the OSSteerVehicle's current playing team, or a negative value on
+ * error.
+ * \note The team can only be changed through OSSteerPlugIn API.
+ * \note SOCCER OSSteerVehicle only.
+ */
+OSSteerVehicle::OSSeekerState OSSteerVehicle::get_seeker_state() const
+{
+	if (mVehicleType == CTF_SEEKER)
+	{
+		return (OSSteerVehicle::OSSeekerState) static_cast<ossup::CtfSeeker<
+				OSSteerVehicle>*>(mVehicle)->state;
+	}
+	return (OSSteerVehicle::OSSeekerState) OS_ERROR;
+}
+
+/**
  * Sets steering speed.
  * \note OSSteerVehicle should be not externally updated.
  * \note LOW_SPEED_TURN OSSteerVehicle only.
@@ -1096,11 +1112,11 @@ void OSSteerVehicle::write_datagram(BamWriter *manager, Datagram &dg)
 	}
 	if(mVehicleType == CTF_SEEKER)
 	{
-		;
+		/*do nothing*/;
 	}
 	if(mVehicleType == CTF_ENEMY)
 	{
-		;
+		/*do nothing*/;
 	}
 	if(mVehicleType == LOW_SPEED_TURN)
 	{
@@ -1200,11 +1216,11 @@ void OSSteerVehicle::finalize(BamReader *manager)
 	}
 	if(mVehicleType == CTF_SEEKER)
 	{
-		;
+		/*do nothing*/;
 	}
 	if(mVehicleType == CTF_ENEMY)
 	{
-		;
+		/*do nothing*/;
 	}
 	if(mVehicleType == LOW_SPEED_TURN)
 	{
@@ -1335,11 +1351,11 @@ void OSSteerVehicle::fillin(DatagramIterator &scan, BamReader *manager)
 	}
 	if(mVehicleType == CTF_SEEKER)
 	{
-		;
+		/*do nothing*/;
 	}
 	if(mVehicleType == CTF_ENEMY)
 	{
-		;
+		/*do nothing*/;
 	}
 	if(mVehicleType == LOW_SPEED_TURN)
 	{

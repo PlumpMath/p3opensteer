@@ -16,6 +16,7 @@
 
 #ifndef CPPPARSER
 #include "support/common.h"
+#include "support/PlugIn_CaptureTheFlag.h"
 #endif //CPPPARSER
 
 /**
@@ -122,6 +123,21 @@ PUBLISHED:
 		DOWNSTREAM
 	};
 
+	/**
+	 * CTF_SEEKER OSSteerVehicle state.
+	 */
+	enum OSSeekerState
+	{
+#ifndef CPPPARSER
+		RUNNING = ossup::CtfSeeker<OSSteerVehicle>::running,
+		TAGGED = ossup::CtfSeeker<OSSteerVehicle>::tagged,
+		ATGOAL = ossup::CtfSeeker<OSSteerVehicle>::atGoal
+#else
+		RUNNING,TAGGED,ATGOAL
+#endif //CPPPARSER
+
+	};
+
 	virtual ~OSSteerVehicle();
 
 	/**
@@ -190,6 +206,13 @@ PUBLISHED:
 	 */
 	///@{
 	OSSteerPlugIn::OSPlayingTeam get_playing_team() const;
+	///@}
+
+	/**
+	 * \name SEEKER STATE SETTINGS (CTF_SEEKER)
+	 */
+	///@{
+	OSSeekerState get_seeker_state() const;
 	///@}
 
 	/**
@@ -289,7 +312,7 @@ private:
 	///@}
 
 	/**
-	 * \name SPECIFIC SETTINGS (USED FOR SERIALIZATION ONLY).
+	 * \name SERIALIZATION SETTINGS.
 	 */
 	///@{
 	//pedestrian

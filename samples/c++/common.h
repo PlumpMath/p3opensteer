@@ -42,6 +42,8 @@ extern random_device rd;
 ///functions' declarations
 void startFramework(int argc, char *argv[], const string&);
 NodePath loadPlane(const string&, float widthX = 30.0, float widthY = 30.0);
+NodePath loadTerrainLowPoly(const string&, float widthScale = 128,
+		float heightScale = 64.0, const string& texture = "dry-grass.png");
 NodePath loadTerrain(const string&, float widthScale = 0.5,
 		float heightScale = 10.0);
 PT(CollisionEntry)getCollisionEntryFromCamera();

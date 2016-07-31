@@ -170,6 +170,22 @@ PUBLISHED:
 	///@}
 
 	/**
+	 * \name CAPTURE THE FLAG SETTINGS (SOCCER)
+	 */
+	///@{
+	void set_home_base_center(const LPoint3f& center);
+	LPoint3f get_home_base_center() const;
+	void set_home_base_radius(float radius);
+	float get_home_base_radius() const;
+	void set_braking_rate(float rate);
+	float get_braking_rate() const;
+	void set_avoidance_predict_time_min(float time);
+	float get_avoidance_predict_time_min() const;
+	void set_avoidance_predict_time_max(float time);
+	float get_avoidance_predict_time_max() const;
+	///@}
+
+	/**
 	 * \name STEERING SPEED SETTINGS (LOW_SPEED_TURN)
 	 */
 	///@{
@@ -249,7 +265,7 @@ private:
 	///@}
 
 	/**
-	 * \name SPECIFIC SETTINGS (USED FOR SERIALIZATION ONLY).
+	 * \name SERIALIZATION SETTINGS.
 	 */
 	///@{
 	//pedestrian, boid
@@ -261,6 +277,10 @@ private:
 	LPoint3f mFieldMinPoint_ser, mFieldMaxPoint_ser;
 	float mGoalFraction_ser;
 	int mScoreTeamA_ser, mScoreTeamB_ser;
+	//capture the flag
+	LPoint3f mHomeBaseCenter_ser;
+	float mHomeBaseRadius_ser, mBrakingRate_ser, mAvoidancePredictTimeMin_ser,
+	mAvoidancePredictTimeMax_ser;
 	//low speed turn
 	float mSteeringSpeed_ser;
 	///@}

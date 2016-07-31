@@ -1010,6 +1010,9 @@ void OSSteerPlugIn::set_world_center(const LPoint3f& center)
 		ossup::BoidsPlugIn<OSSteerVehicle>* plugIn =
 				static_cast<ossup::BoidsPlugIn<OSSteerVehicle>*>(mPlugIn);
 		plugIn->worldCenter = ossup::LVecBase3fToOpenSteerVec3(center);
+#ifdef OS_DEBUG
+	do_debug_draw_static_geometry();
+#endif //OS_DEBUG
 	}
 }
 
@@ -1041,6 +1044,9 @@ void OSSteerPlugIn::set_world_radius(float radius)
 		ossup::BoidsPlugIn<OSSteerVehicle>* plugIn =
 				static_cast<ossup::BoidsPlugIn<OSSteerVehicle>*>(mPlugIn);
 		plugIn->worldRadius = radius;
+#ifdef OS_DEBUG
+	do_debug_draw_static_geometry();
+#endif //OS_DEBUG
 	}
 }
 
@@ -1146,6 +1152,9 @@ void OSSteerPlugIn::set_playing_field(const LPoint3f& min, const LPoint3f& max,
 				static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn);
 		plugIn->setSoccerField(ossup::LVecBase3fToOpenSteerVec3(min),
 				ossup::LVecBase3fToOpenSteerVec3(max), goalFraction);
+#ifdef OS_DEBUG
+	do_debug_draw_static_geometry();
+#endif //OS_DEBUG
 	}
 }
 
@@ -1156,7 +1165,6 @@ void OSSteerPlugIn::set_playing_field(const LPoint3f& min, const LPoint3f& max,
  */
 float OSSteerPlugIn::get_goal_fraction() const
 {
-	float fraction = OS_ERROR;
 	if (mPlugInType == SOCCER)
 	{
 		ossup::MicTestPlugIn<OSSteerVehicle>* plugIn =
@@ -1166,9 +1174,9 @@ float OSSteerPlugIn::get_goal_fraction() const
 		float goalYdim = abs(
 				plugIn->m_TeamAGoal->getMax().z
 						- plugIn->m_TeamAGoal->getMin().z);
-		fraction = goalYdim / fieldYdim;
+		return goalYdim / fieldYdim;
 	}
-	return fraction;
+	return OS_ERROR;
 }
 
 /**
@@ -1177,14 +1185,13 @@ float OSSteerPlugIn::get_goal_fraction() const
  */
 int OSSteerPlugIn::get_score_team_a() const
 {
-	int score = OS_ERROR;
 	if (mPlugInType == SOCCER)
 	{
 		ossup::MicTestPlugIn<OSSteerVehicle>* plugIn =
 				static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn);
-		score = plugIn->m_redScore;
+		return plugIn->m_redScore;
 	}
-	return score;
+	return OS_ERROR;
 }
 
 /**
@@ -1193,14 +1200,174 @@ int OSSteerPlugIn::get_score_team_a() const
  */
 int OSSteerPlugIn::get_score_team_b() const
 {
-	int score = OS_ERROR;
 	if (mPlugInType == SOCCER)
 	{
 		ossup::MicTestPlugIn<OSSteerVehicle>* plugIn =
 				static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn);
-		score = plugIn->m_blueScore;
+		return plugIn->m_blueScore;
 	}
-	return score;
+	return OS_ERROR;
+}
+
+/**
+ * Sets home base center.
+ * \note CAPTURE_THE_FLAG OSSteerPlugIn only.
+ */
+void OSSteerPlugIn::set_home_base_center(const LPoint3f& center)
+{
+	if (mPlugInType == CAPTURE_THE_FLAG)
+	{
+		ossup::CtfPlugIn<OSSteerVehicle>* plugIn = static_cast<ossup::CtfPlugIn<
+				OSSteerVehicle>*>(mPlugIn);
+		plugIn->m_CtfPlugInData.gHomeBaseCenter =
+				ossup::LVecBase3fToOpenSteerVec3(center);
+#ifdef OS_DEBUG
+	do_debug_draw_static_geometry();
+#endif //OS_DEBUG
+	}
+}
+
+/**
+ * Returns home base center.
+ * Returns LPoint3f::zero() on error.
+ * \note CAPTURE_THE_FLAG OSSteerPlugIn only.
+ */
+LPoint3f OSSteerPlugIn::get_home_base_center() const
+{
+	if (mPlugInType == CAPTURE_THE_FLAG)
+	{
+		ossup::CtfPlugIn<OSSteerVehicle>* plugIn = static_cast<ossup::CtfPlugIn<
+				OSSteerVehicle>*>(mPlugIn);
+		return ossup::OpenSteerVec3ToLVecBase3f(
+				plugIn->m_CtfPlugInData.gHomeBaseCenter);
+	}
+	return LPoint3f::zero();
+}
+
+/**
+ * Sets home base radius.
+ * \note CAPTURE_THE_FLAG OSSteerPlugIn only.
+ */
+void OSSteerPlugIn::set_home_base_radius(float radius)
+{
+	if (mPlugInType == CAPTURE_THE_FLAG)
+	{
+		ossup::CtfPlugIn<OSSteerVehicle>* plugIn = static_cast<ossup::CtfPlugIn<
+				OSSteerVehicle>*>(mPlugIn);
+		plugIn->m_CtfPlugInData.gHomeBaseRadius = (
+				radius >= 0 ? radius : -radius);
+#ifdef OS_DEBUG
+	do_debug_draw_static_geometry();
+#endif //OS_DEBUG
+	}
+}
+
+/**
+ * Returns home base radius, or a negative value on error.
+ * \note CAPTURE_THE_FLAG OSSteerPlugIn only.
+ */
+float OSSteerPlugIn::get_home_base_radius() const
+{
+	if (mPlugInType == CAPTURE_THE_FLAG)
+	{
+		ossup::CtfPlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::CtfPlugIn<OSSteerVehicle>*>(mPlugIn);
+		return plugIn->m_CtfPlugInData.gHomeBaseRadius;
+	}
+	return OS_ERROR;
+}
+
+/**
+ * Sets braking rate (>=0).
+ * \note CAPTURE_THE_FLAG OSSteerPlugIn only.
+ */
+void OSSteerPlugIn::set_braking_rate(float rate)
+{
+	if (mPlugInType == CAPTURE_THE_FLAG)
+	{
+		ossup::CtfPlugIn<OSSteerVehicle>* plugIn = static_cast<ossup::CtfPlugIn<
+				OSSteerVehicle>*>(mPlugIn);
+		plugIn->m_CtfPlugInData.gBrakingRate = (
+				rate >= 0 ? rate : -rate);
+	}
+}
+
+/**
+ * Returns braking rate (>=0), or a negative value on error.
+ * \note CAPTURE_THE_FLAG OSSteerPlugIn only.
+ */
+float OSSteerPlugIn::get_braking_rate() const
+{
+	if (mPlugInType == CAPTURE_THE_FLAG)
+	{
+		ossup::CtfPlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::CtfPlugIn<OSSteerVehicle>*>(mPlugIn);
+		return plugIn->m_CtfPlugInData.gBrakingRate;
+	}
+	return OS_ERROR;
+}
+
+/**
+ * Sets avoidance predict time min.
+ * \note CAPTURE_THE_FLAG OSSteerPlugIn only.
+ */
+void OSSteerPlugIn::set_avoidance_predict_time_min(float time)
+{
+	if (mPlugInType == CAPTURE_THE_FLAG)
+	{
+		ossup::CtfPlugIn<OSSteerVehicle>* plugIn = static_cast<ossup::CtfPlugIn<
+				OSSteerVehicle>*>(mPlugIn);
+		plugIn->m_CtfPlugInData.gAvoidancePredictTimeMin = (
+				time >= 0 ? time : -time);
+		//(re)set avoidance predict time
+		plugIn->m_CtfPlugInData.gAvoidancePredictTime =
+				plugIn->m_CtfPlugInData.gAvoidancePredictTimeMin;
+	}
+}
+
+/**
+ * Returns avoidance predict time min, or a negative value on error.
+ * \note CAPTURE_THE_FLAG OSSteerPlugIn only.
+ */
+float OSSteerPlugIn::get_avoidance_predict_time_min() const
+{
+	if (mPlugInType == CAPTURE_THE_FLAG)
+	{
+		ossup::CtfPlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::CtfPlugIn<OSSteerVehicle>*>(mPlugIn);
+		return plugIn->m_CtfPlugInData.gAvoidancePredictTimeMin;
+	}
+	return OS_ERROR;
+}
+
+/**
+ * Sets avoidance predict time max.
+ * \note CAPTURE_THE_FLAG OSSteerPlugIn only.
+ */
+void OSSteerPlugIn::set_avoidance_predict_time_max(float time)
+{
+	if (mPlugInType == CAPTURE_THE_FLAG)
+	{
+		ossup::CtfPlugIn<OSSteerVehicle>* plugIn = static_cast<ossup::CtfPlugIn<
+				OSSteerVehicle>*>(mPlugIn);
+		plugIn->m_CtfPlugInData.gAvoidancePredictTimeMax = (
+				time >= 0 ? time : -time);
+	}
+}
+
+/**
+ * Returns avoidance predict time max, or a negative value on error.
+ * \note CAPTURE_THE_FLAG OSSteerPlugIn only.
+ */
+float OSSteerPlugIn::get_avoidance_predict_time_max() const
+{
+	if (mPlugInType == CAPTURE_THE_FLAG)
+	{
+		ossup::CtfPlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::CtfPlugIn<OSSteerVehicle>*>(mPlugIn);
+		return plugIn->m_CtfPlugInData.gAvoidancePredictTimeMax;
+	}
+	return OS_ERROR;
 }
 
 /**
@@ -1217,7 +1384,7 @@ void OSSteerPlugIn::set_steering_speed(float steeringSpeed)
 }
 
 /**
- * Returns steering speed (>=0), a negative value on error.
+ * Returns steering speed (>=0), or a negative value on error.
  * \note LOW_SPEED_TURN OSSteerPlugIn only.
  */
 float OSSteerPlugIn::get_steering_speed() const
@@ -1554,14 +1721,17 @@ void OSSteerPlugIn::write_datagram(BamWriter *manager, Datagram &dg)
 		points[0].write_datagram(dg);
 		points[1].write_datagram(dg);
 		dg.add_stdfloat(get_goal_fraction());
-		ossup::MicTestPlugIn<OSSteerVehicle>* plugIn =
-						static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn);
-		dg.add_int32(plugIn->m_redScore);
-		dg.add_int32(plugIn->m_blueScore);
+		dg.add_int32(get_score_team_a());
+		dg.add_int32(get_score_team_b());
 	}
 	if(mPlugInType == CAPTURE_THE_FLAG)
 	{
-		;
+		LPoint3f center = get_home_base_center();
+		center.write_datagram(dg);
+		dg.add_stdfloat(get_home_base_radius());
+		dg.add_stdfloat(get_braking_rate());
+		dg.add_stdfloat(get_avoidance_predict_time_min());
+		dg.add_stdfloat(get_avoidance_predict_time_max());
 	}
 	if(mPlugInType == LOW_SPEED_TURN)
 	{
@@ -1710,7 +1880,11 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 	}
 	if(mPlugInType == CAPTURE_THE_FLAG)
 	{
-		;
+		set_home_base_center(mHomeBaseCenter_ser);
+		set_home_base_radius(mHomeBaseRadius_ser);
+		set_braking_rate(mBrakingRate_ser);
+		set_avoidance_predict_time_min(mAvoidancePredictTimeMin_ser);
+		set_avoidance_predict_time_max(mAvoidancePredictTimeMax_ser);
 	}
 	if(mPlugInType == LOW_SPEED_TURN)
 	{
@@ -1850,7 +2024,11 @@ void OSSteerPlugIn::fillin(DatagramIterator &scan, BamReader *manager)
 	}
 	if(mPlugInType == CAPTURE_THE_FLAG)
 	{
-		;
+		mHomeBaseCenter_ser.read_datagram(scan);
+		mHomeBaseRadius_ser = scan.get_stdfloat();
+		mBrakingRate_ser = scan.get_stdfloat();
+		mAvoidancePredictTimeMin_ser = scan.get_stdfloat();
+		mAvoidancePredictTimeMax_ser = scan.get_stdfloat();
 	}
 	if(mPlugInType == LOW_SPEED_TURN)
 	{
