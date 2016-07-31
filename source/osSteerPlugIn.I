@@ -141,6 +141,8 @@ inline void OSSteerPlugIn::do_reset()
 	mPathwayPoints.clear();
 	mPathwayRadii.clear();
 	mPathwaySingleRadius = mPathwayClosedCycle = false;
+	//serialization
+	mSerializedDataTmpPtr = NULL;
 #ifdef OS_DEBUG
 	mDrawer3dNP.clear();
 	mDrawer3dStaticNP.clear();

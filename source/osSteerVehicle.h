@@ -162,9 +162,9 @@ PUBLISHED:
 	INLINE float get_radius() const;
 	INLINE void set_speed(float speed);
 	INLINE float get_speed() const;
-	INLINE void set_max_force(float max_force);
+	INLINE void set_max_force(float maxForce);
 	INLINE float get_max_force() const;
-	INLINE void set_max_speed(float max_speed);
+	INLINE void set_max_speed(float maxSpeed);
 	INLINE float get_max_speed() const;
 	INLINE void set_forward(const LVector3f& forward);
 	INLINE LVector3f get_forward() const;
@@ -312,20 +312,25 @@ private:
 	///@}
 
 	/**
-	 * \name SERIALIZATION SETTINGS.
+	 * \name SERIALIZATION ONLY SETTINGS.
 	 */
 	///@{
-	//pedestrian
-	bool mReverseAtEndPoint_ser;
-	bool mWanderBehavior_ser;
-	ValueList<LPoint3f> mPathwayEndPoints_ser;
-	OSPathDirection mPathwayDirection_ser;
-	//boid
-	OSFlockSettings mFlockSettings_ser;
+	// temporary storage for serialized data
+	struct SerializedDataTmp
+	{
+		//pedestrian
+		bool mReverseAtEndPoint;
+		bool mWanderBehavior;
+		ValueList<LPoint3f> mPathwayEndPoints;
+		OSPathDirection mPathwayDirection;
+		//boid
+		OSFlockSettings mFlockSettings;
+		//low speed turn
+		float mSteeringSpeed;
+	}*mSerializedDataTmpPtr;
+	// persistent storage for serialized data
 	//soccer
-	OSSteerPlugIn::OSPlayingTeam  mPlayingTeam_ser;
-	//low speed turn
-	float mSteeringSpeed_ser;
+	OSSteerPlugIn::OSPlayingTeam mPlayingTeam_ser;
 	///@}
 
 	// Explicitly disabled copy constructor and copy assignment operator.

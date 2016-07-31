@@ -747,7 +747,7 @@ int OSSteerPlugIn::do_add_obstacle(NodePath objectNP,
 				OSSteerManager::get_global_ptr()->get_global_obstacles();
 		nassertr_always(
 				globalObstacles.first().size()
-						== globalObstacles.second().size(), OS_ERROR);
+						== globalObstacles.second().size(), OS_ERROR)
 
 		//1: set obstacle's settings
 		OSObstacleSettings settings;
@@ -822,7 +822,7 @@ NodePath OSSteerPlugIn::remove_obstacle(int ref)
 		//it is in the local list (ie added by this OSSteerPlugIn)
 		nassertr_always(
 				globalObstacles.first().size()
-						== globalObstacles.second().size(), NodePath::fail());
+						== globalObstacles.second().size(), NodePath::fail())
 
 		//get the node path
 		resultNP = (*iterA).second();
@@ -842,7 +842,7 @@ NodePath OSSteerPlugIn::remove_obstacle(int ref)
 		//4: remove the OpenSteer obstacle's pointer from the local list
 		nassertr_always(
 				mLocalObstacles.first().size()
-						== mLocalObstacles.second().size(), NodePath::fail());
+						== mLocalObstacles.second().size(), NodePath::fail())
 
 		mLocalObstacles.first().erase(iterOL);
 		//5: remove the obstacle's attributes from the local list
@@ -1840,20 +1840,22 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 		}
 	}
 
-	///SPECIFICS
+	///SERIALIZATION ONLY
+	nassertv_always(mSerializedDataTmpPtr != NULL)
+
 	if(mPlugInType == ONE_TURNING)
 	{
 		/*do nothing*/;
 	}
 	if(mPlugInType == PEDESTRIAN)
 	{
-		set_proximity_database(mPD_ser);
+		set_proximity_database(mSerializedDataTmpPtr->mPD);
 	}
 	if(mPlugInType == BOID)
 	{
-		set_proximity_database(mPD_ser);
-		set_world_center(mWorldCenter_ser);
-		set_world_radius(mWorldRadius_ser);
+		set_proximity_database(mSerializedDataTmpPtr->mPD);
+		set_world_center(mSerializedDataTmpPtr->mWorldCenter);
+		set_world_radius(mSerializedDataTmpPtr->mWorldRadius);
 	}
 	if(mPlugInType == MULTIPLE_PURSUIT)
 	{
@@ -1861,8 +1863,8 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 	}
 	if(mPlugInType == SOCCER)
 	{
-		set_playing_field(mFieldMinPoint_ser, mFieldMaxPoint_ser,
-				mGoalFraction_ser);
+		set_playing_field(mSerializedDataTmpPtr->mFieldMinPoint, mSerializedDataTmpPtr->mFieldMaxPoint,
+				mSerializedDataTmpPtr->mGoalFraction);
 		pvector<PT(OSSteerVehicle)>::iterator iter;
 		for (iter = mSteerVehicles.begin(); iter != mSteerVehicles.end(); ++iter)
 		{
@@ -1875,25 +1877,28 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 		}
 		ossup::MicTestPlugIn<OSSteerVehicle>* plugIn =
 						static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn);
-		plugIn->m_redScore = mScoreTeamA_ser;
-		plugIn->m_blueScore = mScoreTeamB_ser;
+		plugIn->m_redScore = mSerializedDataTmpPtr->mScoreTeamA;
+		plugIn->m_blueScore = mSerializedDataTmpPtr->mScoreTeamB;
 	}
 	if(mPlugInType == CAPTURE_THE_FLAG)
 	{
-		set_home_base_center(mHomeBaseCenter_ser);
-		set_home_base_radius(mHomeBaseRadius_ser);
-		set_braking_rate(mBrakingRate_ser);
-		set_avoidance_predict_time_min(mAvoidancePredictTimeMin_ser);
-		set_avoidance_predict_time_max(mAvoidancePredictTimeMax_ser);
+		set_home_base_center(mSerializedDataTmpPtr->mHomeBaseCenter);
+		set_home_base_radius(mSerializedDataTmpPtr->mHomeBaseRadius);
+		set_braking_rate(mSerializedDataTmpPtr->mBrakingRate);
+		set_avoidance_predict_time_min(mSerializedDataTmpPtr->mAvoidancePredictTimeMin);
+		set_avoidance_predict_time_max(mSerializedDataTmpPtr->mAvoidancePredictTimeMax);
 	}
 	if(mPlugInType == LOW_SPEED_TURN)
 	{
-		set_steering_speed(mSteeringSpeed_ser);
+		set_steering_speed(mSerializedDataTmpPtr->mSteeringSpeed);
 	}
 	if(mPlugInType == MAP_DRIVE)
 	{
 		;
 	}
+	// deallocate SerializedDataTmp
+	delete mSerializedDataTmpPtr;
+	mSerializedDataTmpPtr = NULL;
 }
 
 /**
@@ -1995,20 +2000,24 @@ void OSSteerPlugIn::fillin(DatagramIterator &scan, BamReader *manager)
 		manager->read_pointer(scan);
 	}
 
-	///SPECIFICS
+	///SERIALIZATION ONLY
+	nassertv_always(mSerializedDataTmpPtr == NULL)
+
+	// allocate SerializedDataTmp
+	mSerializedDataTmpPtr = new SerializedDataTmp();
 	if(mPlugInType == ONE_TURNING)
 	{
 		/*do nothing*/;
 	}
 	if(mPlugInType == PEDESTRIAN)
 	{
-		mPD_ser = (OSProximityDatabase) scan.get_uint8();
+		mSerializedDataTmpPtr->mPD = (OSProximityDatabase) scan.get_uint8();
 	}
 	if(mPlugInType == BOID)
 	{
-		mPD_ser = (OSProximityDatabase) scan.get_uint8();
-		mWorldCenter_ser.read_datagram(scan);
-		mWorldRadius_ser = scan.get_stdfloat();
+		mSerializedDataTmpPtr->mPD = (OSProximityDatabase) scan.get_uint8();
+		mSerializedDataTmpPtr->mWorldCenter.read_datagram(scan);
+		mSerializedDataTmpPtr->mWorldRadius = scan.get_stdfloat();
 	}
 	if(mPlugInType == MULTIPLE_PURSUIT)
 	{
@@ -2016,23 +2025,23 @@ void OSSteerPlugIn::fillin(DatagramIterator &scan, BamReader *manager)
 	}
 	if(mPlugInType == SOCCER)
 	{
-		mFieldMinPoint_ser.read_datagram(scan);
-		mFieldMaxPoint_ser.read_datagram(scan);
-		mGoalFraction_ser = scan.get_stdfloat();
-		mScoreTeamA_ser = scan.get_int32();
-		mScoreTeamB_ser = scan.get_int32();
+		mSerializedDataTmpPtr->mFieldMinPoint.read_datagram(scan);
+		mSerializedDataTmpPtr->mFieldMaxPoint.read_datagram(scan);
+		mSerializedDataTmpPtr->mGoalFraction = scan.get_stdfloat();
+		mSerializedDataTmpPtr->mScoreTeamA = scan.get_int32();
+		mSerializedDataTmpPtr->mScoreTeamB = scan.get_int32();
 	}
 	if(mPlugInType == CAPTURE_THE_FLAG)
 	{
-		mHomeBaseCenter_ser.read_datagram(scan);
-		mHomeBaseRadius_ser = scan.get_stdfloat();
-		mBrakingRate_ser = scan.get_stdfloat();
-		mAvoidancePredictTimeMin_ser = scan.get_stdfloat();
-		mAvoidancePredictTimeMax_ser = scan.get_stdfloat();
+		mSerializedDataTmpPtr->mHomeBaseCenter.read_datagram(scan);
+		mSerializedDataTmpPtr->mHomeBaseRadius = scan.get_stdfloat();
+		mSerializedDataTmpPtr->mBrakingRate = scan.get_stdfloat();
+		mSerializedDataTmpPtr->mAvoidancePredictTimeMin = scan.get_stdfloat();
+		mSerializedDataTmpPtr->mAvoidancePredictTimeMax = scan.get_stdfloat();
 	}
 	if(mPlugInType == LOW_SPEED_TURN)
 	{
-		mSteeringSpeed_ser = scan.get_stdfloat();
+		mSerializedDataTmpPtr->mSteeringSpeed = scan.get_stdfloat();
 	}
 	if(mPlugInType == MAP_DRIVE)
 	{

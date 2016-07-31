@@ -265,24 +265,29 @@ private:
 	///@}
 
 	/**
-	 * \name SERIALIZATION SETTINGS.
+	 * \name SERIALIZATION ONLY SETTINGS.
 	 */
 	///@{
-	//pedestrian, boid
-	OSProximityDatabase mPD_ser;
-	//boid
-	LPoint3f mWorldCenter_ser;
-	float mWorldRadius_ser;
-	//soccer
-	LPoint3f mFieldMinPoint_ser, mFieldMaxPoint_ser;
-	float mGoalFraction_ser;
-	int mScoreTeamA_ser, mScoreTeamB_ser;
-	//capture the flag
-	LPoint3f mHomeBaseCenter_ser;
-	float mHomeBaseRadius_ser, mBrakingRate_ser, mAvoidancePredictTimeMin_ser,
-	mAvoidancePredictTimeMax_ser;
-	//low speed turn
-	float mSteeringSpeed_ser;
+	// temporary storage for serialized data
+	struct SerializedDataTmp
+	{
+		//pedestrian, boid
+		OSProximityDatabase mPD;
+		//boid
+		LPoint3f mWorldCenter;
+		float mWorldRadius;
+		//soccer
+		LPoint3f mFieldMinPoint, mFieldMaxPoint;
+		float mGoalFraction;
+		int mScoreTeamA, mScoreTeamB;
+		//capture the flag
+		LPoint3f mHomeBaseCenter;
+		float mHomeBaseRadius, mBrakingRate, mAvoidancePredictTimeMin,
+		mAvoidancePredictTimeMax;
+		//low speed turn
+		float mSteeringSpeed;
+	}*mSerializedDataTmpPtr;
+	// persistent storage for serialized data
 	///@}
 
 #ifdef OS_DEBUG

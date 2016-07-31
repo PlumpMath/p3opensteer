@@ -13,11 +13,15 @@ vector<vector<PT(AnimControl)> > vehicleAnimCtls;
 PT(OSSteerPlugIn)steerPlugIn;
 vector<PT(OSSteerVehicle)>steerVehicles;
 //
+NodePath flagNP;
+AnimControlCollection flagAnims;
+
 void setParametersBeforeCreation();
 AsyncTask::DoneStatus updatePlugIn(GenericAsyncTask*, void*);
 void addSeeker(const Event*, void*);
 void addEnemy(const Event*, void*);
 void setHomeBaseCenter(const Event*, void*);
+NodePath getFlag(const string&);
 
 int main(int argc, char *argv[])
 {
@@ -77,6 +81,10 @@ int main(int argc, char *argv[])
 		steerPlugIn->set_braking_rate(0.75);
 		steerPlugIn->set_avoidance_predict_time_min(0.9);
 		steerPlugIn->set_avoidance_predict_time_max(2.0);
+
+		// load flag model naming it with "FlagNP" to ease restoring from bam
+		// file
+		flagNP = getFlag("FlagNP");
 	}
 	else
 	{
@@ -114,6 +122,13 @@ int main(int argc, char *argv[])
 			}
 		}
 
+		// restore flag and its animation
+		flagNP =
+				OSSteerManager::get_global_ptr()->get_reference_node_path().find(
+						"**/FlagNP");
+		auto_bind(flagNP.node(), flagAnims);
+		flagAnims.get_anim(0)->loop(true);
+
 		// set creation parameters as strings before other plug-ins/vehicles creation
 		cout << endl << "Current creation parameters:";
 		setParametersBeforeCreation();
@@ -141,20 +156,22 @@ int main(int argc, char *argv[])
 			(void*) steerPlugIn.p());
 
 	// handle addition steer vehicles, models and animations
-	HandleVehicleData seekerData(0.7, 0, "kinematic", sceneNP,
+	HandleVehicleData seekerData(1.2, 0, "kinematic", sceneNP,
 						steerPlugIn, steerVehicles, vehicleAnimCtls);
 	framework.define_key("a", "addSeeker", &addSeeker,
 			(void*) &seekerData);
-	HandleVehicleData enemyData(0.7, 1, "kinematic", sceneNP,
+	HandleVehicleData enemyData(1.2, 1, "kinematic", sceneNP,
 						steerPlugIn, steerVehicles, vehicleAnimCtls);
 	framework.define_key("e", "addEnemy", &addEnemy,
 			(void*) &enemyData);
+
 	// set home base center
-	framework.define_key("h", "setHomeBaseCenter", &setHomeBaseCenter, NULL);
+	framework.define_key("h", "setHomeBaseCenter", &setHomeBaseCenter,
+			(void*) &flagNP);
 
 	// handle obstacle addition
 	HandleObstacleData obstacleAddition(true, sceneNP, steerPlugIn,
-			LVecBase3f(0.03, 0.03, 0.03));
+			LVecBase3f(0.05, 0.05, 0.08));
 	framework.define_key("o", "addObstacle", &handleObstacles,
 			(void*) &obstacleAddition);
 	// handle obstacle removal
@@ -314,6 +331,8 @@ void setHomeBaseCenter(const Event*, void* data)
 	{
 		return;
 	}
+
+	NodePath* flag = reinterpret_cast<NodePath*>(data);
 	// get the collision entry, if any
 	PT(CollisionEntry)entry0 = getCollisionEntryFromCamera();
 	if (entry0)
@@ -325,6 +344,23 @@ void setHomeBaseCenter(const Event*, void* data)
 		// set home base center's position
 		LPoint3f center = entry0->get_surface_point(window->get_render());
 		steerPlugIn->set_home_base_center(center);
+		flag->set_pos(center);
 		cout << "set home base center at: " << center << endl;
 	}
+}
+
+// load the flag
+NodePath getFlag(const string& name)
+{
+	NodePath flag = window->load_model(framework.get_models(),
+			"flag_oga.egg");
+	flag.set_two_sided(true);
+	flag.set_scale(1.5);
+	flag.set_name(name);
+	flag.reparent_to(
+			OSSteerManager::get_global_ptr()->get_reference_node_path());
+	NodePath flagWave = window->load_model(flag, "flag_oga-wave.egg");
+	auto_bind(flag.node(), flagAnims);
+	flagAnims.get_anim(0)->loop(true);
+	return flag;
 }

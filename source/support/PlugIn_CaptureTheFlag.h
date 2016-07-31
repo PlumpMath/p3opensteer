@@ -155,6 +155,17 @@ public:
 #endif
 	}
 
+	// reset to start
+	virtual void resetToStart(void)
+	{
+		avoiding = false;         // not activossup avoiding
+		randomizeStartingPositionAndHeading();  // new starting position
+		this->setPosition(this->getStart());
+#ifdef OS_DEBUG
+		this->clearTrailHistory();     // prevent long streaks due to teleportation
+#endif
+	}
+
 #ifdef OS_DEBUG
 	// draw this character/vehicle into the scene
 	void draw(void)
@@ -248,6 +259,15 @@ public:
 		CtfBase<Entity>::reset();
 		this->bodyColor.set(0.4f, 0.4f, 0.6f); // blueish
 ///		gSeeker = this;
+		state = CtfBase<Entity>::running;
+		evading = false;
+	}
+
+	// reset to start
+	void resetToStart(void)
+	{
+		CtfBase<Entity>::resetToStart();
+		this->bodyColor.set(0.4f, 0.4f, 0.6f); // blueish
 		state = CtfBase<Entity>::running;
 		evading = false;
 	}
@@ -541,6 +561,13 @@ public:
 	void reset(void)
 	{
 		CtfBase<Entity>::reset();
+		this->bodyColor.set(0.6f, 0.4f, 0.4f); // redish
+	}
+
+	// reset to start
+	void resetToStart(void)
+	{
+		CtfBase<Entity>::resetToStart();
 		this->bodyColor.set(0.6f, 0.4f, 0.4f); // redish
 	}
 
@@ -899,7 +926,8 @@ public:
 		// service queued reset request, if any
 		if (m_CtfPlugInData.gDelayedResetPlugInXXX)
 		{
-			reset();
+///			reset();
+			resetToStart();
 			m_CtfPlugInData.gDelayedResetPlugInXXX = false;
 		}
 
@@ -962,6 +990,16 @@ public:
 		for (iter = all.begin(); iter != all.end(); ++iter)
 		{
 			(*iter)->reset();
+		}
+	}
+
+	void resetToStart(void)
+	{
+		// reset to start each vehicles
+		iterator iter;
+		for (iter = all.begin(); iter != all.end(); ++iter)
+		{
+			(*iter)->resetToStart();
 		}
 	}
 
