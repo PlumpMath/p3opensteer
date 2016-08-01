@@ -24,6 +24,8 @@ vehicleAnimCtls = []
 steerPlugIn = None
 steerVehicles = []
 #
+flagAnims = AnimControlCollection()
+
 def setParametersBeforeCreation():
     """set parameters as strings before plug-ins/vehicles creation"""
     
@@ -117,7 +119,7 @@ def addEnemy(data=None):
 
     createCtfVehicle(data, OSSteerVehicle.CTF_ENEMY)
 
-def setHomeBaseCenter():
+def setHomeBaseCenter(flag):
     """set home base center"""
 
     global steerPlugIn, app
@@ -134,7 +136,23 @@ def setHomeBaseCenter():
         # set home base center's position
         center = entry0.get_surface_point(app.render)
         steerPlugIn.set_home_base_center(center)
+        flag.set_pos(center)
         print("set home base center at: " + str(center))
+        
+def getFlag():
+    """load the flag"""
+
+    global app
+    
+    flag = app.loader.load_model("flag_oga.egg")
+    flag.set_two_sided(True)
+    flag.set_scale(1.5)
+    flag.reparent_to(OSSteerManager.get_global_ptr().get_reference_node_path())
+    flagWave = app.loader.load_model("flag_oga-wave.egg")
+    flagWave.reparent_to(flag)
+    auto_bind(flag.node(), flagAnims)
+    flagAnims.get_anim(0).loop(True)
+    return flag
         
 if __name__ == '__main__':
 
@@ -241,18 +259,20 @@ if __name__ == '__main__':
     app.accept("d", toggleDebugDraw, [steerPlugIn])
 
     # handle addition steer vehicles, models and animations 
-    seekerData = HandleVehicleData(0.7, 0, "kinematic", sceneNP, 
+    seekerData = HandleVehicleData(1.2, 0, "kinematic", sceneNP, 
                         steerPlugIn, steerVehicles, vehicleAnimCtls)
     app.accept("a", addSeeker, [seekerData])
-    enemyData = HandleVehicleData(0.7, 1, "kinematic", sceneNP, 
+    enemyData = HandleVehicleData(1.2, 1, "kinematic", sceneNP, 
                         steerPlugIn, steerVehicles, vehicleAnimCtls)
     app.accept("e", addEnemy, [enemyData])
+    
     # set home base center
-    app.accept("h", setHomeBaseCenter)
+    flagNP = getFlag()
+    app.accept("h", setHomeBaseCenter, [flagNP])
 
     # handle obstacle addition
     obstacleAddition = HandleObstacleData(True, sceneNP, steerPlugIn,
-                        LVecBase3f(0.03, 0.03, 0.03))
+                        LVecBase3f(0.05, 0.05, 0.08))
     app.accept("o", handleObstacles, [obstacleAddition])
     # handle obstacle removal
     obstacleRemoval = HandleObstacleData(False, sceneNP, steerPlugIn)
