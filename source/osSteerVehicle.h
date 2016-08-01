@@ -162,9 +162,9 @@ PUBLISHED:
 	INLINE float get_radius() const;
 	INLINE void set_speed(float speed);
 	INLINE float get_speed() const;
-	INLINE void set_max_force(float max_force);
+	INLINE void set_max_force(float maxForce);
 	INLINE float get_max_force() const;
-	INLINE void set_max_speed(float max_speed);
+	INLINE void set_max_speed(float maxSpeed);
 	INLINE float get_max_speed() const;
 	INLINE void set_forward(const LVector3f& forward);
 	INLINE LVector3f get_forward() const;

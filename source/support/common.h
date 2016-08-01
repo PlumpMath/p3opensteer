@@ -70,6 +70,11 @@ inline LVecBase4f OpenSteerColorToLVecBase4f(const OpenSteer::Color& c)
  */
 struct VehicleSettings
 {
+	VehicleSettings() :
+			m_mass(), m_radius(), m_speed(), m_maxForce(),
+			m_maxSpeed(), m_forward(), m_side(), m_up(), m_position()
+	{
+	}
 	// mass
 	float m_mass;
 	// size of bounding sphere, for obstacle avoidance, etc.

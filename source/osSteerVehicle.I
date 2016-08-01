@@ -97,9 +97,9 @@ INLINE float OSSteerVehicle::get_speed() const
 /**
  * Sets the OSSteerVehicle's max force.
  */
-INLINE void OSSteerVehicle::set_max_force(float max_force)
+INLINE void OSSteerVehicle::set_max_force(float maxForce)
 {
-	mVehicle->setMaxForce(max_force);
+	mVehicle->setMaxForce(maxForce);
 }
 
 /**
@@ -113,9 +113,9 @@ INLINE float OSSteerVehicle::get_max_force() const
 /**
  * Sets the OSSteerVehicle's max speed.
  */
-INLINE void OSSteerVehicle::set_max_speed(float max_speed)
+INLINE void OSSteerVehicle::set_max_speed(float maxSpeed)
 {
-	mVehicle->setMaxSpeed(max_speed);
+	mVehicle->setMaxSpeed(maxSpeed);
 }
 
 /**
