@@ -312,20 +312,25 @@ private:
 	///@}
 
 	/**
-	 * \name SERIALIZATION SETTINGS.
+	 * \name SERIALIZATION ONLY SETTINGS.
 	 */
 	///@{
-	//pedestrian
-	bool mReverseAtEndPoint_ser;
-	bool mWanderBehavior_ser;
-	ValueList<LPoint3f> mPathwayEndPoints_ser;
-	OSPathDirection mPathwayDirection_ser;
-	//boid
-	OSFlockSettings mFlockSettings_ser;
+	// temporary storage for serialized data
+	struct SerializedDataTmp
+	{
+		//pedestrian
+		bool mReverseAtEndPoint;
+		bool mWanderBehavior;
+		ValueList<LPoint3f> mPathwayEndPoints;
+		OSPathDirection mPathwayDirection;
+		//boid
+		OSFlockSettings mFlockSettings;
+		//low speed turn
+		float mSteeringSpeed;
+	}*mSerializedDataTmpPtr;
+	// persistent storage for serialized data
 	//soccer
-	OSSteerPlugIn::OSPlayingTeam  mPlayingTeam_ser;
-	//low speed turn
-	float mSteeringSpeed_ser;
+	OSSteerPlugIn::OSPlayingTeam mPlayingTeam_ser;
 	///@}
 
 	// Explicitly disabled copy constructor and copy assignment operator.

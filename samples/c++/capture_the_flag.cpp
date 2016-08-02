@@ -13,6 +13,7 @@ vector<vector<PT(AnimControl)> > vehicleAnimCtls;
 PT(OSSteerPlugIn)steerPlugIn;
 vector<PT(OSSteerVehicle)>steerVehicles;
 //
+NodePath flagNP;
 AnimControlCollection flagAnims;
 
 void setParametersBeforeCreation();
@@ -20,7 +21,7 @@ AsyncTask::DoneStatus updatePlugIn(GenericAsyncTask*, void*);
 void addSeeker(const Event*, void*);
 void addEnemy(const Event*, void*);
 void setHomeBaseCenter(const Event*, void*);
-NodePath getFlag();
+NodePath getFlag(const string&);
 
 int main(int argc, char *argv[])
 {
@@ -80,6 +81,10 @@ int main(int argc, char *argv[])
 		steerPlugIn->set_braking_rate(0.75);
 		steerPlugIn->set_avoidance_predict_time_min(0.9);
 		steerPlugIn->set_avoidance_predict_time_max(2.0);
+
+		// load flag model naming it with "FlagNP" to ease restoring from bam
+		// file
+		flagNP = getFlag("FlagNP");
 	}
 	else
 	{
@@ -116,6 +121,13 @@ int main(int argc, char *argv[])
 				vehicleAnimCtls[i][j] = tmpAnims.get_anim(j);
 			}
 		}
+
+		// restore flag and its animation
+		flagNP =
+				OSSteerManager::get_global_ptr()->get_reference_node_path().find(
+						"**/FlagNP");
+		auto_bind(flagNP.node(), flagAnims);
+		flagAnims.get_anim(0)->loop(true);
 
 		// set creation parameters as strings before other plug-ins/vehicles creation
 		cout << endl << "Current creation parameters:";
@@ -154,7 +166,6 @@ int main(int argc, char *argv[])
 			(void*) &enemyData);
 
 	// set home base center
-	NodePath flagNP = getFlag();
 	framework.define_key("h", "setHomeBaseCenter", &setHomeBaseCenter,
 			(void*) &flagNP);
 
@@ -339,12 +350,13 @@ void setHomeBaseCenter(const Event*, void* data)
 }
 
 // load the flag
-NodePath getFlag()
+NodePath getFlag(const string& name)
 {
 	NodePath flag = window->load_model(framework.get_models(),
 			"flag_oga.egg");
 	flag.set_two_sided(true);
 	flag.set_scale(1.5);
+	flag.set_name(name);
 	flag.reparent_to(
 			OSSteerManager::get_global_ptr()->get_reference_node_path());
 	NodePath flagWave = window->load_model(flag, "flag_oga-wave.egg");

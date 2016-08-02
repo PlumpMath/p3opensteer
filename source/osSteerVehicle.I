@@ -261,7 +261,8 @@ inline void OSSteerVehicle::do_reset()
 			mANCallbackCalled = false;
 	mMove = mSteady = mPathFollowing = mAvoidObstacle = mAvoidCloseNeighbor =
 			mAvoidNeighbor = ThrowEventData();
-	//specifics
+	//serialization
+	mSerializedDataTmpPtr = NULL;
 	mPlayingTeam_ser = OSSteerPlugIn::NO_TEAM;
 }
 

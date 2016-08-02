@@ -1174,22 +1174,24 @@ void OSSteerVehicle::finalize(BamReader *manager)
 	//4: set the new OpenSteer vehicle's settings
 	set_settings(mVehicleSettings);
 
-	///SPECIFICS
+	///SERIALIZATION ONLY
+	nassertv_always(mSerializedDataTmpPtr != NULL)
+
 	if(mVehicleType == ONE_TURNING)
 	{
 		/*do nothing*/;
 	}
 	if(mVehicleType == PEDESTRIAN)
 	{
-		set_reverse_at_end_point(mReverseAtEndPoint_ser);
-		set_wander_behavior(mWanderBehavior_ser);
-		set_pathway_end_points(mPathwayEndPoints_ser);
-		mPathwayEndPoints_ser.clear();
-		set_pathway_direction(mPathwayDirection_ser);
+		set_reverse_at_end_point(mSerializedDataTmpPtr->mReverseAtEndPoint);
+		set_wander_behavior(mSerializedDataTmpPtr->mWanderBehavior);
+		set_pathway_end_points(mSerializedDataTmpPtr->mPathwayEndPoints);
+		mSerializedDataTmpPtr->mPathwayEndPoints.clear();
+		set_pathway_direction(mSerializedDataTmpPtr->mPathwayDirection);
 	}
 	if(mVehicleType == BOID)
 	{
-		set_flock_settings(mFlockSettings_ser);
+		set_flock_settings(mSerializedDataTmpPtr->mFlockSettings);
 	}
 
 	if(mVehicleType == MP_WANDERER)
@@ -1224,12 +1226,15 @@ void OSSteerVehicle::finalize(BamReader *manager)
 	}
 	if(mVehicleType == LOW_SPEED_TURN)
 	{
-		set_steering_speed(mSteeringSpeed_ser);
+		set_steering_speed(mSerializedDataTmpPtr->mSteeringSpeed);
 	}
 	if(mVehicleType == MAP_DRIVER)
 	{
 		;
 	}
+	// deallocate SerializedDataTmp
+	delete mSerializedDataTmpPtr;
+	mSerializedDataTmpPtr = NULL;
 }
 
 /**
@@ -1310,28 +1315,32 @@ void OSSteerVehicle::fillin(DatagramIterator &scan, BamReader *manager)
 	///The reference node path.
 	manager->read_pointer(scan);
 
-	///SPECIFICS
+	///SERIALIZATION ONLY
+	nassertv_always(mSerializedDataTmpPtr == NULL)
+
+	// allocate SerializedDataTmp
+	mSerializedDataTmpPtr = new SerializedDataTmp();
 	if(mVehicleType == ONE_TURNING)
 	{
 		/*do nothing*/;
 	}
 	if(mVehicleType == PEDESTRIAN)
 	{
-		mReverseAtEndPoint_ser = scan.get_bool();
-		mWanderBehavior_ser = scan.get_bool();
-		mPathwayEndPoints_ser.clear();
+		mSerializedDataTmpPtr->mReverseAtEndPoint = scan.get_bool();
+		mSerializedDataTmpPtr->mWanderBehavior = scan.get_bool();
+		mSerializedDataTmpPtr->mPathwayEndPoints.clear();
 		unsigned int sizeP = scan.get_uint32();
 		for (unsigned int i = 0; i < sizeP; ++i)
 		{
 			LPoint3f point;
 			point.read_datagram(scan);
-			mPathwayEndPoints_ser.add_value(point);
+			mSerializedDataTmpPtr->mPathwayEndPoints.add_value(point);
 		}
-		mPathwayDirection_ser = (OSPathDirection) scan.get_uint8();
+		mSerializedDataTmpPtr->mPathwayDirection = (OSPathDirection) scan.get_uint8();
 	}
 	if(mVehicleType == BOID)
 	{
-		mFlockSettings_ser.read_datagram(scan);
+		mSerializedDataTmpPtr->mFlockSettings.read_datagram(scan);
 	}
 	if(mVehicleType == MP_WANDERER)
 	{
@@ -1359,7 +1368,7 @@ void OSSteerVehicle::fillin(DatagramIterator &scan, BamReader *manager)
 	}
 	if(mVehicleType == LOW_SPEED_TURN)
 	{
-		mSteeringSpeed_ser = scan.get_stdfloat();
+		mSerializedDataTmpPtr->mSteeringSpeed = scan.get_stdfloat();
 	}
 	if(mVehicleType == MAP_DRIVER)
 	{

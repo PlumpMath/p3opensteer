@@ -8,7 +8,7 @@ import panda3d.core
 from p3opensteer import OSSteerManager, ValueList_string, ValueList_LPoint3f, \
         ValueList_float, OSSteerVehicle
 from panda3d.core import TextNode, ClockObject, AnimControlCollection, \
-        auto_bind, LPoint3f, LVecBase3f
+        auto_bind, LPoint3f, LVecBase3f, NodePath
 #
 from common import startFramework, toggleDebugFlag, toggleDebugDraw, mask, \
         loadTerrain, printCreationParameters, handleVehicleEvent, \
@@ -24,6 +24,7 @@ vehicleAnimCtls = []
 steerPlugIn = None
 steerVehicles = []
 #
+flagNP = NodePath()
 flagAnims = AnimControlCollection()
 
 def setParametersBeforeCreation():
@@ -139,7 +140,7 @@ def setHomeBaseCenter(flag):
         flag.set_pos(center)
         print("set home base center at: " + str(center))
         
-def getFlag():
+def getFlag(name):
     """load the flag"""
 
     global app
@@ -147,6 +148,7 @@ def getFlag():
     flag = app.loader.load_model("flag_oga.egg")
     flag.set_two_sided(True)
     flag.set_scale(1.5)
+    flag.set_name(name)
     flag.reparent_to(OSSteerManager.get_global_ptr().get_reference_node_path())
     flagWave = app.loader.load_model("flag_oga-wave.egg")
     flagWave.reparent_to(flag)
@@ -210,6 +212,10 @@ if __name__ == '__main__':
         steerPlugIn.set_braking_rate(0.75)
         steerPlugIn.set_avoidance_predict_time_min(0.9)
         steerPlugIn.set_avoidance_predict_time_max(2.0)
+        
+        # load flag model naming it with "FlagNP" to ease restoring from bam
+        # file
+        flagNP = getFlag("FlagNP")
     else:
         # valid bamFile
         # restore plug-in: through steer manager
@@ -236,6 +242,12 @@ if __name__ == '__main__':
             for j in range(tmpAnims.get_num_anims()):
                 vehicleAnimCtls[i][j] = tmpAnims.get_anim(j)
 
+        # restore flag and its animation
+        flagNP = OSSteerManager.get_global_ptr().get_reference_node_path().find(
+                        "**/FlagNP")
+        auto_bind(flagNP.node(), flagAnims)
+        flagAnims.get_anim(0).loop(True)
+        
         # set creation parameters as strings before other plug-ins/vehicles creation
         print("\n" + "Current creation parameters:")
         setParametersBeforeCreation()
@@ -267,7 +279,6 @@ if __name__ == '__main__':
     app.accept("e", addEnemy, [enemyData])
     
     # set home base center
-    flagNP = getFlag()
     app.accept("h", setHomeBaseCenter, [flagNP])
 
     # handle obstacle addition
