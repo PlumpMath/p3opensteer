@@ -101,8 +101,8 @@ struct CtfPlugInData
 {
 	Vec3 gHomeBaseCenter; //Vec3(0, 0, 0)
 	float gHomeBaseRadius; //1.5
-	float gMinStartRadius; //30.0
-	float gMaxStartRadius; //40.0
+///	float gMinStartRadius; //30.0
+///	float gMaxStartRadius; //40.0
 	float gBrakingRate; //0.75
 	float gAvoidancePredictTimeMin; //0.9
 	float gAvoidancePredictTimeMax; //2.0 (>=gAvoidancePredictTimeMin)
@@ -150,6 +150,17 @@ public:
 
 ///		randomizeStartingPositionAndHeading();  // new starting position
 
+#ifdef OS_DEBUG
+		this->clearTrailHistory();     // prevent long streaks due to teleportation
+#endif
+	}
+
+	// reset to start
+	virtual void resetToStart(void)
+	{
+		avoiding = false;         // not activossup avoiding
+		randomizeStartingPositionAndHeading();  // new starting position
+		this->setPosition(this->getStart());
 #ifdef OS_DEBUG
 		this->clearTrailHistory();     // prevent long streaks due to teleportation
 #endif
@@ -248,6 +259,15 @@ public:
 		CtfBase<Entity>::reset();
 		this->bodyColor.set(0.4f, 0.4f, 0.6f); // blueish
 ///		gSeeker = this;
+		state = CtfBase<Entity>::running;
+		evading = false;
+	}
+
+	// reset to start
+	void resetToStart(void)
+	{
+		CtfBase<Entity>::resetToStart();
+		this->bodyColor.set(0.4f, 0.4f, 0.6f); // blueish
 		state = CtfBase<Entity>::running;
 		evading = false;
 	}
@@ -541,6 +561,13 @@ public:
 	void reset(void)
 	{
 		CtfBase<Entity>::reset();
+		this->bodyColor.set(0.6f, 0.4f, 0.4f); // redish
+	}
+
+	// reset to start
+	void resetToStart(void)
+	{
+		CtfBase<Entity>::resetToStart();
 		this->bodyColor.set(0.6f, 0.4f, 0.4f); // redish
 	}
 
@@ -840,6 +867,10 @@ template<typename Entity> inline Vec3 CtfSeeker<Entity>::XXXsteerToEvadeAllDefen
 // ----------------------------------------------------------------------------
 // PlugIn for OpenSteerDemo
 
+/**
+ * \note: Public class members for tweaking:
+ * - \var CtfPlugInData: common plug-in data shared among seeker and enemies.
+ */
 template<typename Entity>
 class CtfPlugIn: public PlugIn
 {
@@ -863,8 +894,8 @@ public:
 	{
 		m_CtfPlugInData.gHomeBaseCenter = Vec3(0, 0, 0);
 		m_CtfPlugInData.gHomeBaseRadius = 1.5;
-		m_CtfPlugInData.gMinStartRadius = 30;
-		m_CtfPlugInData.gMaxStartRadius = 40;
+///		m_CtfPlugInData.gMinStartRadius = 30;
+///		m_CtfPlugInData.gMaxStartRadius = 40;
 		m_CtfPlugInData.gBrakingRate = 0.75;
 		m_CtfPlugInData.gAvoidancePredictTimeMin = 0.9f;
 		m_CtfPlugInData.gAvoidancePredictTimeMax = 2;
@@ -895,7 +926,8 @@ public:
 		// service queued reset request, if any
 		if (m_CtfPlugInData.gDelayedResetPlugInXXX)
 		{
-			reset();
+///			reset();
+			resetToStart();
 			m_CtfPlugInData.gDelayedResetPlugInXXX = false;
 		}
 
@@ -958,6 +990,16 @@ public:
 		for (iter = all.begin(); iter != all.end(); ++iter)
 		{
 			(*iter)->reset();
+		}
+	}
+
+	void resetToStart(void)
+	{
+		// reset to start each vehicles
+		iterator iter;
+		for (iter = all.begin(); iter != all.end(); ++iter)
+		{
+			(*iter)->resetToStart();
 		}
 	}
 

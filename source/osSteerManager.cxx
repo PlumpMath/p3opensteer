@@ -160,7 +160,7 @@ bool OSSteerManager::destroy_steer_plug_in(NodePath steerPlugInNP)
 NodePath OSSteerManager::get_steer_plug_in(int index) const
 {
 	nassertr_always((index >= 0) && (index < (int ) mSteerPlugIns.size()),
-			NodePath::fail());
+			NodePath::fail())
 
 	return NodePath::any_path(mSteerPlugIns[index]);
 }
@@ -220,7 +220,7 @@ bool OSSteerManager::destroy_steer_vehicle(NodePath steerVehicleNP)
 NodePath OSSteerManager::get_steer_vehicle(int index) const
 {
 	nassertr_always((index >= 0) && (index < (int ) mSteerVehicles.size()),
-			NodePath::fail());
+			NodePath::fail())
 
 	return NodePath::any_path(mSteerVehicles[index]);
 }

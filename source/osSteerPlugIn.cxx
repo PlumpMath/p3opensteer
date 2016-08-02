@@ -747,7 +747,7 @@ int OSSteerPlugIn::do_add_obstacle(NodePath objectNP,
 				OSSteerManager::get_global_ptr()->get_global_obstacles();
 		nassertr_always(
 				globalObstacles.first().size()
-						== globalObstacles.second().size(), OS_ERROR);
+						== globalObstacles.second().size(), OS_ERROR)
 
 		//1: set obstacle's settings
 		OSObstacleSettings settings;
@@ -822,7 +822,7 @@ NodePath OSSteerPlugIn::remove_obstacle(int ref)
 		//it is in the local list (ie added by this OSSteerPlugIn)
 		nassertr_always(
 				globalObstacles.first().size()
-						== globalObstacles.second().size(), NodePath::fail());
+						== globalObstacles.second().size(), NodePath::fail())
 
 		//get the node path
 		resultNP = (*iterA).second();
@@ -842,7 +842,7 @@ NodePath OSSteerPlugIn::remove_obstacle(int ref)
 		//4: remove the OpenSteer obstacle's pointer from the local list
 		nassertr_always(
 				mLocalObstacles.first().size()
-						== mLocalObstacles.second().size(), NodePath::fail());
+						== mLocalObstacles.second().size(), NodePath::fail())
 
 		mLocalObstacles.first().erase(iterOL);
 		//5: remove the obstacle's attributes from the local list
@@ -1010,6 +1010,9 @@ void OSSteerPlugIn::set_world_center(const LPoint3f& center)
 		ossup::BoidsPlugIn<OSSteerVehicle>* plugIn =
 				static_cast<ossup::BoidsPlugIn<OSSteerVehicle>*>(mPlugIn);
 		plugIn->worldCenter = ossup::LVecBase3fToOpenSteerVec3(center);
+#ifdef OS_DEBUG
+	do_debug_draw_static_geometry();
+#endif //OS_DEBUG
 	}
 }
 
@@ -1041,6 +1044,9 @@ void OSSteerPlugIn::set_world_radius(float radius)
 		ossup::BoidsPlugIn<OSSteerVehicle>* plugIn =
 				static_cast<ossup::BoidsPlugIn<OSSteerVehicle>*>(mPlugIn);
 		plugIn->worldRadius = radius;
+#ifdef OS_DEBUG
+	do_debug_draw_static_geometry();
+#endif //OS_DEBUG
 	}
 }
 
@@ -1146,6 +1152,9 @@ void OSSteerPlugIn::set_playing_field(const LPoint3f& min, const LPoint3f& max,
 				static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn);
 		plugIn->setSoccerField(ossup::LVecBase3fToOpenSteerVec3(min),
 				ossup::LVecBase3fToOpenSteerVec3(max), goalFraction);
+#ifdef OS_DEBUG
+	do_debug_draw_static_geometry();
+#endif //OS_DEBUG
 	}
 }
 
@@ -1156,7 +1165,6 @@ void OSSteerPlugIn::set_playing_field(const LPoint3f& min, const LPoint3f& max,
  */
 float OSSteerPlugIn::get_goal_fraction() const
 {
-	float fraction = OS_ERROR;
 	if (mPlugInType == SOCCER)
 	{
 		ossup::MicTestPlugIn<OSSteerVehicle>* plugIn =
@@ -1166,9 +1174,9 @@ float OSSteerPlugIn::get_goal_fraction() const
 		float goalYdim = abs(
 				plugIn->m_TeamAGoal->getMax().z
 						- plugIn->m_TeamAGoal->getMin().z);
-		fraction = goalYdim / fieldYdim;
+		return goalYdim / fieldYdim;
 	}
-	return fraction;
+	return OS_ERROR;
 }
 
 /**
@@ -1177,14 +1185,13 @@ float OSSteerPlugIn::get_goal_fraction() const
  */
 int OSSteerPlugIn::get_score_team_a() const
 {
-	int score = OS_ERROR;
 	if (mPlugInType == SOCCER)
 	{
 		ossup::MicTestPlugIn<OSSteerVehicle>* plugIn =
 				static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn);
-		score = plugIn->m_redScore;
+		return plugIn->m_redScore;
 	}
-	return score;
+	return OS_ERROR;
 }
 
 /**
@@ -1193,14 +1200,174 @@ int OSSteerPlugIn::get_score_team_a() const
  */
 int OSSteerPlugIn::get_score_team_b() const
 {
-	int score = OS_ERROR;
 	if (mPlugInType == SOCCER)
 	{
 		ossup::MicTestPlugIn<OSSteerVehicle>* plugIn =
 				static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn);
-		score = plugIn->m_blueScore;
+		return plugIn->m_blueScore;
 	}
-	return score;
+	return OS_ERROR;
+}
+
+/**
+ * Sets home base center.
+ * \note CAPTURE_THE_FLAG OSSteerPlugIn only.
+ */
+void OSSteerPlugIn::set_home_base_center(const LPoint3f& center)
+{
+	if (mPlugInType == CAPTURE_THE_FLAG)
+	{
+		ossup::CtfPlugIn<OSSteerVehicle>* plugIn = static_cast<ossup::CtfPlugIn<
+				OSSteerVehicle>*>(mPlugIn);
+		plugIn->m_CtfPlugInData.gHomeBaseCenter =
+				ossup::LVecBase3fToOpenSteerVec3(center);
+#ifdef OS_DEBUG
+	do_debug_draw_static_geometry();
+#endif //OS_DEBUG
+	}
+}
+
+/**
+ * Returns home base center.
+ * Returns LPoint3f::zero() on error.
+ * \note CAPTURE_THE_FLAG OSSteerPlugIn only.
+ */
+LPoint3f OSSteerPlugIn::get_home_base_center() const
+{
+	if (mPlugInType == CAPTURE_THE_FLAG)
+	{
+		ossup::CtfPlugIn<OSSteerVehicle>* plugIn = static_cast<ossup::CtfPlugIn<
+				OSSteerVehicle>*>(mPlugIn);
+		return ossup::OpenSteerVec3ToLVecBase3f(
+				plugIn->m_CtfPlugInData.gHomeBaseCenter);
+	}
+	return LPoint3f::zero();
+}
+
+/**
+ * Sets home base radius.
+ * \note CAPTURE_THE_FLAG OSSteerPlugIn only.
+ */
+void OSSteerPlugIn::set_home_base_radius(float radius)
+{
+	if (mPlugInType == CAPTURE_THE_FLAG)
+	{
+		ossup::CtfPlugIn<OSSteerVehicle>* plugIn = static_cast<ossup::CtfPlugIn<
+				OSSteerVehicle>*>(mPlugIn);
+		plugIn->m_CtfPlugInData.gHomeBaseRadius = (
+				radius >= 0 ? radius : -radius);
+#ifdef OS_DEBUG
+	do_debug_draw_static_geometry();
+#endif //OS_DEBUG
+	}
+}
+
+/**
+ * Returns home base radius, or a negative value on error.
+ * \note CAPTURE_THE_FLAG OSSteerPlugIn only.
+ */
+float OSSteerPlugIn::get_home_base_radius() const
+{
+	if (mPlugInType == CAPTURE_THE_FLAG)
+	{
+		ossup::CtfPlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::CtfPlugIn<OSSteerVehicle>*>(mPlugIn);
+		return plugIn->m_CtfPlugInData.gHomeBaseRadius;
+	}
+	return OS_ERROR;
+}
+
+/**
+ * Sets braking rate (>=0).
+ * \note CAPTURE_THE_FLAG OSSteerPlugIn only.
+ */
+void OSSteerPlugIn::set_braking_rate(float rate)
+{
+	if (mPlugInType == CAPTURE_THE_FLAG)
+	{
+		ossup::CtfPlugIn<OSSteerVehicle>* plugIn = static_cast<ossup::CtfPlugIn<
+				OSSteerVehicle>*>(mPlugIn);
+		plugIn->m_CtfPlugInData.gBrakingRate = (
+				rate >= 0 ? rate : -rate);
+	}
+}
+
+/**
+ * Returns braking rate (>=0), or a negative value on error.
+ * \note CAPTURE_THE_FLAG OSSteerPlugIn only.
+ */
+float OSSteerPlugIn::get_braking_rate() const
+{
+	if (mPlugInType == CAPTURE_THE_FLAG)
+	{
+		ossup::CtfPlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::CtfPlugIn<OSSteerVehicle>*>(mPlugIn);
+		return plugIn->m_CtfPlugInData.gBrakingRate;
+	}
+	return OS_ERROR;
+}
+
+/**
+ * Sets avoidance predict time min.
+ * \note CAPTURE_THE_FLAG OSSteerPlugIn only.
+ */
+void OSSteerPlugIn::set_avoidance_predict_time_min(float time)
+{
+	if (mPlugInType == CAPTURE_THE_FLAG)
+	{
+		ossup::CtfPlugIn<OSSteerVehicle>* plugIn = static_cast<ossup::CtfPlugIn<
+				OSSteerVehicle>*>(mPlugIn);
+		plugIn->m_CtfPlugInData.gAvoidancePredictTimeMin = (
+				time >= 0 ? time : -time);
+		//(re)set avoidance predict time
+		plugIn->m_CtfPlugInData.gAvoidancePredictTime =
+				plugIn->m_CtfPlugInData.gAvoidancePredictTimeMin;
+	}
+}
+
+/**
+ * Returns avoidance predict time min, or a negative value on error.
+ * \note CAPTURE_THE_FLAG OSSteerPlugIn only.
+ */
+float OSSteerPlugIn::get_avoidance_predict_time_min() const
+{
+	if (mPlugInType == CAPTURE_THE_FLAG)
+	{
+		ossup::CtfPlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::CtfPlugIn<OSSteerVehicle>*>(mPlugIn);
+		return plugIn->m_CtfPlugInData.gAvoidancePredictTimeMin;
+	}
+	return OS_ERROR;
+}
+
+/**
+ * Sets avoidance predict time max.
+ * \note CAPTURE_THE_FLAG OSSteerPlugIn only.
+ */
+void OSSteerPlugIn::set_avoidance_predict_time_max(float time)
+{
+	if (mPlugInType == CAPTURE_THE_FLAG)
+	{
+		ossup::CtfPlugIn<OSSteerVehicle>* plugIn = static_cast<ossup::CtfPlugIn<
+				OSSteerVehicle>*>(mPlugIn);
+		plugIn->m_CtfPlugInData.gAvoidancePredictTimeMax = (
+				time >= 0 ? time : -time);
+	}
+}
+
+/**
+ * Returns avoidance predict time max, or a negative value on error.
+ * \note CAPTURE_THE_FLAG OSSteerPlugIn only.
+ */
+float OSSteerPlugIn::get_avoidance_predict_time_max() const
+{
+	if (mPlugInType == CAPTURE_THE_FLAG)
+	{
+		ossup::CtfPlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::CtfPlugIn<OSSteerVehicle>*>(mPlugIn);
+		return plugIn->m_CtfPlugInData.gAvoidancePredictTimeMax;
+	}
+	return OS_ERROR;
 }
 
 /**
@@ -1217,7 +1384,7 @@ void OSSteerPlugIn::set_steering_speed(float steeringSpeed)
 }
 
 /**
- * Returns steering speed (>=0), a negative value on error.
+ * Returns steering speed (>=0), or a negative value on error.
  * \note LOW_SPEED_TURN OSSteerPlugIn only.
  */
 float OSSteerPlugIn::get_steering_speed() const
@@ -1554,14 +1721,17 @@ void OSSteerPlugIn::write_datagram(BamWriter *manager, Datagram &dg)
 		points[0].write_datagram(dg);
 		points[1].write_datagram(dg);
 		dg.add_stdfloat(get_goal_fraction());
-		ossup::MicTestPlugIn<OSSteerVehicle>* plugIn =
-						static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn);
-		dg.add_int32(plugIn->m_redScore);
-		dg.add_int32(plugIn->m_blueScore);
+		dg.add_int32(get_score_team_a());
+		dg.add_int32(get_score_team_b());
 	}
 	if(mPlugInType == CAPTURE_THE_FLAG)
 	{
-		;
+		LPoint3f center = get_home_base_center();
+		center.write_datagram(dg);
+		dg.add_stdfloat(get_home_base_radius());
+		dg.add_stdfloat(get_braking_rate());
+		dg.add_stdfloat(get_avoidance_predict_time_min());
+		dg.add_stdfloat(get_avoidance_predict_time_max());
 	}
 	if(mPlugInType == LOW_SPEED_TURN)
 	{
@@ -1670,20 +1840,22 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 		}
 	}
 
-	///SPECIFICS
+	///SERIALIZATION ONLY
+	nassertv_always(mSerializedDataTmpPtr != NULL)
+
 	if(mPlugInType == ONE_TURNING)
 	{
 		/*do nothing*/;
 	}
 	if(mPlugInType == PEDESTRIAN)
 	{
-		set_proximity_database(mPD_ser);
+		set_proximity_database(mSerializedDataTmpPtr->mPD);
 	}
 	if(mPlugInType == BOID)
 	{
-		set_proximity_database(mPD_ser);
-		set_world_center(mWorldCenter_ser);
-		set_world_radius(mWorldRadius_ser);
+		set_proximity_database(mSerializedDataTmpPtr->mPD);
+		set_world_center(mSerializedDataTmpPtr->mWorldCenter);
+		set_world_radius(mSerializedDataTmpPtr->mWorldRadius);
 	}
 	if(mPlugInType == MULTIPLE_PURSUIT)
 	{
@@ -1691,8 +1863,8 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 	}
 	if(mPlugInType == SOCCER)
 	{
-		set_playing_field(mFieldMinPoint_ser, mFieldMaxPoint_ser,
-				mGoalFraction_ser);
+		set_playing_field(mSerializedDataTmpPtr->mFieldMinPoint, mSerializedDataTmpPtr->mFieldMaxPoint,
+				mSerializedDataTmpPtr->mGoalFraction);
 		pvector<PT(OSSteerVehicle)>::iterator iter;
 		for (iter = mSteerVehicles.begin(); iter != mSteerVehicles.end(); ++iter)
 		{
@@ -1705,21 +1877,28 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 		}
 		ossup::MicTestPlugIn<OSSteerVehicle>* plugIn =
 						static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn);
-		plugIn->m_redScore = mScoreTeamA_ser;
-		plugIn->m_blueScore = mScoreTeamB_ser;
+		plugIn->m_redScore = mSerializedDataTmpPtr->mScoreTeamA;
+		plugIn->m_blueScore = mSerializedDataTmpPtr->mScoreTeamB;
 	}
 	if(mPlugInType == CAPTURE_THE_FLAG)
 	{
-		;
+		set_home_base_center(mSerializedDataTmpPtr->mHomeBaseCenter);
+		set_home_base_radius(mSerializedDataTmpPtr->mHomeBaseRadius);
+		set_braking_rate(mSerializedDataTmpPtr->mBrakingRate);
+		set_avoidance_predict_time_min(mSerializedDataTmpPtr->mAvoidancePredictTimeMin);
+		set_avoidance_predict_time_max(mSerializedDataTmpPtr->mAvoidancePredictTimeMax);
 	}
 	if(mPlugInType == LOW_SPEED_TURN)
 	{
-		set_steering_speed(mSteeringSpeed_ser);
+		set_steering_speed(mSerializedDataTmpPtr->mSteeringSpeed);
 	}
 	if(mPlugInType == MAP_DRIVE)
 	{
 		;
 	}
+	// deallocate SerializedDataTmp
+	delete mSerializedDataTmpPtr;
+	mSerializedDataTmpPtr = NULL;
 }
 
 /**
@@ -1821,20 +2000,24 @@ void OSSteerPlugIn::fillin(DatagramIterator &scan, BamReader *manager)
 		manager->read_pointer(scan);
 	}
 
-	///SPECIFICS
+	///SERIALIZATION ONLY
+	nassertv_always(mSerializedDataTmpPtr == NULL)
+
+	// allocate SerializedDataTmp
+	mSerializedDataTmpPtr = new SerializedDataTmp();
 	if(mPlugInType == ONE_TURNING)
 	{
 		/*do nothing*/;
 	}
 	if(mPlugInType == PEDESTRIAN)
 	{
-		mPD_ser = (OSProximityDatabase) scan.get_uint8();
+		mSerializedDataTmpPtr->mPD = (OSProximityDatabase) scan.get_uint8();
 	}
 	if(mPlugInType == BOID)
 	{
-		mPD_ser = (OSProximityDatabase) scan.get_uint8();
-		mWorldCenter_ser.read_datagram(scan);
-		mWorldRadius_ser = scan.get_stdfloat();
+		mSerializedDataTmpPtr->mPD = (OSProximityDatabase) scan.get_uint8();
+		mSerializedDataTmpPtr->mWorldCenter.read_datagram(scan);
+		mSerializedDataTmpPtr->mWorldRadius = scan.get_stdfloat();
 	}
 	if(mPlugInType == MULTIPLE_PURSUIT)
 	{
@@ -1842,19 +2025,23 @@ void OSSteerPlugIn::fillin(DatagramIterator &scan, BamReader *manager)
 	}
 	if(mPlugInType == SOCCER)
 	{
-		mFieldMinPoint_ser.read_datagram(scan);
-		mFieldMaxPoint_ser.read_datagram(scan);
-		mGoalFraction_ser = scan.get_stdfloat();
-		mScoreTeamA_ser = scan.get_int32();
-		mScoreTeamB_ser = scan.get_int32();
+		mSerializedDataTmpPtr->mFieldMinPoint.read_datagram(scan);
+		mSerializedDataTmpPtr->mFieldMaxPoint.read_datagram(scan);
+		mSerializedDataTmpPtr->mGoalFraction = scan.get_stdfloat();
+		mSerializedDataTmpPtr->mScoreTeamA = scan.get_int32();
+		mSerializedDataTmpPtr->mScoreTeamB = scan.get_int32();
 	}
 	if(mPlugInType == CAPTURE_THE_FLAG)
 	{
-		;
+		mSerializedDataTmpPtr->mHomeBaseCenter.read_datagram(scan);
+		mSerializedDataTmpPtr->mHomeBaseRadius = scan.get_stdfloat();
+		mSerializedDataTmpPtr->mBrakingRate = scan.get_stdfloat();
+		mSerializedDataTmpPtr->mAvoidancePredictTimeMin = scan.get_stdfloat();
+		mSerializedDataTmpPtr->mAvoidancePredictTimeMax = scan.get_stdfloat();
 	}
 	if(mPlugInType == LOW_SPEED_TURN)
 	{
-		mSteeringSpeed_ser = scan.get_stdfloat();
+		mSerializedDataTmpPtr->mSteeringSpeed = scan.get_stdfloat();
 	}
 	if(mPlugInType == MAP_DRIVE)
 	{

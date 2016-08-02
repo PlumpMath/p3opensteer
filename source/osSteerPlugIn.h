@@ -170,6 +170,22 @@ PUBLISHED:
 	///@}
 
 	/**
+	 * \name CAPTURE THE FLAG SETTINGS (SOCCER)
+	 */
+	///@{
+	void set_home_base_center(const LPoint3f& center);
+	LPoint3f get_home_base_center() const;
+	void set_home_base_radius(float radius);
+	float get_home_base_radius() const;
+	void set_braking_rate(float rate);
+	float get_braking_rate() const;
+	void set_avoidance_predict_time_min(float time);
+	float get_avoidance_predict_time_min() const;
+	void set_avoidance_predict_time_max(float time);
+	float get_avoidance_predict_time_max() const;
+	///@}
+
+	/**
 	 * \name STEERING SPEED SETTINGS (LOW_SPEED_TURN)
 	 */
 	///@{
@@ -249,20 +265,29 @@ private:
 	///@}
 
 	/**
-	 * \name SPECIFIC SETTINGS (USED FOR SERIALIZATION ONLY).
+	 * \name SERIALIZATION ONLY SETTINGS.
 	 */
 	///@{
-	//pedestrian, boid
-	OSProximityDatabase mPD_ser;
-	//boid
-	LPoint3f mWorldCenter_ser;
-	float mWorldRadius_ser;
-	//soccer
-	LPoint3f mFieldMinPoint_ser, mFieldMaxPoint_ser;
-	float mGoalFraction_ser;
-	int mScoreTeamA_ser, mScoreTeamB_ser;
-	//low speed turn
-	float mSteeringSpeed_ser;
+	// temporary storage for serialized data
+	struct SerializedDataTmp
+	{
+		//pedestrian, boid
+		OSProximityDatabase mPD;
+		//boid
+		LPoint3f mWorldCenter;
+		float mWorldRadius;
+		//soccer
+		LPoint3f mFieldMinPoint, mFieldMaxPoint;
+		float mGoalFraction;
+		int mScoreTeamA, mScoreTeamB;
+		//capture the flag
+		LPoint3f mHomeBaseCenter;
+		float mHomeBaseRadius, mBrakingRate, mAvoidancePredictTimeMin,
+		mAvoidancePredictTimeMax;
+		//low speed turn
+		float mSteeringSpeed;
+	}*mSerializedDataTmpPtr;
+	// persistent storage for serialized data
 	///@}
 
 #ifdef OS_DEBUG

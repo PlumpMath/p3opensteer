@@ -70,6 +70,18 @@ def loadPlane(name, widthX = 30.0, widthY = 30.0):
     plane.set_name(name)
     return plane
 
+def loadTerrainLowPoly(name, widthScale=128, heightScale=64.0,
+                       texture="dry-grass.png"):
+    """load terrain low poly stuff"""
+    
+    global app
+    terrainNP = app.loader.load_model("terrain-low-poly.egg")
+    terrainNP.set_name(name)
+    terrainNP.set_scale(widthScale, widthScale, heightScale)
+    tex = loader.load_texture(texture)
+    terrainNP.set_texture(tex)
+    return terrainNP
+
 def loadTerrain(name, widthScale = 0.5, heightScale = 10.0):
     """load terrain stuff"""
 

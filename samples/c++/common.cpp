@@ -80,6 +80,20 @@ NodePath loadPlane(const string& name, float widthX, float widthY)
 	return plane;
 }
 
+// load terrain low poly stuff
+NodePath loadTerrainLowPoly(const string& name, float widthScale,
+		float heightScale, const string& texture)
+{
+	NodePath terrainNP = window->load_model(framework.get_models(),
+			"terrain-low-poly.egg");
+	terrainNP.set_name(name);
+	terrainNP.set_scale(widthScale, widthScale, heightScale);
+	PT(Texture)tex =
+	TexturePool::load_texture(Filename(texture));
+	terrainNP.set_texture(tex);
+	return terrainNP;
+}
+
 // terrain update
 static AsyncTask::DoneStatus terrainUpdate(GenericAsyncTask* task, void* data)
 {
