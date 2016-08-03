@@ -423,7 +423,8 @@ def handleObstacles(data):
                 # something went wrong remove from scene
                 obstacleNP.remove_node()
                 return
-            print("added " + str(obstacleNP) + " obstacle.")
+            print("added " + str(obstacleNP) + " obstacle at " + 
+                  str(obstacleNP.get_pos()))
         # check if we want remove obstacle
         elif not addObstacle:
             # cycle through the local obstacle list

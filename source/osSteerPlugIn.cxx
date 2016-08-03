@@ -1371,6 +1371,117 @@ float OSSteerPlugIn::get_avoidance_predict_time_max() const
 }
 
 /**
+ * Makes the map, given its center, its dimension and its resolution.
+ * \note The map is square, and it is divided into resolution x resolution
+ * square elements
+ * \note MAP_DRIVE OSSteerPlugIn only.
+ */
+void OSSteerPlugIn::make_map(const LPoint3f& center, float dimension,
+		int resolution)
+{
+	if (mPlugInType == MAP_DRIVE)
+	{
+		ossup::MapDrivePlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn);
+		plugIn->makeMap(ossup::LVecBase3fToOpenSteerVec3(center), dimension,
+				resolution);
+	}
+}
+
+/**
+ * Sets the steering mode on the map: path follow or wander steering.
+ * \note MAP_DRIVE OSSteerPlugIn only.
+ */
+void OSSteerPlugIn::set_map_steering_mode(OSMapSteeringMode mode)
+{
+	if (mPlugInType == MAP_DRIVE)
+	{
+		ossup::MapDrivePlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn);
+		switch (mode)
+		{
+		case WANDER_STEERING:
+			plugIn->setDemoSelect(1);
+			break;
+		case PATH_FOLLOW_STEERING:
+			plugIn->setDemoSelect(2);
+			break;
+		default:
+			break;
+		}
+	}
+}
+
+/**
+ * Returns the steering mode on the map.
+ * \note MAP_DRIVE OSSteerPlugIn only.
+ */
+OSSteerPlugIn::OSMapSteeringMode OSSteerPlugIn::get_map_steering_mode() const
+{
+	if (mPlugInType == MAP_DRIVE)
+	{
+		ossup::MapDrivePlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn);
+		switch (plugIn->getDemoSelect())
+		{
+		case 1:
+			return WANDER_STEERING;
+			break;
+		case 2:
+			return PATH_FOLLOW_STEERING;
+			break;
+		default:
+			break;
+		}
+	}
+	return OS_ERROR;
+}
+
+/**
+ * Sets the prediction type on the map: curved or linear prediction.
+ * \note MAP_DRIVE OSSteerPlugIn only.
+ */
+void OSSteerPlugIn::set_map_prediction_type(OSMapPredictionType type)
+{
+	if (mPlugInType == MAP_DRIVE)
+	{
+		ossup::MapDrivePlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn);
+		if (type == CURVED_PREDICTION)
+		{
+			plugIn->setCurvedSteering(true);
+		}
+		else
+		{
+			// LINEAR_PREDICTION:
+			plugIn->setCurvedSteering(false);
+		}
+	}
+}
+
+/**
+ * Returns the prediction type on the map.
+ * \note MAP_DRIVE OSSteerPlugIn only.
+ */
+OSSteerPlugIn::OSMapPredictionType OSSteerPlugIn::get_map_prediction_type() const
+{
+	if (mPlugInType == MAP_DRIVE)
+	{
+		ossup::MapDrivePlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn);
+		if (plugIn->getCurvedSteering())
+		{
+			return CURVED_PREDICTION;
+		}
+		else
+		{
+			return LINEAR_PREDICTION;
+		}
+	}
+	return OS_ERROR;
+}
+
+/**
  * Sets steering speed (>=0).
  * \note LOW_SPEED_TURN OSSteerPlugIn only.
  */

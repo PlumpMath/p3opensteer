@@ -3337,6 +3337,45 @@ public:
 		curvedSteering = _curvedSteering;
 	}
 
+	void setDemoSelect(int _demoSelect = 2)
+	{
+		if (demoSelect != _demoSelect)
+		{
+			//update
+			demoSelect = _demoSelect;
+			regenerateMap();
+		}
+	}
+
+	int getDemoSelect() const
+	{
+		return demoSelect;
+	}
+
+	void setUsePathFences(bool _usePathFences = true)
+	{
+		if (usePathFences != _usePathFences)
+		{
+			usePathFences = _usePathFences;
+			regenerateMap();
+		}
+	}
+
+	bool getUsePathFences() const
+	{
+		return usePathFences;
+	}
+
+	void setCurvedSteering(bool _curvedSteering = true)
+	{
+		curvedSteering = _curvedSteering;
+	}
+
+	bool getCurvedSteering() const
+	{
+		return curvedSteering;
+	}
+
 ///	void togglePathFences(void)
 ///	{
 ///		usePathFences = !usePathFences;

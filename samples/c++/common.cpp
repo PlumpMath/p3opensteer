@@ -489,7 +489,8 @@ void handleObstacles(const Event* e, void* data)
 				obstacleNP.remove_node();
 				return;
 			}
-			cout << "added " << obstacleNP << " obstacle." << endl;
+			cout << "added " << obstacleNP << " obstacle at " <<
+					obstacleNP.get_pos() << endl;
 		}
 		// check if we want remove obstacle
 		else if (not addObstacle)

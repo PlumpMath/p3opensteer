@@ -81,6 +81,24 @@ PUBLISHED:
 		NO_TEAM
 	};
 
+	/**
+	 * OSSteerPlugIn map steering modes.
+	 */
+	enum OSMapSteeringMode
+	{
+		WANDER_STEERING,
+		PATH_FOLLOW_STEERING
+	};
+
+	/**
+	 * OSSteerPlugIn map prediction types.
+	 */
+	enum OSMapPredictionType
+	{
+		CURVED_PREDICTION,
+		LINEAR_PREDICTION
+	};
+
 	virtual ~OSSteerPlugIn();
 
 	/**
@@ -183,6 +201,17 @@ PUBLISHED:
 	float get_avoidance_predict_time_min() const;
 	void set_avoidance_predict_time_max(float time);
 	float get_avoidance_predict_time_max() const;
+	///@}
+
+	/**
+	 * \name MAP STEERING SETTINGS (MAP_DRIVE)
+	 */
+	///@{
+	void make_map(const LPoint3f& center, float dimension, int resolution = 200);
+	void set_map_steering_mode(OSMapSteeringMode mode = PATH_FOLLOW_STEERING);
+	OSMapSteeringMode get_map_steering_mode() const;
+	void set_map_prediction_type(OSMapPredictionType type = CURVED_PREDICTION);
+	OSMapPredictionType get_map_prediction_type() const;
 	///@}
 
 	/**
