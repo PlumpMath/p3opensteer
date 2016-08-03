@@ -653,7 +653,7 @@ ValueList<LPoint3f> OSSteerVehicle::get_pathway_end_points() const
  * - UPSTREAM
  * - DOWNSTREAM
  * By default direction is chosen randomly at creation time.
- * \note PEDESTRIAN OSSteerVehicle only.
+ * \note PEDESTRIAN, MAP_DRIVER OSSteerVehicle(s) only.
  */
 void OSSteerVehicle::set_pathway_direction(OSPathDirection direction)
 {
@@ -673,12 +673,28 @@ void OSSteerVehicle::set_pathway_direction(OSPathDirection direction)
 			break;
 		}
 	}
+	if (mVehicleType == MAP_DRIVER)
+	{
+		ossup::MapDriver<OSSteerVehicle>* vehicle =
+				static_cast<ossup::MapDriver<OSSteerVehicle>*>(mVehicle);
+		switch (direction)
+		{
+		case UPSTREAM:
+			vehicle->pathFollowDirection = 1;
+			break;
+		case DOWNSTREAM:
+			vehicle->pathFollowDirection = -1;
+			break;
+		default:
+			break;
+		}
+	}
 }
 
 /**
  * Returns OSSteerVehicle's direction for pathway following, or a negative
  * value on error.
- * \note PEDESTRIAN OSSteerVehicle only.
+ * \note PEDESTRIAN, MAP_DRIVER OSSteerVehicle(s) only.
  */
 OSSteerVehicle::OSPathDirection OSSteerVehicle::get_pathway_direction() const
 {
@@ -688,6 +704,22 @@ OSSteerVehicle::OSPathDirection OSSteerVehicle::get_pathway_direction() const
 		ossup::Pedestrian<OSSteerVehicle>* vehicle =
 				static_cast<ossup::Pedestrian<OSSteerVehicle>*>(mVehicle);
 		switch (vehicle->pathDirection)
+		{
+		case 1:
+			result = UPSTREAM;
+			break;
+		case -1:
+			result = DOWNSTREAM;
+			break;
+		default:
+			break;
+		}
+	}
+	if (mVehicleType == MAP_DRIVER)
+	{
+		ossup::MapDriver<OSSteerVehicle>* vehicle =
+				static_cast<ossup::MapDriver<OSSteerVehicle>*>(mVehicle);
+		switch (vehicle->pathFollowDirection)
 		{
 		case 1:
 			result = UPSTREAM;
@@ -1124,7 +1156,7 @@ void OSSteerVehicle::write_datagram(BamWriter *manager, Datagram &dg)
 	}
 	if(mVehicleType == MAP_DRIVER)
 	{
-		;
+		dg.add_uint8((uint8_t) get_pathway_direction());
 	}
 }
 
@@ -1230,7 +1262,7 @@ void OSSteerVehicle::finalize(BamReader *manager)
 	}
 	if(mVehicleType == MAP_DRIVER)
 	{
-		;
+		set_pathway_direction(mSerializedDataTmpPtr->mPathwayDirection);
 	}
 	// deallocate SerializedDataTmp
 	delete mSerializedDataTmpPtr;
@@ -1336,7 +1368,8 @@ void OSSteerVehicle::fillin(DatagramIterator &scan, BamReader *manager)
 			point.read_datagram(scan);
 			mSerializedDataTmpPtr->mPathwayEndPoints.add_value(point);
 		}
-		mSerializedDataTmpPtr->mPathwayDirection = (OSPathDirection) scan.get_uint8();
+		mSerializedDataTmpPtr->mPathwayDirection =
+				(OSPathDirection) scan.get_uint8();
 	}
 	if(mVehicleType == BOID)
 	{
@@ -1372,7 +1405,8 @@ void OSSteerVehicle::fillin(DatagramIterator &scan, BamReader *manager)
 	}
 	if(mVehicleType == MAP_DRIVER)
 	{
-		;
+		mSerializedDataTmpPtr->mPathwayDirection =
+				(OSPathDirection) scan.get_uint8();
 	}
 }
 

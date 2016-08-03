@@ -207,7 +207,11 @@ PUBLISHED:
 	 * \name MAP STEERING SETTINGS (MAP_DRIVE)
 	 */
 	///@{
-	void make_map(const LPoint3f& center, float dimension, int resolution = 200);
+	void make_map(const LPoint3f& center, float dimension,
+			int resolution = 200);
+	LPoint3f get_map_center() const;
+	float get_map_dimension() const;
+	int get_map_resolution() const;
 	void set_map_steering_mode(OSMapSteeringMode mode = PATH_FOLLOW_STEERING);
 	OSMapSteeringMode get_map_steering_mode() const;
 	void set_map_prediction_type(OSMapPredictionType type = CURVED_PREDICTION);
@@ -313,6 +317,12 @@ private:
 		LPoint3f mHomeBaseCenter;
 		float mHomeBaseRadius, mBrakingRate, mAvoidancePredictTimeMin,
 		mAvoidancePredictTimeMax;
+		//map drive
+		OSMapSteeringMode mMapSteeringMode;
+		OSMapPredictionType mMapPredictionType;
+		LPoint3f mMapCenter;
+		float mMapDimension;
+		int mMapResolution;
 		//low speed turn
 		float mSteeringSpeed;
 	}*mSerializedDataTmpPtr;

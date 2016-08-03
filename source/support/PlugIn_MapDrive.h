@@ -946,6 +946,36 @@ typedef PolylineSegmentedPathwaySegmentRadii GCRoute;
 
  */
 
+
+XXX;
+//// QQQ first pass at detecting "stuck" state
+//bool stuck;
+//Vec3 qqqLastNearestObstacle;
+//// QQQ temporary global QQQoaJustScraping
+//// QQQ replace this global flag with a cleaner mechanism
+//bool QQQoaJustScraping;
+//// for "curvature-based incremental steering" -- contains the current
+//// steering into which new incremental steering is blended
+//Vec3 currentSteering;
+//// use curved prediction and incremental steering:
+//bool curvedSteering;
+//bool incrementalSteering;
+//// which of the three demo modes is selected
+//int demoSelect;
+//// size of the world (the map actually)
+//float worldSize;
+//float worldDiag;
+
+/**
+ * \note: Public class members for tweaking:
+ * - \var pathFollowDirection: follow the path "upstream or downstream" (+1/-1)
+ * (int)
+ * - \var baseLookAheadTime: master look ahead (prediction) time (float)
+ *
+ */
+
+
+
 // ----------------------------------------------------------------------------
 template<typename Entity>
 class MapDriver: public VehicleAddOnMixin<SimpleVehicle, Entity>
@@ -1028,8 +1058,8 @@ public:
 ///		setMaxForce(maxSpeed() * 0.4f);
 
 		// vehicle is 2 meters wide and 3 meters long
-		halfWidth = 1.0f;
-		halfLength = 1.5f;
+		halfWidth = this->radius() * 1.0f;
+		halfLength = this->radius() * 1.5f;
 
 		// init dynamically controlled radius
 		adjustVehicleRadiusForSpeed();
@@ -3004,6 +3034,11 @@ public:
 ///		// scatter random rock clumps over map
 ///		useRandomRocks = true;
 
+		worldSize = 1.0;
+		worldDiag = sqrtXXX(square(worldSize) / 2);
+		worldCenter = Vec3();
+		worldResolution = 1;
+
 		// reset this plugin
 		reset();
 	}
@@ -3369,6 +3404,12 @@ public:
 	void setCurvedSteering(bool _curvedSteering = true)
 	{
 		curvedSteering = _curvedSteering;
+		// update curvedSteering of each vehicles
+		iterator iter;
+		for (iter = vehicles.begin(); iter != vehicles.end(); ++iter)
+		{
+			(*iter)->curvedSteering = curvedSteering;
+		}
 	}
 
 	bool getCurvedSteering() const
@@ -4153,6 +4194,8 @@ public:
 		//
 		worldSize = _worldSize;
 		worldDiag = sqrtXXX(square(worldSize) / 2);
+		worldCenter = c;
+		worldResolution = resolution;
 #ifdef OLDTERRAINMAP
 		map = new TerrainMap(c, worldSize, worldSize, resolution);
 #else
@@ -4167,6 +4210,8 @@ public:
 	// size of the world (the map actually)
 	float worldSize;
 	float worldDiag;
+	Vec3 worldCenter;
+	int worldResolution;
 
 	// which of the three demo modes is selected
 	int demoSelect;

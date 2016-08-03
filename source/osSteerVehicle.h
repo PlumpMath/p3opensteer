@@ -180,6 +180,14 @@ PUBLISHED:
 	///@}
 
 	/**
+	 * \name PATHWAY DIRECTION SETTINGS (PEDESTRIAN, MAP_DRIVER)
+	 */
+	///@{
+	void set_pathway_direction(OSPathDirection direction);
+	OSPathDirection get_pathway_direction() const;
+	///@}
+
+	/**
 	 * \name WALK MOVEMENT SETTINGS (PEDESTRIAN)
 	 */
 	///@{
@@ -189,8 +197,6 @@ PUBLISHED:
 	bool get_wander_behavior() const;
 	void set_pathway_end_points(const ValueList<LPoint3f>& points);
 	ValueList<LPoint3f> get_pathway_end_points() const;
-	void set_pathway_direction(OSPathDirection direction);
-	OSPathDirection get_pathway_direction() const;
 	///@}
 
 	/**
@@ -213,6 +219,14 @@ PUBLISHED:
 	 */
 	///@{
 	OSSeekerState get_seeker_state() const;
+	///@}
+
+	/**
+	 * \name MAP STEERING SETTINGS (MAP_DRIVER)
+	 */
+	///@{
+	void set_XXX(float steeringSpeed = 1.0);//XXX
+	float get_XXX() const;//XXX
 	///@}
 
 	/**
@@ -322,6 +336,7 @@ private:
 		bool mReverseAtEndPoint;
 		bool mWanderBehavior;
 		ValueList<LPoint3f> mPathwayEndPoints;
+		//pedestrian, map driver
 		OSPathDirection mPathwayDirection;
 		//boid
 		OSFlockSettings mFlockSettings;

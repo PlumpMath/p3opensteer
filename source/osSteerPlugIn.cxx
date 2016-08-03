@@ -1389,6 +1389,52 @@ void OSSteerPlugIn::make_map(const LPoint3f& center, float dimension,
 }
 
 /**
+ * Returns the map center.
+ * Returns LPoint3f::zero() on error.
+ * \note MAP_DRIVE OSSteerPlugIn only.
+ */
+LPoint3f OSSteerPlugIn::get_map_center() const
+{
+	if (mPlugInType == MAP_DRIVE)
+	{
+		ossup::MapDrivePlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn);
+		return ossup::OpenSteerVec3ToLVecBase3f(plugIn->worldCenter);
+	}
+	return LPoint3f::zero();
+}
+
+/**
+ * Returns the map dimension, or a negative value on error.
+ * \note MAP_DRIVE OSSteerPlugIn only.
+ */
+float OSSteerPlugIn::get_map_dimension() const
+{
+	if (mPlugInType == MAP_DRIVE)
+	{
+		ossup::MapDrivePlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn);
+		return plugIn->worldSize;
+	}
+	return OS_ERROR;
+}
+
+/**
+ * Returns the map resolution, or a negative value on error.
+ * \note MAP_DRIVE OSSteerPlugIn only.
+ */
+int OSSteerPlugIn::get_map_resolution() const
+{
+	if (mPlugInType == MAP_DRIVE)
+	{
+		ossup::MapDrivePlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn);
+		return plugIn->worldResolution;
+	}
+	return OS_ERROR;
+}
+
+/**
  * Sets the steering mode on the map: path follow or wander steering.
  * \note MAP_DRIVE OSSteerPlugIn only.
  */
@@ -1434,11 +1480,14 @@ OSSteerPlugIn::OSMapSteeringMode OSSteerPlugIn::get_map_steering_mode() const
 			break;
 		}
 	}
-	return OS_ERROR;
+	return (OSMapSteeringMode) OS_ERROR;
 }
 
 /**
- * Sets the prediction type on the map: curved or linear prediction.
+ * Sets the default prediction type on the map (curved or linear): each newly
+ * added OSSteerVehicle will use it by default.
+ * \note Also the already added OSSteerVehicle(s) will replace their type of
+ * prediction with this one.
  * \note MAP_DRIVE OSSteerPlugIn only.
  */
 void OSSteerPlugIn::set_map_prediction_type(OSMapPredictionType type)
@@ -1460,7 +1509,8 @@ void OSSteerPlugIn::set_map_prediction_type(OSMapPredictionType type)
 }
 
 /**
- * Returns the prediction type on the map.
+ * Returns the default prediction type on the map.
+ * \note
  * \note MAP_DRIVE OSSteerPlugIn only.
  */
 OSSteerPlugIn::OSMapPredictionType OSSteerPlugIn::get_map_prediction_type() const
@@ -1478,7 +1528,7 @@ OSSteerPlugIn::OSMapPredictionType OSSteerPlugIn::get_map_prediction_type() cons
 			return LINEAR_PREDICTION;
 		}
 	}
-	return OS_ERROR;
+	return (OSMapPredictionType) OS_ERROR;
 }
 
 /**
@@ -1850,7 +1900,12 @@ void OSSteerPlugIn::write_datagram(BamWriter *manager, Datagram &dg)
 	}
 	if(mPlugInType == MAP_DRIVE)
 	{
-		;
+		dg.add_uint8((uint8_t) get_map_steering_mode());
+		dg.add_uint8((uint8_t) get_map_prediction_type());
+		LPoint3f center = get_map_center();
+		center.write_datagram(dg);
+		dg.add_stdfloat(get_map_dimension());
+		dg.add_int32(get_map_resolution());
 	}
 }
 
@@ -1974,20 +2029,21 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 	}
 	if(mPlugInType == SOCCER)
 	{
-		set_playing_field(mSerializedDataTmpPtr->mFieldMinPoint, mSerializedDataTmpPtr->mFieldMaxPoint,
+		set_playing_field(mSerializedDataTmpPtr->mFieldMinPoint,
+				mSerializedDataTmpPtr->mFieldMaxPoint,
 				mSerializedDataTmpPtr->mGoalFraction);
 		pvector<PT(OSSteerVehicle)>::iterator iter;
-		for (iter = mSteerVehicles.begin(); iter != mSteerVehicles.end(); ++iter)
+		for (iter = mSteerVehicles.begin(); iter != mSteerVehicles.end();
+				++iter)
 		{
 			// check if vehicle has gained its final type (i.e. finalized)
-			if (dynamic_cast<ossup::Player<OSSteerVehicle>*>(
-					&(*iter)->get_abstract_vehicle()))
+			if (dynamic_cast<ossup::Player<OSSteerVehicle>*>(&(*iter)->get_abstract_vehicle()))
 			{
 				add_player_to_team((*iter), (*iter)->mPlayingTeam_ser);
 			}
 		}
 		ossup::MicTestPlugIn<OSSteerVehicle>* plugIn =
-						static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn);
+				static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn);
 		plugIn->m_redScore = mSerializedDataTmpPtr->mScoreTeamA;
 		plugIn->m_blueScore = mSerializedDataTmpPtr->mScoreTeamB;
 	}
@@ -1996,8 +2052,10 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 		set_home_base_center(mSerializedDataTmpPtr->mHomeBaseCenter);
 		set_home_base_radius(mSerializedDataTmpPtr->mHomeBaseRadius);
 		set_braking_rate(mSerializedDataTmpPtr->mBrakingRate);
-		set_avoidance_predict_time_min(mSerializedDataTmpPtr->mAvoidancePredictTimeMin);
-		set_avoidance_predict_time_max(mSerializedDataTmpPtr->mAvoidancePredictTimeMax);
+		set_avoidance_predict_time_min(
+				mSerializedDataTmpPtr->mAvoidancePredictTimeMin);
+		set_avoidance_predict_time_max(
+				mSerializedDataTmpPtr->mAvoidancePredictTimeMax);
 	}
 	if(mPlugInType == LOW_SPEED_TURN)
 	{
@@ -2005,7 +2063,11 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 	}
 	if(mPlugInType == MAP_DRIVE)
 	{
-		;
+		set_map_steering_mode(mSerializedDataTmpPtr->mMapSteeringMode);
+		set_map_prediction_type(mSerializedDataTmpPtr->mMapPredictionType);
+		make_map(mSerializedDataTmpPtr->mMapCenter,
+				mSerializedDataTmpPtr->mMapDimension,
+				mSerializedDataTmpPtr->mMapResolution);
 	}
 	// deallocate SerializedDataTmp
 	delete mSerializedDataTmpPtr;
@@ -2156,7 +2218,13 @@ void OSSteerPlugIn::fillin(DatagramIterator &scan, BamReader *manager)
 	}
 	if(mPlugInType == MAP_DRIVE)
 	{
-		;
+		mSerializedDataTmpPtr->mMapSteeringMode =
+				(OSMapSteeringMode) scan.get_uint8();
+		mSerializedDataTmpPtr->mMapPredictionType =
+				(OSMapPredictionType) scan.get_uint8();
+		mSerializedDataTmpPtr->mMapCenter.read_datagram(scan);
+		mSerializedDataTmpPtr->mMapDimension = scan.get_stdfloat();
+		mSerializedDataTmpPtr->mMapResolution = scan.get_int32();
 	}
 }
 
