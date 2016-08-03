@@ -18,14 +18,15 @@ static GeoMipTerrain* terrain;
 static LPoint3f terrainRootNetPos;
 #define DEFAULT_MAXVALUE 1.0
 //models and animations
-string vehicleFile[4] =
-{ "eve.egg", "ralph.egg", "sparrow.egg", "ball.egg" };
-string vehicleAnimFiles[4][2] =
+string vehicleFile[5] =
+{ "eve.egg", "ralph.egg", "sparrow.egg", "ball.egg", "red_car.egg" };
+string vehicleAnimFiles[5][2] =
 {
 { "eve-walk.egg", "eve-run.egg" },
 { "ralph-walk.egg", "ralph-run.egg" },
 { "sparrow-flying.egg", "sparrow-flying2.egg" },
-{ "", "" }};
+{ "", "" },
+{ "red_car-anim.egg", "red_car-anim2.egg" }};
 const float animRateFactor[2] =
 { 1.20, 4.80 };
 //obstacle model
@@ -359,8 +360,9 @@ void handleVehicles(const Event* e, void* data)
 			PT(OSSteerPlugIn)steerPlugIn = vehicleData->steerPlugIn;
 			vector<PT(OSSteerVehicle)>&steerVehicles = vehicleData->steerVehicles;
 			vector<vector<PT(AnimControl)> >&vehicleAnimCtls = vehicleData->vehicleAnimCtls;
+			LVector3f deltaPos = vehicleData->deltaPos;
 			// add vehicle
-			LPoint3f pos = entry0->get_surface_point(NodePath());
+			LPoint3f pos = entry0->get_surface_point(NodePath()) + deltaPos;
 			getVehicleModelAnims(meanScale, vehicleFileIdx, moveType, sceneNP,
 					steerPlugIn, steerVehicles, vehicleAnimCtls, pos);
 			// show the added vehicles
@@ -394,13 +396,19 @@ vector<PT(OSSteerVehicle)>&steerVehicles, vector<vector<PT(AnimControl)> >& vehi
 	{
 		// first anim -> modelAnimCtls[i][0]
 		vehicleAnimNP[0] = window->load_model(vehicleNPs, vehicleAnimFiles[vehicleFileIdx][0]);
-		auto_bind(vehicleNPs.node(), tmpAnims);
+		auto_bind(vehicleNPs.node(), tmpAnims,
+                PartGroup::HMF_ok_part_extra |
+                PartGroup::HMF_ok_anim_extra |
+                PartGroup::HMF_ok_wrong_root_name);
 		vehicleAnimCtls.back()[0] = tmpAnims.get_anim(0);
 		tmpAnims.clear_anims();
 		vehicleAnimNP[0].detach_node();
 		// second anim -> modelAnimCtls[i][1]
 		vehicleAnimNP[1] = window->load_model(vehicleNPs, vehicleAnimFiles[vehicleFileIdx][1]);
-		auto_bind(vehicleNPs.node(), tmpAnims);
+		auto_bind(vehicleNPs.node(), tmpAnims,
+                PartGroup::HMF_ok_part_extra |
+                PartGroup::HMF_ok_anim_extra |
+                PartGroup::HMF_ok_wrong_root_name);
 		vehicleAnimCtls.back()[1] = tmpAnims.get_anim(0);
 		tmpAnims.clear_anims();
 		vehicleAnimNP[1].detach_node();

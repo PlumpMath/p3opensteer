@@ -10,6 +10,9 @@
 #include "osSteerVehicle.h"
 #include "osSteerManager.h"
 #include "camera.h"
+#include "orthographicLens.h"
+#include "graphicsEngine.h"
+#include "throw_event.h"
 
 #ifndef CPPPARSER
 #include "support/PlugIn_OneTurning.h"
@@ -464,6 +467,7 @@ int OSSteerPlugIn::add_steer_vehicle(NodePath steerVehicleNP)
 		settings.set_forward(forward);
 		settings.set_up(up);
 		settings.set_position(pos);
+		settings.set_start(pos);
 		//update radius
 		settings.set_radius(modelRadius);
 		//set actually OpenSteer vehicle's settings
@@ -638,8 +642,10 @@ void OSSteerPlugIn::set_pathway(const ValueList<LPoint3f>& pointList,
 	mPathwayRadii = radiusList;
 	mPathwaySingleRadius = singleRadius;
 	mPathwayClosedCycle = closedCycle;
+	//update static geometry if needed
+	do_on_static_geometry_change(true, false);
 #ifdef OS_DEBUG
-	do_debug_draw_static_geometry();
+	do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
 #endif //OS_DEBUG
 }
 
@@ -778,10 +784,12 @@ int OSSteerPlugIn::do_add_obstacle(NodePath objectNP,
 		{
 			objectNP.reparent_to(mReferenceNP);
 		}
-	}
+		//update static geometry if needed
+		do_on_static_geometry_change(false, true);
 #ifdef OS_DEBUG
-	do_debug_draw_static_geometry();
+		do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
 #endif //OS_DEBUG
+	}
 	return ref;
 }
 
@@ -852,12 +860,52 @@ NodePath OSSteerPlugIn::remove_obstacle(int ref)
 		pvector<OSSteerManager::ObstacleAttributes>::iterator iterAL =
 				mLocalObstacles.second().begin() + pointerIdx;
 		mLocalObstacles.second().erase(iterAL);
-	}
+		//update static geometry if needed
+		do_on_static_geometry_change(false, true);
 #ifdef OS_DEBUG
-	do_debug_draw_static_geometry();
+		do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
 #endif //OS_DEBUG
+	}
 	//
 	return resultNP;
+}
+
+/**
+ * Updates the OSSteerPlugIn static geometry if needed.
+ * \note It is called on pathway and/or obstacles changes.
+ * \note Internal use only.
+ */
+void OSSteerPlugIn::do_on_static_geometry_change(bool dirtyPathway,
+		bool dirtyObstacles)
+{
+	CONTINUE_IF_ELSE_V(dirtyPathway || dirtyObstacles)
+
+	if ((mPlugInType == PEDESTRIAN) && (dirtyPathway))
+	{
+		//(re)set the end points of all added OSSteerVehicle(s)
+		//as the first and last point of the pathway
+		ValueList<int> idxList;
+		idxList.add_value(0);
+		idxList.add_value(get_pathway_points().size() - 1);
+		for (int i = 0; i < get_num_steer_vehicles(); ++i)
+		{
+			//NOTE: this check is needed during de-serialization
+			if (check_steer_vehicle_compatibility(
+					NodePath::any_path(get_steer_vehicle(i))))
+			{
+				get_steer_vehicle(i)->set_pathway_end_points(idxList);
+			}
+		}
+	}
+	if (mPlugInType == MAP_DRIVE)
+	{
+		if (static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn)->map)
+		{
+			//map is present: re-make the map
+			make_map(
+					static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn)->worldResolution);
+		}
+	}
 }
 
 /**
@@ -968,7 +1016,7 @@ OSSteerPlugIn::OSProximityDatabase OSSteerPlugIn::get_proximity_database() const
 	{
 		ossup::PedestrianPlugIn<OSSteerVehicle>* plugIn =
 				static_cast<ossup::PedestrianPlugIn<OSSteerVehicle>*>(mPlugIn);
-		switch (plugIn->pdIdx)
+		switch (plugIn->getPD())
 		{
 		case 0:
 			return LQ_PD;
@@ -984,7 +1032,7 @@ OSSteerPlugIn::OSProximityDatabase OSSteerPlugIn::get_proximity_database() const
 	{
 		ossup::BoidsPlugIn<OSSteerVehicle>* plugIn =
 				static_cast<ossup::BoidsPlugIn<OSSteerVehicle>*>(mPlugIn);
-		switch (plugIn->pdIdx)
+		switch (plugIn->getPD())
 		{
 		case 0:
 			return LQ_PD;
@@ -1009,9 +1057,9 @@ void OSSteerPlugIn::set_world_center(const LPoint3f& center)
 	{
 		ossup::BoidsPlugIn<OSSteerVehicle>* plugIn =
 				static_cast<ossup::BoidsPlugIn<OSSteerVehicle>*>(mPlugIn);
-		plugIn->worldCenter = ossup::LVecBase3fToOpenSteerVec3(center);
+		plugIn->setWorldCenter(ossup::LVecBase3fToOpenSteerVec3(center));
 #ifdef OS_DEBUG
-	do_debug_draw_static_geometry();
+	do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
 #endif //OS_DEBUG
 	}
 }
@@ -1027,7 +1075,7 @@ LPoint3f OSSteerPlugIn::get_world_center() const
 	{
 		ossup::BoidsPlugIn<OSSteerVehicle>* plugIn =
 				static_cast<ossup::BoidsPlugIn<OSSteerVehicle>*>(mPlugIn);
-		return ossup::OpenSteerVec3ToLVecBase3f(plugIn->worldCenter);
+		return ossup::OpenSteerVec3ToLVecBase3f(plugIn->getWorldCenter());
 	}
 	return LPoint3f::zero();
 }
@@ -1043,16 +1091,15 @@ void OSSteerPlugIn::set_world_radius(float radius)
 	{
 		ossup::BoidsPlugIn<OSSteerVehicle>* plugIn =
 				static_cast<ossup::BoidsPlugIn<OSSteerVehicle>*>(mPlugIn);
-		plugIn->worldRadius = radius;
+		plugIn->setWorldRadius(radius);
 #ifdef OS_DEBUG
-	do_debug_draw_static_geometry();
+	do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
 #endif //OS_DEBUG
 	}
 }
 
 /**
- * Returns the world radius.
- * Returns a negative on error.
+ * Returns the world radius, or a negative value on error.
  * \note BOID OSSteerPlugIn only.
  */
 float OSSteerPlugIn::get_world_radius() const
@@ -1061,7 +1108,7 @@ float OSSteerPlugIn::get_world_radius() const
 	{
 		ossup::BoidsPlugIn<OSSteerVehicle>* plugIn =
 				static_cast<ossup::BoidsPlugIn<OSSteerVehicle>*>(mPlugIn);
-		return plugIn->worldRadius;
+		return plugIn->getWorldRadius();
 	}
 	return OS_ERROR;
 }
@@ -1153,7 +1200,7 @@ void OSSteerPlugIn::set_playing_field(const LPoint3f& min, const LPoint3f& max,
 		plugIn->setSoccerField(ossup::LVecBase3fToOpenSteerVec3(min),
 				ossup::LVecBase3fToOpenSteerVec3(max), goalFraction);
 #ifdef OS_DEBUG
-	do_debug_draw_static_geometry();
+	do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
 #endif //OS_DEBUG
 	}
 }
@@ -1222,7 +1269,7 @@ void OSSteerPlugIn::set_home_base_center(const LPoint3f& center)
 		plugIn->m_CtfPlugInData.gHomeBaseCenter =
 				ossup::LVecBase3fToOpenSteerVec3(center);
 #ifdef OS_DEBUG
-	do_debug_draw_static_geometry();
+	do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
 #endif //OS_DEBUG
 	}
 }
@@ -1257,7 +1304,7 @@ void OSSteerPlugIn::set_home_base_radius(float radius)
 		plugIn->m_CtfPlugInData.gHomeBaseRadius = (
 				radius >= 0 ? radius : -radius);
 #ifdef OS_DEBUG
-	do_debug_draw_static_geometry();
+	do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
 #endif //OS_DEBUG
 	}
 }
@@ -1371,21 +1418,97 @@ float OSSteerPlugIn::get_avoidance_predict_time_max() const
 }
 
 /**
- * Makes the map, given its center, its dimension and its resolution.
+ * Makes the map based on the defined pathway and on its resolution.
  * \note The map is square, and it is divided into resolution x resolution
  * square elements
  * \note MAP_DRIVE OSSteerPlugIn only.
  */
-void OSSteerPlugIn::make_map(const LPoint3f& center, float dimension,
-		int resolution)
+void OSSteerPlugIn::make_map(int resolution)
 {
 	if (mPlugInType == MAP_DRIVE)
 	{
 		ossup::MapDrivePlugIn<OSSteerVehicle>* plugIn =
 				static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn);
-		plugIn->makeMap(ossup::LVecBase3fToOpenSteerVec3(center), dimension,
-				resolution);
+		plugIn->makeMap(resolution);
+#ifdef OS_DEBUG
+	do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
+#endif //OS_DEBUG
 	}
+}
+
+/**
+ * Returns the map center.
+ * Returns LPoint3f::zero() on error.
+ * \note MAP_DRIVE OSSteerPlugIn only.
+ */
+LPoint3f OSSteerPlugIn::get_map_center() const
+{
+	if (mPlugInType == MAP_DRIVE)
+	{
+		ossup::MapDrivePlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn);
+		return ossup::OpenSteerVec3ToLVecBase3f(plugIn->worldCenter);
+	}
+	return LPoint3f::zero();
+}
+
+/**
+ * Returns the map dimension, or a negative value on error.
+ * \note MAP_DRIVE OSSteerPlugIn only.
+ */
+float OSSteerPlugIn::get_map_dimension() const
+{
+	if (mPlugInType == MAP_DRIVE)
+	{
+		ossup::MapDrivePlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn);
+		return plugIn->worldSize;
+	}
+	return OS_ERROR;
+}
+
+/**
+ * Returns the map resolution, or a negative value on error.
+ * \note MAP_DRIVE OSSteerPlugIn only.
+ */
+int OSSteerPlugIn::get_map_resolution() const
+{
+	if (mPlugInType == MAP_DRIVE)
+	{
+		ossup::MapDrivePlugIn<OSSteerVehicle>* plugIn =
+				static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn);
+		return plugIn->worldResolution;
+	}
+	return OS_ERROR;
+}
+
+/**
+ * Sets the use of path fences on the map.
+ * \note MAP_DRIVE OSSteerPlugIn only.
+ */
+void OSSteerPlugIn::set_map_path_fences(bool enable)
+{
+	if (mPlugInType == MAP_DRIVE)
+	{
+		static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn)->setUsePathFences(
+				enable);
+#ifdef OS_DEBUG
+		do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
+#endif //OS_DEBUG
+	}
+}
+
+/**
+ * Returns the use of path fences on the map, or a negative value on error.
+ * \note MAP_DRIVE OSSteerPlugIn only.
+ */
+bool OSSteerPlugIn::get_map_path_fences() const
+{
+	if (mPlugInType == MAP_DRIVE)
+	{
+		return static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn)->getUsePathFences();
+	}
+	return (OSMapSteeringMode) OS_ERROR;
 }
 
 /**
@@ -1400,6 +1523,9 @@ void OSSteerPlugIn::set_map_steering_mode(OSMapSteeringMode mode)
 				static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn);
 		switch (mode)
 		{
+		case FREE_STEERING:
+			plugIn->setDemoSelect(0);
+			break;
 		case WANDER_STEERING:
 			plugIn->setDemoSelect(1);
 			break;
@@ -1409,11 +1535,14 @@ void OSSteerPlugIn::set_map_steering_mode(OSMapSteeringMode mode)
 		default:
 			break;
 		}
+#ifdef OS_DEBUG
+	do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
+#endif //OS_DEBUG
 	}
 }
 
 /**
- * Returns the steering mode on the map.
+ * Returns the steering mode on the map, or a negative value on error.
  * \note MAP_DRIVE OSSteerPlugIn only.
  */
 OSSteerPlugIn::OSMapSteeringMode OSSteerPlugIn::get_map_steering_mode() const
@@ -1424,6 +1553,9 @@ OSSteerPlugIn::OSMapSteeringMode OSSteerPlugIn::get_map_steering_mode() const
 				static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn);
 		switch (plugIn->getDemoSelect())
 		{
+		case 0:
+			return FREE_STEERING;
+			break;
 		case 1:
 			return WANDER_STEERING;
 			break;
@@ -1434,11 +1566,14 @@ OSSteerPlugIn::OSMapSteeringMode OSSteerPlugIn::get_map_steering_mode() const
 			break;
 		}
 	}
-	return OS_ERROR;
+	return (OSMapSteeringMode) OS_ERROR;
 }
 
 /**
- * Sets the prediction type on the map: curved or linear prediction.
+ * Sets the default prediction type on the map (curved or linear): each newly
+ * added OSSteerVehicle will use it by default.
+ * \note Also the type of prediction of the already added OSSteerVehicle(s) will
+ * be replaced by this one.
  * \note MAP_DRIVE OSSteerPlugIn only.
  */
 void OSSteerPlugIn::set_map_prediction_type(OSMapPredictionType type)
@@ -1460,7 +1595,8 @@ void OSSteerPlugIn::set_map_prediction_type(OSMapPredictionType type)
 }
 
 /**
- * Returns the prediction type on the map.
+ * Returns the default prediction type on the map.
+ * \note
  * \note MAP_DRIVE OSSteerPlugIn only.
  */
 OSSteerPlugIn::OSMapPredictionType OSSteerPlugIn::get_map_prediction_type() const
@@ -1478,7 +1614,7 @@ OSSteerPlugIn::OSMapPredictionType OSSteerPlugIn::get_map_prediction_type() cons
 			return LINEAR_PREDICTION;
 		}
 	}
-	return OS_ERROR;
+	return (OSMapPredictionType) OS_ERROR;
 }
 
 /**
@@ -1631,7 +1767,7 @@ int OSSteerPlugIn::toggle_debug_drawing(bool enable)
 			mDrawer3dStatic->clear();
 			mDrawer3dStaticNP.show();
 			//draw static geometry
-			do_debug_draw_static_geometry();
+			do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
 		}
 		if (mDrawer2dNP.is_hidden())
 		{
@@ -1680,32 +1816,107 @@ int OSSteerPlugIn::toggle_debug_drawing(bool enable)
 	return OS_SUCCESS;
 }
 
+/**
+ * Writes the OSSteerPlugIn's (static) debug drawing projected to the x,y plane
+ * into a (square) texture, given the world scene, a GraphicsOutput and the
+ * size.
+ * Output will be a size x size texture, written to the "fileName" file into
+ * current directory and the event "debug_drawing_texture_ready" (with the
+ * texture as parameter) is thrown when all is ready.
+ */
+void OSSteerPlugIn::debug_drawing_to_texture(const NodePath& scene,
+		PT(GraphicsOutput)window, int size, const string& fileName)
+{
+#ifdef OS_DEBUG
+	//continue if mDebugCamera is not empty
+	CONTINUE_IF_ELSE_V(!mDebugCamera.is_empty())
+
+	{
+		//https://www.panda3d.org/forums/viewtopic.php?t=12009
+		mTexture = new Texture("DrawTexture");
+		mTextureFileName = fileName;
+
+		//get scene dimensions
+		LVecBase3f sceneDims;
+		LVector3f sceneDeltaCenter;
+		OSSteerManager::get_global_ptr()->get_bounding_dimensions(scene,
+				sceneDims, sceneDeltaCenter);
+
+		mTextureRender2d = NodePath("rttRender2d");
+		mTextureRender2d.set_depth_test(false);
+		mTextureRender2d.set_depth_write(false);
+		mTextureCamera2d = NodePath(new Camera("rttCamera2d"));
+		mTextureCamera2d.reparent_to(mTextureRender2d);
+
+		//create a graphic output buffer where to render
+		mTextureBuffer = window->make_texture_buffer("rttBuffer", size,
+				size, mTexture, true);
+		//set it "one shot"
+		mTextureBuffer->set_one_shot(true);
+		//create a display region
+		PT (DisplayRegion)rttRegion = mTextureBuffer->make_display_region();
+		rttRegion->set_sort(20);
+		rttRegion->set_clear_color_active(true);
+		rttRegion->set_clear_color(LColorf(1, 1, 1, 0));
+		rttRegion->set_clear_depth_active(true);
+		rttRegion->set_clear_depth(1.0);
+		//set the camera for the buffer display region
+		DCAST(Camera, mTextureCamera2d.node())->set_lens(new OrthographicLens());
+		DCAST(Camera, mTextureCamera2d.node())->get_lens()->set_film_size(
+				sceneDims.get_x(), sceneDims.get_y());
+		DCAST(Camera, mTextureCamera2d.node())->get_lens()->set_near_far(-1000.0,
+				1000.0);
+		rttRegion->set_camera(mTextureCamera2d);
+		//look down
+		mTextureCamera2d.set_hpr(0, -90, 0);
+
+		//allocate the mesh drawer for texture drawing
+		mTextureDrawer2d = new ossup::DrawMeshDrawer(mTextureRender2d, mTextureCamera2d,
+				100, 0.04);
+		mTextureDrawer2d->setSize(40.0);
+	}
+	//create the task for drawing to texture
+	mTextureTaskData = new TaskInterface<OSSteerPlugIn>::TaskData(this,
+			&OSSteerPlugIn::do_debug_draw_to_texture_task);
+	mTextureTask = new GenericAsyncTask(string("OSSteerPlugIn::do_debug_draw_to_texture_task"),
+			&TaskInterface<OSSteerManager>::taskFunction,
+	reinterpret_cast<void*>(mTextureTaskData.p()));
+	//Adds mDrawTextureTask to the active queue.
+	AsyncTaskManager::get_global_ptr()->add(mTextureTask);
+
+#endif //OS_DEBUG
+}
+
 #ifdef OS_DEBUG
 /**
  * Draws static geometry.
  * \note Internal use only.
  */
-void OSSteerPlugIn::do_debug_draw_static_geometry()
+void OSSteerPlugIn::do_debug_draw_static_geometry(const NodePath& camera,
+		ossup::DrawMeshDrawer * drawer)
 {
 	//continue if mDrawer3dStaticNP is not empty
-	CONTINUE_IF_ELSE_V(
-			(!mDebugCamera.is_empty()) && (!mDrawer3dStaticNP.is_empty()))
+	CONTINUE_IF_ELSE_V((!camera.is_empty()) && (drawer != NULL))
 
 	//set drawer
 	ossup::DrawMeshDrawer * currentDrawer = gDrawer3d;
-	gDrawer3d = mDrawer3dStatic;
+	gDrawer3d = drawer;
 
 	//drawers' initializations
-	mDrawer3dStatic->initialize();
+	drawer->initialize();
 
 	//draw static geometry
+	//common elements: pathway and obstacles
+	static_cast<ossup::PlugIn*>(mPlugIn)->drawPath();
+	static_cast<ossup::PlugIn*>(mPlugIn)->drawObstacles();
+
+	//specific elements
 	//ctf: render home base and obstacles
 	if (mPlugInType == CAPTURE_THE_FLAG)
 	{
 		ossup::CtfPlugIn<OSSteerVehicle>* plugIn = static_cast<ossup::CtfPlugIn<
 				OSSteerVehicle>*>(mPlugIn);
 		plugIn->drawHomeBase();
-		plugIn->drawObstacles();
 	}
 	//map drive: render path and map
 	if (mPlugInType == MAP_DRIVE)
@@ -1713,32 +1924,45 @@ void OSSteerPlugIn::do_debug_draw_static_geometry()
 		ossup::MapDrivePlugIn<OSSteerVehicle>* plugIn =
 				static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn);
 		plugIn->drawMap();
-		plugIn->drawPath();
-	}
-	//pedestrian: render path and obstacles
-	if (mPlugInType == PEDESTRIAN)
-	{
-		ossup::PedestrianPlugIn<OSSteerVehicle>* plugIn =
-				static_cast<ossup::PedestrianPlugIn<OSSteerVehicle>*>(mPlugIn);
-		plugIn->drawPath();
-		plugIn->drawObstacles();
 	}
 	//soccer: render path
 	if (mPlugInType == SOCCER)
 	{
 		static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn)->drawSoccerField();
 	}
-	//boid: render obstacles
-	if (mPlugInType == BOID)
-	{
-		static_cast<ossup::BoidsPlugIn<OSSteerVehicle>*>(mPlugIn)->drawObstacles();
-	}
 
 	//drawer finalizations
-	mDrawer3dStatic->finalize();
+	drawer->finalize();
 
 	//(re)set drawer
 	gDrawer3d = currentDrawer;
+}
+
+/**
+ * Drawing to texture one shot task.
+ * \note Internal use only.
+ */
+AsyncTask::DoneStatus OSSteerPlugIn::do_debug_draw_to_texture_task(
+		GenericAsyncTask* task)
+{
+	//draw static geometry
+	do_debug_draw_static_geometry(mTextureCamera2d, mTextureDrawer2d);
+	//
+	if (! mTexture->has_ram_image())
+	{
+       return AsyncTask::DS_cont;
+	}
+	// got texture
+	mTexture->write("debug_texture.png");
+	// deallocate resources
+	delete mTextureDrawer2d;
+	GraphicsEngine::get_global_ptr()->remove_window(mTextureBuffer);
+	mTextureCamera2d.remove_node();
+	mTextureRender2d.remove_node();
+	// the work was accomplished: signal with an event
+	throw_event("debug_drawing_texture_ready", EventParameter(mTexture));
+	//done
+	return AsyncTask::DS_done;
 }
 #endif //OS_DEBUG
 
@@ -1781,6 +2005,9 @@ void OSSteerPlugIn::write_datagram(BamWriter *manager, Datagram &dg)
 	dg.add_bool(mPathwayClosedCycle);
 	///@}
 
+	///Current time.
+	dg.add_stdfloat(mCurrentTime);
+
 	/// Pointers
 	///The reference node path.
 	manager->write_pointer(dg, mReferenceNP.node());
@@ -1807,7 +2034,7 @@ void OSSteerPlugIn::write_datagram(BamWriter *manager, Datagram &dg)
 		}
 	}
 
-	///SPECIFICS
+	///TYPE SPECIFIC
 	if(mPlugInType == ONE_TURNING)
 	{
 		/*do nothing*/;
@@ -1818,9 +2045,10 @@ void OSSteerPlugIn::write_datagram(BamWriter *manager, Datagram &dg)
 	}
 	if(mPlugInType == BOID)
 	{
-		dg.add_uint8((uint8_t) get_proximity_database());
+		//dependency: proximity database ---> world center, world radius
 		get_world_center().write_datagram(dg);
 		dg.add_stdfloat(get_world_radius());
+		dg.add_uint8((uint8_t) get_proximity_database());
 	}
 	if(mPlugInType == MULTIPLE_PURSUIT)
 	{
@@ -1841,8 +2069,13 @@ void OSSteerPlugIn::write_datagram(BamWriter *manager, Datagram &dg)
 		center.write_datagram(dg);
 		dg.add_stdfloat(get_home_base_radius());
 		dg.add_stdfloat(get_braking_rate());
+		//dependency: avoidance predict time ---> avoidance predict time min
+		ossup::CtfPlugIn<OSSteerVehicle>* plugIn = static_cast<ossup::CtfPlugIn<
+				OSSteerVehicle>*>(mPlugIn);
 		dg.add_stdfloat(get_avoidance_predict_time_min());
 		dg.add_stdfloat(get_avoidance_predict_time_max());
+		dg.add_stdfloat(plugIn->m_CtfPlugInData.gAvoidancePredictTime);
+		dg.add_bool(plugIn->m_CtfPlugInData.gDelayedResetPlugInXXX);
 	}
 	if(mPlugInType == LOW_SPEED_TURN)
 	{
@@ -1850,7 +2083,11 @@ void OSSteerPlugIn::write_datagram(BamWriter *manager, Datagram &dg)
 	}
 	if(mPlugInType == MAP_DRIVE)
 	{
-		;
+		dg.add_uint8((uint8_t) get_map_steering_mode());
+		dg.add_uint8((uint8_t) get_map_prediction_type());
+		//dependency: map ---> resolution, use path fences
+		dg.add_int32(get_map_resolution());
+		dg.add_bool(get_map_path_fences());
 	}
 }
 
@@ -1919,11 +2156,13 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 			if (check_steer_vehicle_compatibility(
 					NodePath::any_path((*iter))))
 			{
-				OSVehicleSettings settings = (*iter)->get_settings();
 				//do add to real update list
+#ifndef NDEBUG
+				bool vehicleAdded =
+#endif
 				static_cast<ossup::PlugIn*>(mPlugIn)->addVehicle(
 						&(*iter)->get_abstract_vehicle());
-				(*iter)->set_settings(settings);
+				nassertv_always(vehicleAdded);
 			}
 		}
 	}
@@ -1951,7 +2190,7 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 		}
 	}
 
-	///SERIALIZATION ONLY
+	///TYPE SPECIFIC
 	nassertv_always(mSerializedDataTmpPtr != NULL)
 
 	if(mPlugInType == ONE_TURNING)
@@ -1964,9 +2203,10 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 	}
 	if(mPlugInType == BOID)
 	{
-		set_proximity_database(mSerializedDataTmpPtr->mPD);
+		//dependency: proximity database ---> world center, world radius
 		set_world_center(mSerializedDataTmpPtr->mWorldCenter);
 		set_world_radius(mSerializedDataTmpPtr->mWorldRadius);
+		set_proximity_database(mSerializedDataTmpPtr->mPD);
 	}
 	if(mPlugInType == MULTIPLE_PURSUIT)
 	{
@@ -1974,20 +2214,21 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 	}
 	if(mPlugInType == SOCCER)
 	{
-		set_playing_field(mSerializedDataTmpPtr->mFieldMinPoint, mSerializedDataTmpPtr->mFieldMaxPoint,
+		set_playing_field(mSerializedDataTmpPtr->mFieldMinPoint,
+				mSerializedDataTmpPtr->mFieldMaxPoint,
 				mSerializedDataTmpPtr->mGoalFraction);
 		pvector<PT(OSSteerVehicle)>::iterator iter;
-		for (iter = mSteerVehicles.begin(); iter != mSteerVehicles.end(); ++iter)
+		for (iter = mSteerVehicles.begin(); iter != mSteerVehicles.end();
+				++iter)
 		{
 			// check if vehicle has gained its final type (i.e. finalized)
-			if (dynamic_cast<ossup::Player<OSSteerVehicle>*>(
-					&(*iter)->get_abstract_vehicle()))
+			if (dynamic_cast<ossup::Player<OSSteerVehicle>*>(&(*iter)->get_abstract_vehicle()))
 			{
 				add_player_to_team((*iter), (*iter)->mPlayingTeam_ser);
 			}
 		}
 		ossup::MicTestPlugIn<OSSteerVehicle>* plugIn =
-						static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn);
+				static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn);
 		plugIn->m_redScore = mSerializedDataTmpPtr->mScoreTeamA;
 		plugIn->m_blueScore = mSerializedDataTmpPtr->mScoreTeamB;
 	}
@@ -1996,8 +2237,17 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 		set_home_base_center(mSerializedDataTmpPtr->mHomeBaseCenter);
 		set_home_base_radius(mSerializedDataTmpPtr->mHomeBaseRadius);
 		set_braking_rate(mSerializedDataTmpPtr->mBrakingRate);
-		set_avoidance_predict_time_min(mSerializedDataTmpPtr->mAvoidancePredictTimeMin);
-		set_avoidance_predict_time_max(mSerializedDataTmpPtr->mAvoidancePredictTimeMax);
+		//dependency: avoidance predict time ---> avoidance predict time min
+		ossup::CtfPlugIn<OSSteerVehicle>* plugIn = static_cast<ossup::CtfPlugIn<
+				OSSteerVehicle>*>(mPlugIn);
+		set_avoidance_predict_time_min(
+				mSerializedDataTmpPtr->mAvoidancePredictTimeMin);
+		set_avoidance_predict_time_max(
+				mSerializedDataTmpPtr->mAvoidancePredictTimeMax);
+		plugIn->m_CtfPlugInData.gAvoidancePredictTime =
+				mSerializedDataTmpPtr->mAvoidancePredictTime;
+		plugIn->m_CtfPlugInData.gDelayedResetPlugInXXX =
+				mSerializedDataTmpPtr->mGDelayedResetPlugInXXX;
 	}
 	if(mPlugInType == LOW_SPEED_TURN)
 	{
@@ -2005,7 +2255,14 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 	}
 	if(mPlugInType == MAP_DRIVE)
 	{
-		;
+		set_map_steering_mode(mSerializedDataTmpPtr->mMapSteeringMode);
+		set_map_prediction_type(mSerializedDataTmpPtr->mMapPredictionType);
+		//dependency: map ---> resolution, use path fences
+		//note: set MapDrivePlugIn::usePathFences directly to avoid making map twice
+///		set_map_path_fences(mSerializedDataTmpPtr->mUsePathFences);
+		static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn)->usePathFences =
+				mSerializedDataTmpPtr->mUsePathFences;
+		make_map(mSerializedDataTmpPtr->mMapResolution);
 	}
 	// deallocate SerializedDataTmp
 	delete mSerializedDataTmpPtr;
@@ -2084,6 +2341,9 @@ void OSSteerPlugIn::fillin(DatagramIterator &scan, BamReader *manager)
 	mPathwayClosedCycle = scan.get_bool();
 	///@}
 
+	///Current time.
+	mCurrentTime = scan.get_stdfloat();
+
 	/// Pointers
 	///The reference node path.
 	manager->read_pointer(scan);
@@ -2111,7 +2371,7 @@ void OSSteerPlugIn::fillin(DatagramIterator &scan, BamReader *manager)
 		manager->read_pointer(scan);
 	}
 
-	///SERIALIZATION ONLY
+	///TYPE SPECIFIC
 	nassertv_always(mSerializedDataTmpPtr == NULL)
 
 	// allocate SerializedDataTmp
@@ -2126,9 +2386,10 @@ void OSSteerPlugIn::fillin(DatagramIterator &scan, BamReader *manager)
 	}
 	if(mPlugInType == BOID)
 	{
-		mSerializedDataTmpPtr->mPD = (OSProximityDatabase) scan.get_uint8();
+		//dependency: proximity database ---> world center, world radius
 		mSerializedDataTmpPtr->mWorldCenter.read_datagram(scan);
 		mSerializedDataTmpPtr->mWorldRadius = scan.get_stdfloat();
+		mSerializedDataTmpPtr->mPD = (OSProximityDatabase) scan.get_uint8();
 	}
 	if(mPlugInType == MULTIPLE_PURSUIT)
 	{
@@ -2147,8 +2408,11 @@ void OSSteerPlugIn::fillin(DatagramIterator &scan, BamReader *manager)
 		mSerializedDataTmpPtr->mHomeBaseCenter.read_datagram(scan);
 		mSerializedDataTmpPtr->mHomeBaseRadius = scan.get_stdfloat();
 		mSerializedDataTmpPtr->mBrakingRate = scan.get_stdfloat();
+		//dependency: avoidance predict time ---> avoidance predict time min
 		mSerializedDataTmpPtr->mAvoidancePredictTimeMin = scan.get_stdfloat();
 		mSerializedDataTmpPtr->mAvoidancePredictTimeMax = scan.get_stdfloat();
+		mSerializedDataTmpPtr->mAvoidancePredictTime = scan.get_stdfloat();
+		mSerializedDataTmpPtr->mGDelayedResetPlugInXXX = scan.get_bool();
 	}
 	if(mPlugInType == LOW_SPEED_TURN)
 	{
@@ -2156,7 +2420,13 @@ void OSSteerPlugIn::fillin(DatagramIterator &scan, BamReader *manager)
 	}
 	if(mPlugInType == MAP_DRIVE)
 	{
-		;
+		mSerializedDataTmpPtr->mMapSteeringMode =
+				(OSMapSteeringMode) scan.get_uint8();
+		mSerializedDataTmpPtr->mMapPredictionType =
+				(OSMapPredictionType) scan.get_uint8();
+		//dependency: map ---> resolution, use path fences
+		mSerializedDataTmpPtr->mMapResolution = scan.get_int32();
+		mSerializedDataTmpPtr->mUsePathFences = scan.get_bool();
 	}
 }
 

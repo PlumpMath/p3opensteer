@@ -9,7 +9,7 @@ from p3opensteer import OSSteerManager
 from panda3d.core import load_prc_file_data, GeoMipTerrain, PNMImage, \
                 Filename, TextureStage, TexturePool, BitMask32, CardMaker, \
                 NodePath, WindowProperties, AnimControlCollection, auto_bind, \
-                LVecBase3f, LVector3f, LPoint3f
+                LVecBase3f, LVector3f, LPoint3f, PartGroup
 from direct.showbase.ShowBase import ShowBase
 import sys, random
 
@@ -22,11 +22,12 @@ terrain = None
 terrainRootNetPos = None
 DEFAULT_MAXVALUE = 1.0
 # models and animations
-vehicleFile = ["eve.egg", "ralph.egg", "sparrow.egg", "ball.egg"]
+vehicleFile = ["eve.egg", "ralph.egg", "sparrow.egg", "ball.egg", "red_car.egg"]
 vehicleAnimFiles = [["eve-walk.egg", "eve-run.egg"],
                   ["ralph-walk.egg", "ralph-run.egg"],
                   ["sparrow-flying.egg", "sparrow-flying2.egg"],
-                  ["", ""]]
+                  ["", ""],
+                  ["red_car-anim.egg", "red_car-anim2.egg"]]
 animRateFactor = [1.20, 4.80]
 # obstacle model
 obstacleFile = "plants2.egg"
@@ -302,9 +303,10 @@ def handleVehicles(data = None):
             moveType = vehicleData.moveType
             steerPlugIn = vehicleData.steerPlugIn
             steerVehicles = vehicleData.steerVehicles
-            vehicleAnimCtls = vehicleData.vehicleAnimCtls            
+            vehicleAnimCtls = vehicleData.vehicleAnimCtls
+            deltaPos = vehicleData.deltaPos          
             # add vehicle
-            pos = entry0.get_surface_point(NodePath())
+            pos = entry0.get_surface_point(NodePath()) + deltaPos
             getVehicleModelAnims(meanScale, vehicleFileIdx, moveType, sceneNP, 
                                  steerPlugIn, steerVehicles, 
                                  vehicleAnimCtls, pos)
@@ -333,14 +335,20 @@ def getVehicleModelAnims(meanScale, vehicleFileIdx, moveType, sceneNP, steerPlug
         # first anim -> modelAnimCtls[i][0]
         vehicleAnimNP[0] = app.loader.load_model(vehicleAnimFiles[vehicleFileIdx][0])
         vehicleAnimNP[0].reparent_to(vehicleNPs)
-        auto_bind(vehicleNPs.node(), tmpAnims)
+        auto_bind(vehicleNPs.node(), tmpAnims, 
+                  PartGroup.HMF_ok_part_extra |
+                  PartGroup.HMF_ok_anim_extra |
+                  PartGroup.HMF_ok_wrong_root_name)
         vehicleAnimCtls[-1][0] = tmpAnims.get_anim(0)
         tmpAnims.clear_anims()
         vehicleAnimNP[0].detach_node()
         # second anim -> modelAnimCtls[i][1]
         vehicleAnimNP[1] = app.loader.load_model(vehicleAnimFiles[vehicleFileIdx][1])
         vehicleAnimNP[1].reparent_to(vehicleNPs)
-        auto_bind(vehicleNPs.node(), tmpAnims)
+        auto_bind(vehicleNPs.node(), tmpAnims, 
+                  PartGroup.HMF_ok_part_extra |
+                  PartGroup.HMF_ok_anim_extra |
+                  PartGroup.HMF_ok_wrong_root_name)
         vehicleAnimCtls[-1][1] = tmpAnims.get_anim(0)
         tmpAnims.clear_anims()
         vehicleAnimNP[1].detach_node()

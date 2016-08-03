@@ -41,7 +41,6 @@
 	}
 
 extern ossup::DrawMeshDrawer *gDrawer3d, *gDrawer2d;
-extern ReMutex gOpenSteerDebugMutex;
 
 namespace ossup
 {
@@ -65,15 +64,32 @@ inline LVecBase4f OpenSteerColorToLVecBase4f(const OpenSteer::Color& c)
 	return LVecBase4f(c.r(), c.g(), c.b(), c.a());
 }
 
+typedef std::vector<OpenSteer::SegmentedPathway*> PathwayGroup;
+
 /**
  * \brief Vehicle settings.
  */
 struct VehicleSettings
 {
 	VehicleSettings() :
-			m_mass(), m_radius(), m_speed(), m_maxForce(),
-			m_maxSpeed(), m_forward(), m_side(), m_up(), m_position()
+			m_mass(1.0), m_radius(1.0), m_speed(0.0), m_maxForce(1.0), m_maxSpeed(
+					1.0), m_forward(OpenSteer::Vec3::forward), m_side(
+					OpenSteer::Vec3::side), m_up(OpenSteer::Vec3::up), m_position(
+					OpenSteer::Vec3::zero), m_start(OpenSteer::Vec3::zero)
 	{
+	}
+	bool operator == (const VehicleSettings& other)
+	{
+		return (m_mass == other.m_mass) &&
+				(m_radius == other.m_radius) &&
+				(m_speed == other.m_speed) &&
+				(m_maxForce == other.m_maxForce) &&
+				(m_maxSpeed == other.m_maxSpeed) &&
+				(m_forward == other.m_forward) &&
+				(m_side == other.m_side) &&
+				(m_up == other.m_up) &&
+				(m_position == other.m_position) &&
+				(m_start == other.m_start);
 	}
 	// mass
 	float m_mass;
@@ -93,6 +109,8 @@ struct VehicleSettings
 	OpenSteer::Vec3 m_up;
 	// origin of local space
 	OpenSteer::Vec3 m_position;
+	// the vehicle start position.
+	OpenSteer::Vec3 m_start;
 };
 
 template<typename Super, typename Entity>
@@ -211,7 +229,6 @@ public:
 		m_settings.m_side = Super::side();
 		m_settings.m_up = Super::up();
 		m_settings.m_position = Super::position();
-		m_start = Super::position();
 		return m_settings;
 	}
 
@@ -222,6 +239,18 @@ public:
 		reset();
 	}
 
+	OpenSteer::Vec3 getStart() const
+	{
+		return m_settings.m_start;
+	}
+
+	void setStart(const OpenSteer::Vec3& start)
+	{
+		m_settings.m_start = start;
+	}
+
+	/// It is called by setSettings() to perform custom tasks
+	/// which usually depend on base settings
 	virtual void reset()
 	{
 		Super::setMass(m_settings.m_mass);
@@ -233,7 +262,6 @@ public:
 		Super::setSide(Super::localRotateForwardToSide(m_settings.m_forward));
 		Super::setUp(m_settings.m_up);
 		Super::setPosition(m_settings.m_position);
-		m_start = Super::position();
 	}
 
 #ifdef OS_DEBUG
@@ -241,11 +269,6 @@ public:
 	{
 	}
 #endif
-
-	OpenSteer::Vec3 getStart()
-	{
-		return m_start;
-	}
 
 protected:
 	///The entity updated by the vehicle.
@@ -260,8 +283,6 @@ protected:
 	///@}
 	///The vehicle settings.
 	VehicleSettings m_settings;
-	///The vehicle start position.
-	OpenSteer::Vec3 m_start;
 };
 
 //Obstacles: redefinition of draw
@@ -387,16 +408,20 @@ class PlugInAddOnMixin: public Super
 public:
 
 	PlugInAddOnMixin() :
-			obstacles(NULL), localObstacles(NULL), selectedVehicle(NULL), m_pathway(
-			NULL)
+			obstacles(NULL), localObstacles(NULL), selectedVehicle(NULL)
 	{
+		m_pathway.resize(1);
+		m_pathway[0] = NULL;
 	}
 
 	virtual ~PlugInAddOnMixin()
 	{
-		delete m_pathway;
+		delete m_pathway[0];
+		m_pathway.clear();
 	}
 
+	///Note: addVehicle() derived function must not change any vehicle's
+	///physical characteristics as defined by ossup::VehicleSettings
 	virtual bool addVehicle(OpenSteer::AbstractVehicle* vehicle)
 	{
 		bool result = false;
@@ -472,28 +497,92 @@ public:
 			float const radii[], bool closedCycle)
 	{
 		//delete old pathway
-		delete m_pathway;
-		m_pathway = NULL;
+		delete m_pathway[0];
+		m_pathway[0] = NULL;
 		//create a new pathway
 		if (numOfPoints < 2)
 		{
-			m_pathway = NULL;
+			m_pathway[0] = NULL;
 			return;
 		}
 		//check if single radius
 		if (singleRadius)
 		{
-			m_pathway = new OpenSteer::PolylineSegmentedPathwaySingleRadius(
+			m_pathway[0] = new OpenSteer::PolylineSegmentedPathwaySingleRadius(
 					numOfPoints, points, radii[0], closedCycle);
 		}
 		else
 		{
-			m_pathway = new OpenSteer::PolylineSegmentedPathwaySegmentRadii(
+			m_pathway[0] = new OpenSteer::PolylineSegmentedPathwaySegmentRadii(
 					numOfPoints, points, radii, closedCycle);
 		}
-		pathEndpoint0 = points[0];
-		pathEndpoint1 = points[numOfPoints - 1];
 	}
+
+	//will compute point, radius
+	void getPathwayEndPointData(int idx0, int idx1,
+			OpenSteer::Vec3& pathEndpoint0, OpenSteer::Vec3& pathEndpoint1,
+			float& radiusEndpoint0, float&radiusEndpoint1)
+	{
+		int maxPointIdx = (int) m_pathway[0]->pointCount() - 1;
+		//check bounds
+		if ((idx0 < 0) || (idx0 > maxPointIdx) || (idx1 < 0)
+				|| (idx1 > maxPointIdx))
+		{
+			return;
+		}
+		pathEndpoint0 = m_pathway[0]->point(idx0);
+		pathEndpoint1 = m_pathway[0]->point(idx1);
+		OpenSteer::PolylineSegmentedPathwaySegmentRadii* pathRadii =
+				dynamic_cast<OpenSteer::PolylineSegmentedPathwaySegmentRadii*>(m_pathway[0]);
+		if (pathRadii)
+		{
+			//depending if path is closed cycle:
+			//segment count == point count || point count - 1
+			int maxSegmentIdx = (int) pathRadii->segmentCount() - 1;
+			radiusEndpoint0 = pathRadii->segmentRadius(
+					min(idx0, maxSegmentIdx));
+			radiusEndpoint1 = pathRadii->segmentRadius(
+					min(idx1, maxSegmentIdx));
+		}
+		else
+		{
+			//single radius
+			float radius =
+					static_cast<OpenSteer::PolylineSegmentedPathwaySingleRadius*>(m_pathway[0])->radius();
+			radiusEndpoint0 = radius;
+			radiusEndpoint1 = radius;
+		}
+	}
+
+#ifdef OS_DEBUG
+	virtual void drawPath(void)
+	{
+		typedef OpenSteer::SegmentedPathway::size_type size_type;
+
+		// draw a line along each segment of path
+		gDrawer3d->setTwoSided(true);
+		for (size_type i = 1; i < (*m_pathway[0]).pointCount(); ++i)
+		{
+			drawLine((*m_pathway[0]).point(i), (*m_pathway[0]).point(i - 1),
+					OpenSteer::gRed);
+		}
+		gDrawer3d->setTwoSided(false);
+	}
+
+	virtual void drawObstacles(void)
+	{
+		gDrawer3d->setTwoSided(true);
+		// draw obstacles
+		OpenSteer::ObstacleIterator iterObstacle;
+		for (iterObstacle = localObstacles->begin();
+				iterObstacle != localObstacles->end(); ++iterObstacle)
+		{
+			(*iterObstacle)->draw(false, OpenSteer::Color(0, 0, 0),
+					OpenSteer::Vec3(0, 0, 0));
+		}
+		gDrawer3d->setTwoSided(false);
+	}
+#endif
 
 	///A reference to global obstacles handled by all plugins.
 	OpenSteer::ObstacleGroup* obstacles;
@@ -503,10 +592,8 @@ public:
 protected:
 	///The selected vehicle (for debug draw only).
 	OpenSteer::AbstractVehicle* selectedVehicle;
-	///The pathway handled by this plugin.
-	OpenSteer::Pathway* m_pathway;
-	///The pathway endpoints.
-	OpenSteer::Vec3 pathEndpoint0, pathEndpoint1;
+	///The pathway(s) handled by this plugin.
+	PathwayGroup m_pathway;
 };
 
 //common typedef

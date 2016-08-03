@@ -75,7 +75,7 @@ OSSteerManager::~OSSteerManager()
 		//give a chance to OSSteerVehicle to cleanup itself before being destroyed.
 		(*iterC)->do_finalize();
 		//remove the OSSteerVehicles from the inner list (and from the update task)
-		mSteerVehicles.erase(iterC);
+		iterC = mSteerVehicles.erase(iterC);
 	}
 
 	//destroy all OSSteerPlugIns
@@ -86,7 +86,7 @@ OSSteerManager::~OSSteerManager()
 		//give a chance to OSSteerVehicle to cleanup itself before being destroyed.
 		(*iterN)->do_finalize();
 		//remove the OSSteerVehicles from the inner list (and from the update task)
-		mSteerPlugIns.erase(iterN);
+		iterN = mSteerPlugIns.erase(iterN);
 	}
 
 	//clear parameters' tables
@@ -370,7 +370,7 @@ void OSSteerManager::set_parameters_defaults(OSType type)
 				ParameterNameValue("plugin_type", "one_turning"));
 		mSteerPlugInsParameterTable.insert(
 				ParameterNameValue("pathway",
-						"0.0,0.0,0.0:1.0,1.0,1.0$1.0$false"));
+						"0.0,0.0,0.0:1E-4,1E-4,1E-4$0.0$false"));
 	}
 	else if (type == STEERVEHICLE)
 	{
@@ -385,6 +385,8 @@ void OSSteerManager::set_parameters_defaults(OSType type)
 				ParameterNameValue("mov_type", "opensteer"));
 		mSteerVehiclesParameterTable.insert(
 				ParameterNameValue("up_axis_fixed", "false"));
+		mSteerVehiclesParameterTable.insert(
+				ParameterNameValue("up_axis_fixed_mode", "light"));
 		mSteerVehiclesParameterTable.insert(ParameterNameValue("mass", "1.0"));
 		mSteerVehiclesParameterTable.insert(ParameterNameValue("speed", "0.0"));
 		mSteerVehiclesParameterTable.insert(

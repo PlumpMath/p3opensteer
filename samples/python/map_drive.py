@@ -6,9 +6,9 @@ Created on Jun 26, 2016
 
 import panda3d.core
 from p3opensteer import OSSteerManager, ValueList_string, ValueList_LPoint3f, \
-        ValueList_float
+        ValueList_float, OSSteerPlugIn
 from panda3d.core import TextNode, ClockObject, AnimControlCollection, \
-        auto_bind, LPoint3f, LVecBase3f
+        auto_bind, LPoint3f, LVecBase3f, TextureStage, TexGenAttrib
 #
 from common import startFramework, toggleDebugFlag, toggleDebugDraw, mask, \
         loadTerrain, printCreationParameters, handleVehicleEvent, \
@@ -24,6 +24,7 @@ sceneNP = None
 vehicleAnimCtls = []
 steerPlugIn = None
 steerVehicles = []
+rttTexStage = None
 #
 def setParametersBeforeCreation():
     """set parameters as strings before plug-ins/vehicles creation"""
@@ -32,36 +33,26 @@ def setParametersBeforeCreation():
     valueList = ValueList_string()
     # set plug-in type
     steerMgr.set_parameter_value(OSSteerManager.STEERPLUGIN, "plugin_type",
-            "pedestrian")
+            "map_drive")
 
     # set vehicle's type, mass, speed
     steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "vehicle_type",
-            "pedestrian")
-    steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "mass",
-            "2.0")
-    steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "speed",
-            "0.01")
+            "map_driver")
+    steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "max_speed",
+            "20.0")
+    steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "max_force",
+            "8.0")
+    steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "up_axis_fixed",
+            "true")
 
     # set vehicle throwing events
     valueList.clear()
-    valueList.add_value("avoid_obstacle@avoid_obstacle@1.0:avoid_close_neighbor@avoid_close_neighbor@")
+    valueList.add_value(
+            "avoid_obstacle@avoid_obstacle@1.0:path_following@path_following@1.0")
     steerMgr.set_parameter_values(OSSteerManager.STEERVEHICLE,
             "thrown_events", valueList)
     #
     printCreationParameters()
-
-def toggleWanderBehavior():
-    """toggle wander behavior of last inserted vehicle"""
-    
-    global steerVehicles
-    if len(steerVehicles) == 0:
-        return
-    
-    if steerVehicles[-1].get_wander_behavior():
-        steerVehicles[-1].set_wander_behavior(False)
-    else:
-        steerVehicles[-1].set_wander_behavior(True)
-    print(str(steerVehicles[-1]) + "'s wander behavior is " + str(steerVehicles[-1].get_wander_behavior()))
 
 def updatePlugIn(steerPlugIn, task):
     """custom update task for plug-ins"""
@@ -93,7 +84,39 @@ def updatePlugIn(steerPlugIn, task):
             vehicleAnimCtls[i][1].stop()
     #
     return task.cont
-        
+
+def debugDrawToTexture():
+    "debug draw to texture"
+
+    global steerPlugIn, sceneNP, app
+    steerPlugIn.debug_drawing_to_texture(sceneNP, app.win)
+
+def onTextureReady(data, texture):
+    "debug drawing texture is ready"
+    
+    global sceneNP
+    rttTexStage = data
+    # set up texture where to render
+    sceneNP.clear_texture(rttTexStage)
+    rttTexStage.set_mode(TextureStage.M_modulate)
+    # take into account sceneNP dimensions
+    sceneNP.set_tex_offset(rttTexStage, 0.5, 0.5)
+    sceneNP.set_tex_scale(rttTexStage, 1.0 / 128.0, 1.0 / 128.0)
+    sceneNP.set_tex_gen(rttTexStage, TexGenAttrib.M_world_position)
+    sceneNP.set_texture(rttTexStage, texture, 10)
+
+def togglePredictionType():
+    """toggle prediction type"""
+    
+    global steerPlugIn
+    predictionType = steerPlugIn.get_map_prediction_type()
+    if predictionType == OSSteerPlugIn.CURVED_PREDICTION:
+        steerPlugIn.set_map_prediction_type(OSSteerPlugIn.LINEAR_PREDICTION)
+        print ("prediction type: linear")
+    else:
+        steerPlugIn.set_map_prediction_type(OSSteerPlugIn.CURVED_PREDICTION)
+        print ("prediction type: curved")
+       
 if __name__ == '__main__':
 
     msg = "'map drive'"
@@ -105,13 +128,12 @@ if __name__ == '__main__':
     text.set_text(
             msg + "\n\n"      
             "- press \"d\" to toggle debug drawing\n"
-            "- press \"a\"/\"k\" to add 'opensteer'/'kinematic' vehicle\n"
-            "- press \"s\"/\"shift-s\" to increase/decrease last inserted vehicle's max speed\n"
-            "- press \"f\"/\"shift-f\" to increase/decrease last inserted vehicle's max force\n"
-            "- press \"t\" to toggle last inserted vehicle's wander behavior\n"
-            "- press \"o\"/\"shift-o\" to add/remove obstacle\n")
+            "- press \"o\"/\"shift-o\" to add/remove obstacle\n"
+            "- press \"t\" to (re)draw the map of the path\n"
+            "- press \"a\" to add vehicle\n"
+            "- press \"p\" to toggle map prediction type\n")
     textNodePath = app.aspect2d.attach_new_node(text)
-    textNodePath.set_pos(-1.25, 0.0, 0.6)
+    textNodePath.set_pos(0.25, 0.0, 0.8)
     textNodePath.set_scale(0.035)
     
     # create a steer manager; set root and mask to manage 'kinematic' vehicles
@@ -134,6 +156,9 @@ if __name__ == '__main__':
         # and reparent to the reference node
         sceneNP.reparent_to(steerMgr.get_reference_node_path())
         
+        # set the texture stage used for debug draw texture
+        rttTexStage = TextureStage("rttTexStage")
+
         # set sceneNP's collide mask
         sceneNP.set_collide_mask(mask)
 
@@ -147,20 +172,30 @@ if __name__ == '__main__':
     
         # set the pathway
         pointList = ValueList_LPoint3f()
-        pointList.add_value(LPoint3f(-33.2366, 20.8779, 0.224516))
-        pointList.add_value(LPoint3f(-2.17519, 31.4712, 0.157774))
-        pointList.add_value(LPoint3f(7.57217, 11.0209, -0.147097))
-        pointList.add_value(LPoint3f(31.4319, 6.31322, -0.142874))
-        pointList.add_value(LPoint3f(33.0984, -21.5953, -0.158049))
-        pointList.add_value(LPoint3f(10.8928, -33.0309, -0.331787))
-        pointList.add_value(LPoint3f(0.649722, -16.8083, 0.227074))
-        pointList.add_value(LPoint3f(-25.1445, -28.6898, 0.0573864))
-        pointList.add_value(LPoint3f(-43.6806, -14.6532, -0.0712051))
-        pointList.add_value(LPoint3f(-46.9489, 8.38837, -0.222353))
-        # note: pedestrian handles single radius pathway only 
         radiusList = ValueList_float()
-        radiusList.add_value(4)
-        steerPlugIn.set_pathway(pointList, radiusList, True, True)
+        pointList.add_value(LPoint3f(-41.80, 34.46, -0.17))
+        radiusList.add_value(7.0)
+        pointList.add_value(LPoint3f(-2.21, 49.15, -0.36))
+        radiusList.add_value(8.0)
+        pointList.add_value(LPoint3f(10.78, 16.65, 0.14))
+        radiusList.add_value(9.0)
+        pointList.add_value(LPoint3f(40.44, 17.58, -0.22))
+        radiusList.add_value(9.0)
+        pointList.add_value(LPoint3f(49.04, -22.15, -0.60))
+        radiusList.add_value(8.0)
+        pointList.add_value(LPoint3f(13.99, -52.70, 0.39))
+        radiusList.add_value(8.0)
+        pointList.add_value(LPoint3f(-3.46, -31.90, 0.71))
+        radiusList.add_value(7.0)
+        pointList.add_value(LPoint3f(-30.0, -39.97, -0.35))
+        radiusList.add_value(6.0)
+        pointList.add_value(LPoint3f(-47.12, -17.31, -0.43))
+        radiusList.add_value(6.0)
+        pointList.add_value(LPoint3f(-51.31, 9.08, -0.25))
+        radiusList.add_value(7.0)
+        steerPlugIn.set_pathway(pointList, radiusList, False, True)
+        # make the map
+        steerPlugIn.make_map(200)
     else:
         # valid bamFile
         # restore plug-in: through steer manager
@@ -170,6 +205,12 @@ if __name__ == '__main__':
         sceneNP = OSSteerManager.get_global_ptr().get_reference_node_path().find("**/SceneNP")
         # reparent the reference node to render
         OSSteerManager.get_global_ptr().get_reference_node_path().reparent_to(app.render)
+
+        # restore the texture stage used for debug draw texture
+        rttTexStage = sceneNP.find_all_texture_stages().find_texture_stage(
+                "rttTexStage")
+        if not rttTexStage:
+            rttTexStage = TextureStage("rttTexStage")
     
         # restore steer vehicles
         NUMVEHICLES = OSSteerManager.get_global_ptr().get_num_steer_vehicles()
@@ -183,7 +224,7 @@ if __name__ == '__main__':
             # restore animations
             tmpAnims = AnimControlCollection()
             auto_bind(steerVehicles[i], tmpAnims)
-            vehicleAnimCtls[i] = [None, None];
+            vehicleAnimCtls[i] = [None, None]
             for j in range(tmpAnims.get_num_anims()):
                 vehicleAnimCtls[i][j] = tmpAnims.get_anim(j)
 
@@ -200,9 +241,12 @@ if __name__ == '__main__':
 
     # DEBUG DRAWING: make the debug reference node paths sibling of the reference node
     steerMgr.get_reference_node_path_debug().reparent_to(app.render)
-    steerMgr.get_reference_node_path_debug_2d().reparent_to(app.aspect2d);
+    steerMgr.get_reference_node_path_debug_2d().reparent_to(app.aspect2d)
     # enable debug drawing
     steerPlugIn.enable_debug_drawing(app.camera)
+    # print debug draw to texture
+    app.accept("t", debugDrawToTexture)
+    app.accept("debug_drawing_texture_ready", onTextureReady, [rttTexStage])
 
     # # set events' callbacks
     # toggle debug draw
@@ -210,12 +254,9 @@ if __name__ == '__main__':
     app.accept("d", toggleDebugDraw, [steerPlugIn])
 
     # handle addition steer vehicles, models and animations 
-    vehicleData = HandleVehicleData(0.7, 0, "opensteer", sceneNP, 
+    vehicleData = HandleVehicleData(0.4, 4, "kinematic", sceneNP, 
                         steerPlugIn, steerVehicles, vehicleAnimCtls)
     app.accept("a", handleVehicles, [vehicleData])
-    vehicleDataKinematic = HandleVehicleData(0.7, 1, "kinematic", sceneNP, 
-                        steerPlugIn, steerVehicles, vehicleAnimCtls)
-    app.accept("k", handleVehicles, [vehicleDataKinematic])
 
     # handle obstacle addition
     obstacleAddition = HandleObstacleData(True, sceneNP, steerPlugIn,
@@ -223,7 +264,7 @@ if __name__ == '__main__':
     app.accept("o", handleObstacles, [obstacleAddition])
     # handle obstacle removal
     obstacleRemoval = HandleObstacleData(False, sceneNP, steerPlugIn)
-    app.accept("shift-o", handleObstacles, [obstacleRemoval]);
+    app.accept("shift-o", handleObstacles, [obstacleRemoval])
 
     # increase/decrease last inserted vehicle's max speed
     app.accept("s", changeVehicleMaxSpeed, ["s", steerVehicles])
@@ -234,19 +275,19 @@ if __name__ == '__main__':
     
     # handle OSSteerVehicle(s)' events
     app.accept("avoid_obstacle", handleVehicleEvent, ["avoid_obstacle"])
-    app.accept("avoid_close_neighbor", handleVehicleEvent, ["avoid_close_neighbor"])
+    app.accept("path_following", handleVehicleEvent, ["path_following"])
     
     # write to bam file on exit
     app.win.set_close_request_event("close_request_event")
     app.accept("close_request_event", writeToBamFileAndExit, [bamFileName])
 
-    # 'pedestrian' specific: toggle wander behavior
-    app.accept("t", toggleWanderBehavior)
+    # map drive specific: toggle prediction type
+    app.accept("p", togglePredictionType)
     
     # place camera
     trackball = app.trackball.node()
-    trackball.set_pos(0.0, 180.0, -10.0);
-    trackball.set_hpr(0.0, 20.0, 0.0);
+    trackball.set_pos(0.0, 160.0, -5.0)
+    trackball.set_hpr(0.0, 20.0, 0.0)
    
     # app.run(), equals to do the main loop in C++
     app.run()

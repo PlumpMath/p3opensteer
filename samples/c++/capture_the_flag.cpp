@@ -296,7 +296,7 @@ static bool createCtfVehicle(const Event* e, void* data,
 		steerVehicles.back()->set_max_force(maxForce);
 		steerVehicles.back()->set_max_speed(maxSpeed);
 		steerVehicles.back()->set_speed(speed);
-		steerVehicles.back()->enable_up_axis_fixed(true);
+		steerVehicles.back()->set_up_axis_fixed(true);
 		return true;
 	}
 	return false;

@@ -19,13 +19,41 @@ INLINE OSSteerVehicle::OSSteerVehicleType OSSteerVehicle::get_vehicle_type() con
 }
 
 /**
- * Enables/disables OSSteerVehicle's up axis fixed.
- * Returns the value actually set.
+ * Requires that OSSteerVehicle's up axis should be fixed along z.
  */
-INLINE bool OSSteerVehicle::enable_up_axis_fixed(bool enable)
+INLINE void OSSteerVehicle::set_up_axis_fixed(bool enable)
 {
 	mUpAxisFixed = enable;
+}
+
+/**
+ * Returns if OSSteerVehicle's up axis is required to be fixed along z.
+ */
+INLINE bool OSSteerVehicle::get_up_axis_fixed() const
+{
 	return mUpAxisFixed;
+}
+
+/**
+ * Sets the OSSteerVehicle's up axis fixed mode.
+ * \note This mode establishes how the computation of the OSSteerVehicle's
+ * orientation is carried out when the up axis is required to be fixed along z;
+ * going from light to medium up to strong mode increase both precision and
+ * computational cost.
+ */
+INLINE void OSSteerVehicle::set_up_axis_fixed_mode(
+		OSSteerVehicleUpAxisFixedMode mode)
+{
+	mUpAxisFixedMode = mode;
+}
+
+/**
+ * Returns the OSSteerVehicle's up axis fixed mode.
+ */
+INLINE OSSteerVehicle::OSSteerVehicleUpAxisFixedMode
+		OSSteerVehicle::get_up_axis_fixed_mode() const
+{
+	return mUpAxisFixedMode;
 }
 
 /**
@@ -191,6 +219,32 @@ INLINE LPoint3f OSSteerVehicle::get_position() const
 }
 
 /**
+ * Sets the OSSteerVehicle's start position.
+ */
+INLINE void OSSteerVehicle::set_start(const LPoint3f& position)
+{
+	static_cast<VehicleAddOn*>(mVehicle)->setStart(
+			ossup::LVecBase3fToOpenSteerVec3(position));
+}
+
+/**
+ * Returns the OSSteerVehicle's start position.
+ */
+INLINE LPoint3f OSSteerVehicle::get_start() const
+{
+	return ossup::OpenSteerVec3ToLVecBase3f(
+			static_cast<VehicleAddOn*>(mVehicle)->getStart());
+}
+
+/**
+ * Returns if OSSteerVehicle is externally updated.
+ */
+INLINE bool OSSteerVehicle::get_external_update() const
+{
+	return mExternalUpdate;
+}
+
+/**
  * Sets the OSSteerVehicle's move type (opensteer native or kinematic).
  */
 INLINE void OSSteerVehicle::set_mov_type(OSSteerVehicle::OSSteerVehicleMovType movType)
@@ -217,7 +271,7 @@ INLINE PT(OSSteerPlugIn) OSSteerVehicle::get_steer_plug_in() const
 }
 
 /**
- * Enables/disables the OSSteerVehicle's events to be thrown.
+ * Enables/disables a common OSSteerVehicle's event to be thrown.
  */
 INLINE void OSSteerVehicle::enable_steer_vehicle_event(OSEventThrown event,
 		ThrowEventData eventData)
@@ -256,6 +310,7 @@ inline void OSSteerVehicle::do_reset()
 	mVehicleSettings = OSVehicleSettings();
 	mHeigthCorrection = LVector3f::zero();
 	mUpAxisFixed = false;
+	mUpAxisFixedMode = UP_AXIS_FIXED_LIGHT;
 	mExternalUpdate = false;
 	mPFCallbackCalled = mAOCallbackCalled = mACNCallbackCalled =
 			mANCallbackCalled = false;

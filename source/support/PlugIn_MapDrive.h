@@ -769,6 +769,7 @@ private:
 
 typedef PolylineSegmentedPathwaySegmentRadii GCRoute;
 
+
 /*
  * Use PolylineSegmentedPathwaySegmentRadii instead!
 
@@ -946,6 +947,14 @@ typedef PolylineSegmentedPathwaySegmentRadii GCRoute;
 
  */
 
+/**
+ * \note: Public class members for tweaking:
+ * - \var pathFollowDirection: follow the path "upstream or downstream" (+1/-1)
+ * (int)
+ * - \var baseLookAheadTime: master look ahead (prediction) time (float)
+ * - \var curvedSteering: use curved prediction (bool)
+ * - \var incrementalSteering: use incremental steering (bool)
+ */
 // ----------------------------------------------------------------------------
 template<typename Entity>
 class MapDriver: public VehicleAddOnMixin<SimpleVehicle, Entity>
@@ -965,6 +974,8 @@ public:
 		demoSelect = 2;
 		worldSize = 1.0;
 		worldDiag = sqrtXXX(square(worldSize) / 2);
+		halfWidth = 1;
+		halfLength = 1;
 
 #ifdef OS_DEBUG
 		// to compute mean time between collisions
@@ -984,11 +995,10 @@ public:
 		lapsFinished = 0;
 		hintGivenCount = 0;
 		hintTakenCount = 0;
-#endif
-
 		// keep track of path following failure rate
 		pathFollowTime = 0;
 		pathFollowOffTime = 0;
+#endif
 
 		// follow the path "upstream or downstream" (+1/-1)
 		pathFollowDirection = 1;
@@ -1004,14 +1014,13 @@ public:
 	}
 
 	// destructor
-	~MapDriver()
+	virtual ~MapDriver()
 	{
 ///		delete (map);
 ///		delete (path);
 	}
 
-	// reset state
-	void reset(void)
+	virtual void reset(void)
 	{
 		// reset the underlying vehicle class
 		SimpleVehicle::reset();
@@ -1028,11 +1037,18 @@ public:
 ///		setMaxForce(maxSpeed() * 0.4f);
 
 		// vehicle is 2 meters wide and 3 meters long
-		halfWidth = 1.0f;
-		halfLength = 1.5f;
+		// w = 2/3 * r, l = r
+		halfWidth = this->radius() * 0.666666667f;
+		halfLength = this->radius();
 
+///		reset2();
+	}
+
+	void reset2(void)
+	{
 		// init dynamically controlled radius
-		adjustVehicleRadiusForSpeed();
+		///called by update: useless here
+///		adjustVehicleRadiusForSpeed();
 
 #ifdef OS_DEBUG
 		// not previously avoiding
@@ -1050,20 +1066,6 @@ public:
 		// master look ahead (prediction) time
 		baseLookAheadTime = 3;
 
-		if (demoSelect == 2)
-		{
-#ifdef OS_DEBUG
-			lapsStarted++;
-#endif
-///			const float s = worldSize;
-			const float d = (float) pathFollowDirection;
-///			this->setPosition(Vec3(s * d * 0.6f, 0, s * -0.4f));
-			this->regenerateOrthonormalBasisUF(Vec3::side * d);
-		}
-
-		// reset bookeeping to detect stuck cycles
-		resetStuckCycleDetection();
-
 		// assume no previous steering
 		currentSteering = Vec3::zero;
 
@@ -1078,27 +1080,55 @@ public:
 		// state saved for speedometer
 		//      annoteMaxRelSpeed = annoteMaxRelSpeedCurve = annoteMaxRelSpeedPath = 0;
 		//      annoteMaxRelSpeed = annoteMaxRelSpeedCurve = annoteMaxRelSpeedPath = 1;
+///		reset3()
+	}
+
+	void reset3(void)
+	{
+		if (demoSelect == 2)
+		{
+#ifdef OS_DEBUG
+			lapsStarted++;
+#endif
+///			const float s = worldSize;
+			const float d = (float) pathFollowDirection;
+///			this->setPosition(Vec3(s * d * 0.6f, 0, s * -0.4f));
+			this->regenerateOrthonormalBasisUF(Vec3::side * d);
+		}
+
+		// reset bookeeping to detect stuck cycles
+		resetStuckCycleDetection();
 	}
 
 	void resetToPath()
 	{
-		reset();
-		if(path && path->isValid())
+///		reset();
+		reset2();
+		reset3();
+		if ((*path)[0] && (*path)[0]->isValid())
 		{
 			Vec3 forward;
 			Vec3 pos;
 			float distance;
 			//get a point on the pathway
-			pos = path->mapPointToPath(this->position(), forward, distance);
+			pos = (*path)[0]->mapPointToPath(this->position(), forward,
+					distance);
 			//get segment index
-			PolylineSegmentedPathwaySegmentRadii::size_type segIdx =
-					mapPointToSegmentIndex(*path, pos);
+			GCRoute::size_type segIdx = mapPointToSegmentIndex(
+					*static_cast<GCRoute*>((*path)[0]), pos);
 			//get forward direction
-			forward = mapPointAndDirectionToTangent(*path, pos,
+			forward = mapPointAndDirectionToTangent(
+					*static_cast<GCRoute*>((*path)[0]), pos,
 					pathFollowDirection);
 			//randomize position on the segment
-			Vec3 start = path->segmentStart(segIdx);
-			pos = start + forward * frandom2(0.0, path->segmentLength(segIdx));
+			Vec3 start = static_cast<GCRoute*>((*path)[0])->segmentStart(
+					segIdx);
+			pos =
+					start
+							+ forward
+									* frandom2(0.0,
+											static_cast<GCRoute*>((*path)[0])->segmentLength(
+													segIdx));
 			//set pos and forward
 			this->setPosition(pos);
 			this->setForward(forward);
@@ -1107,13 +1137,15 @@ public:
 
 	void resetToMap()
 	{
-		if(path && path->isValid())
+		if((*path)[0] && (*path)[0]->isValid())
 		{
 			resetToPath();
 		}
 		else
 		{
-			reset();
+///			reset();
+			reset2();
+			reset3();
 			float x = frandom2(map->center.x - map->xSize / 2.0 * 0.9,
 					map->center.x + map->xSize / 2.0 * 0.9);
 			float z = frandom2(map->center.z - map->zSize / 2.0 * 0.9,
@@ -1125,6 +1157,11 @@ public:
 	// per frame simulation update
 	void update(const float currentTime, const float elapsedTime)
 	{
+		// don't update if there isn't a map
+		if (!map)
+		{
+			return;
+		}
 
 		handleExitFromMap();
 
@@ -1187,8 +1224,10 @@ public:
 #ifdef OS_DEBUG
 					annotateAvoid =
 #endif
-							steerToAvoidObstaclesOnMap(lookAheadTimeOA(), *map,
-									hintForObstacleAvoidance());
+///					steerToAvoidObstaclesOnMap(lookAheadTimeOA(), *map,
+///							hintForObstacleAvoidance());
+					steerToAvoidObstacles(lookAheadTimeOA(), *map,
+							hintForObstacleAvoidance());
 			const bool needToAvoid = avoid != Vec3::zero;
 
 			// any obstacles to avoid?
@@ -1228,7 +1267,8 @@ public:
 				if (demoSelect == 2)
 				{
 					const Vec3 pf = steerToFollowPath(pathFollowDirection,
-							lookAheadTimePF(), *path);
+							lookAheadTimePF(),
+							*static_cast<GCRoute*>((*path)[0]));
 					if (pf != Vec3::zero)
 					{
 						// steer to remain on path
@@ -1242,7 +1282,8 @@ public:
 						// path aligment: when neither obstacle avoidance nor
 						// path following is required, align with path segment
 						const Vec3 pathHeading = mapPointAndDirectionToTangent(
-								*path, this->position(), pathFollowDirection); // path->tangentAt (position (), pathFollowDirection);
+								*static_cast<GCRoute*>((*path)[0]),
+								this->position(), pathFollowDirection); // path->tangentAt (position (), pathFollowDirection);
 						{
 							const Vec3 b = (this->position()
 									+ (this->up() * 0.2f)
@@ -1257,7 +1298,8 @@ public:
 						}
 						steering +=
 								(steerTowardHeading(pathHeading)
-										* (isNearWaypoint(*path,
+										* (isNearWaypoint(
+												*static_cast<GCRoute*>((*path)[0]),
 												this->position()) /* path->nearWaypoint (position () ) */?
 												0.5f : 0.1f));
 					}
@@ -1378,8 +1420,8 @@ public:
 
 		// are we heading roughly parallel to the current path segment?
 		const Vec3 p = this->position();
-		const Vec3 pathHeading = mapPointAndDirectionToTangent(*path, p,
-				pathFollowDirection); // path->tangentAt (p, pathFollowDirection);
+		const Vec3 pathHeading = mapPointAndDirectionToTangent(
+				*static_cast<GCRoute*>((*path)[0]), p, pathFollowDirection); // path->tangentAt (p, pathFollowDirection);
 		if (pathHeading.dot(this->forward()) < 0.8f)
 		{
 			// if not, the "hint" is to turn to align with path heading
@@ -1401,8 +1443,8 @@ public:
 			{
 				// get offset, distance from obstacle to its image on path
 				float outside;
-				const Vec3 onPath = mapPointToPointOnCenterLineAndOutside(*path,
-						obstacle, outside); // path->mapPointToPath (obstacle, outside);
+				const Vec3 onPath = mapPointToPointOnCenterLineAndOutside(
+						*static_cast<GCRoute*>((*path)[0]), obstacle, outside); // path->mapPointToPath (obstacle, outside);
 				const Vec3 offset = onPath - obstacle;
 				const float offsetDistance = offset.length();
 
@@ -1412,7 +1454,8 @@ public:
 					// when near the outer edge of a sufficiently wide tube
 					// const int segmentIndex = path->indexOfNearestSegment (onPath);
 					// const float segmentRadius = path->segmentRadius( segmentIndex );
-					float const segmentRadius = mapPointToRadius(*path, onPath);
+					float const segmentRadius = mapPointToRadius(
+							*static_cast<GCRoute*>((*path)[0]), onPath);
 					const float w = halfWidth * 6;
 					const bool nearEdge = offsetDistance > w;
 					const bool wideEnough = segmentRadius > (w * 2);
@@ -1442,6 +1485,29 @@ public:
 		}
 		// otherwise, no hint
 		return Vec3::zero;
+	}
+
+	void annotateAvoidObstacle(const float minDistanceToCollision)
+	{
+		///call parent::annotateAvoidObstacle
+		VehicleAddOnMixin<SimpleVehicle, Entity>::annotateAvoidObstacle(
+				minDistanceToCollision);
+	}
+
+	// this overrides (and hides) the one in SteerLibrary.h modified
+	// to handle obstacles on map; it accepts a min time to collision,
+	// a TerrainMap and a steering hint.
+	Vec3 steerToAvoidObstacles(const float minTimeToCollision,
+			const TerrainMap& map, const Vec3& steerHint)
+	{
+		const Vec3 avoidance = steerToAvoidObstaclesOnMap(minTimeToCollision,
+				map, steerHint);
+
+	    // XXX more annotation modularity problems (assumes spherical obstacle)
+	    if (avoidance != Vec3::zero)
+	        annotateAvoidObstacle (minTimeToCollision * this->speed());
+
+	    return avoidance;
 	}
 
 	// like steerToAvoidObstacles, but based on a BinaryTerrainMap indicating
@@ -1819,9 +1885,6 @@ public:
 			this->annotationLine(scanOrigin, hit, Color(0.7f, 0.3f, 0.3f));
 		}
 #endif
-
-		///call parent::annotateAvoidObstacle
-		VehicleAddOnMixin<SimpleVehicle, Entity>::annotateAvoidObstacle(0.0);
 	}
 
 #ifdef OS_DEBUG
@@ -2543,16 +2606,20 @@ public:
 			const Vec3 bbSide = this->side() * halfWidth;
 			const Vec3 bbFront = this->forward() * halfLength;
 			return ( /* path->isInsidePath (position () - bbFront + bbSide) */isInsidePathway(
-					*path, this->position() - bbFront + bbSide)
+					*static_cast<GCRoute*>((*path)[0]),
+					this->position() - bbFront + bbSide)
 					&&
 					/* path->isInsidePath (position () + bbFront + bbSide) */isInsidePathway(
-							*path, this->position() + bbFront + bbSide)
+							*static_cast<GCRoute*>((*path)[0]),
+							this->position() + bbFront + bbSide)
 					&&
 					/* path->isInsidePath (position () + bbFront - bbSide) */isInsidePathway(
-							*path, this->position() + bbFront - bbSide)
+							*static_cast<GCRoute*>((*path)[0]),
+							this->position() + bbFront - bbSide)
 					&&
 					/* path->isInsidePath (position () - bbFront - bbSide) */isInsidePathway(
-							*path, this->position() - bbFront - bbSide));
+							*static_cast<GCRoute*>((*path)[0]),
+							this->position() - bbFront - bbSide));
 		}
 		return true;
 	}
@@ -2705,7 +2772,7 @@ public:
 			else
 			{
 				// heading (unit tangent) of the path segment of interest
-				const Vec3 pathHeading = mapPointAndDirectionToTangent(*path,
+				const Vec3 pathHeading = mapPointAndDirectionToTangent(*static_cast<GCRoute*>((*path)[0]),
 						this->position(), pathFollowDirection); // path->tangentAt (position (), pathFollowDirection);
 				// measure how parallel we are to the path
 				const float parallelness = pathHeading.dot(this->forward());
@@ -2771,48 +2838,48 @@ public:
 	TerrainMap* map;
 
 	// route for path following (waypoints and legs)
-	GCRoute* path;
+//	GCRoute* path;
+	PathwayGroup* path;
 
 	// follow the path "upstream or downstream" (+1/-1)
-	int pathFollowDirection;
+	int pathFollowDirection;///serializable
 
 	// master look ahead (prediction) time
-	float baseLookAheadTime;
+	float baseLookAheadTime;///serializable
 
 	// vehicle dimensions in meters
-	float halfWidth;
-	float halfLength;
+	float halfWidth;///serializable
+	float halfLength;///serializable
 
+	// QQQ first pass at detecting "stuck" state
+	bool stuck;///serializable
+
+	Vec3 qqqLastNearestObstacle;///serializable
+
+	// QQQ temporary global QQQoaJustScraping
+	// QQQ replace this global flag with a cleaner mechanism
+	bool QQQoaJustScraping;///serializable
+
+	// for "curvature-based incremental steering" -- contains the current
+	// steering into which new incremental steering is blended
+	Vec3 currentSteering;///serializable
+
+	// use curved prediction and incremental steering:
+	bool curvedSteering;///serializable
+	bool incrementalSteering;///serializable
+
+	// which of the three demo modes is selected
+	int demoSelect;///updated by plug-in methods
+
+	// size of the world (the map actually)
+	float worldSize;///updated by plug-in methods
+	float worldDiag;///updated by plug-in methods
+
+#ifdef OS_DEBUG
 	// keep track of path following failure rate
 	// (these are probably obsolete now, replaced by stuckOffPathCount)
 	float pathFollowTime;
 	float pathFollowOffTime;
-
-	// QQQ first pass at detecting "stuck" state
-	bool stuck;
-
-	Vec3 qqqLastNearestObstacle;
-
-	// QQQ temporary global QQQoaJustScraping
-	// QQQ replace this global flag with a cleaner mechanism
-	bool QQQoaJustScraping;
-
-	// for "curvature-based incremental steering" -- contains the current
-	// steering into which new incremental steering is blended
-	Vec3 currentSteering;
-
-	// use curved prediction and incremental steering:
-	bool curvedSteering;
-	bool incrementalSteering;
-
-	// which of the three demo modes is selected
-	int demoSelect;
-
-	// size of the world (the map actually)
-	float worldSize;
-	float worldDiag;
-
-#ifdef OS_DEBUG
 	// keep track of failure rate (when vehicle is on top of obstacle)
 	bool collisionDetected;
 	bool collisionLastTime;
@@ -2863,22 +2930,22 @@ public:
 		// state saved for speedometer
 		//      annoteMaxRelSpeed = annoteMaxRelSpeedCurve = annoteMaxRelSpeedPath = 0;
 		this->annoteMaxRelSpeed = this->annoteMaxRelSpeedCurve =
-				this->annoteMaxRelSpeedPath = 1;
+		this->annoteMaxRelSpeedPath = 1;
 		// determine combined steering
 		const bool offPath = !this->bodyInsidePath();
 		if (this->stuck || offPath || this->detectImminentCollision())
 		{
 			// count "off path" events
 			if (offPath && !this->stuck && (this->demoSelect == 2))
-				this->stuckOffPathCount++;
+			this->stuckOffPathCount++;
 			this->stuck = true;
 		}
 		else
 		{
 			// determine steering for obstacle avoidance (save for annotation)
 			const Vec3 avoid = this->annotateAvoid =
-					this->steerToAvoidObstaclesOnMap(this->lookAheadTimeOA(),
-							*this->map, this->hintForObstacleAvoidance());
+			this->steerToAvoidObstaclesOnMap(this->lookAheadTimeOA(),
+					*this->map, this->hintForObstacleAvoidance());
 			const bool needToAvoid = avoid != Vec3::zero;
 
 			// any obstacles to avoid?
@@ -2887,7 +2954,7 @@ public:
 				// slow down and turn to avoid the obstacles
 				const float targetSpeed = (
 						(this->curvedSteering && this->QQQoaJustScraping) ?
-								this->maxSpeedForCurvature() : 0);
+						this->maxSpeedForCurvature() : 0);
 				this->annoteMaxRelSpeed = targetSpeed / this->maxSpeed();
 			}
 			else
@@ -2898,7 +2965,7 @@ public:
 					const Vec3 wander = this->steerForWander(elapsedTime);
 					const Vec3 flat = wander.setYtoZero();
 					const Vec3 weighted = flat.truncateLength(this->maxForce())
-							* 6;
+					* 6;
 					const Vec3 a = this->position() + Vec3(0, 0.2f, 0);
 					this->annotationLine(a, a + (weighted * 0.3f), gWhite);
 				}
@@ -2907,20 +2974,20 @@ public:
 				{
 					const Vec3 pf = this->steerToFollowPath(
 							this->pathFollowDirection, this->lookAheadTimePF(),
-							*this->path);
+							*static_cast<GCRoute*>((*this->path)[0]));
 					if (pf == Vec3::zero)
 					{
 						//XXX
 						// path alignment: when neither obstacle avoidance nor
 						// path following is required, align with path segment
 						const Vec3 pathHeading = mapPointAndDirectionToTangent(
-								*this->path, this->position(),
-								this->pathFollowDirection); // path->tangentAt (position (), pathFollowDirection);
+								*static_cast<GCRoute*>((*this->path)[0]),
+									this->position(), this->pathFollowDirection);// path->tangentAt (position (), pathFollowDirection);
 						{
 							const Vec3 b =
-									(this->position() + (this->up() * 0.2f)
-											+ (this->forward()
-													* this->halfLength * 1.4f));
+							(this->position() + (this->up() * 0.2f)
+									+ (this->forward()
+											* this->halfLength * 1.4f));
 							const float l = 2;
 							this->annotationLine(b, b + (this->forward() * l),
 									gCyan);
@@ -2968,6 +3035,23 @@ class MapDrivePlugIn: public PlugIn
 {
 public:
 
+	MapDrivePlugIn() :
+			map(NULL), worldSize(1.0), worldDiag(1.414), worldCenter(
+					Vec3::zero), worldResolution(1.0), demoSelect(0), curvedSteering(
+					true),
+#ifdef OS_DEBUG
+					windowWidth(1.0),
+#endif
+					usePathFences(false)
+	{
+		vehicles.clear();
+	}
+
+	// be more "nice" to avoid a compiler warning
+	virtual ~MapDrivePlugIn()
+	{
+	}
+
 	const char* name(void)
 	{
 		return "Driving through map based obstacles";
@@ -2976,11 +3060,6 @@ public:
 	float selectionOrderSortKey(void)
 	{
 		return 0.07f;
-	}
-
-	// be more "nice" to avoid a compiler warning
-	virtual ~MapDrivePlugIn()
-	{
 	}
 
 	void open(void)
@@ -3004,8 +3083,13 @@ public:
 ///		// scatter random rock clumps over map
 ///		useRandomRocks = true;
 
-		// reset this plugin
-		reset();
+		worldSize = 1.0;
+		worldDiag = sqrtXXX(square(worldSize) / 2);
+		worldCenter = Vec3();
+		worldResolution = 1;
+
+///		// reset this plugin
+///		reset();
 	}
 
 	void update(const float currentTime, const float elapsedTime)
@@ -3064,7 +3148,7 @@ public:
 
 		// display status in the upper left corner of the window
 		MapDriver<Entity>* vehicle =
-				dynamic_cast<MapDriver<Entity>*>(selectedVehicle);
+				static_cast<MapDriver<Entity>*>(selectedVehicle);
 		if (vehicle)
 		{
 			std::ostringstream status;
@@ -3090,21 +3174,23 @@ public:
 			status << "\n\nStuck count: " << vehicle->stuckCount << " ("
 					<< vehicle->stuckCycleCount << " cycles, "
 					<< vehicle->stuckOffPathCount << " off path)";
-			status << "\n\n[F1] ";
+			status << "\n\n"/*[F1] */"";
+			if (0 == vehicle->demoSelect)
+				status << "free steering";
 			if (1 == vehicle->demoSelect)
-				status << "wander, ";
+				status << "wander"/*,*/" steering";
 			if (2 == vehicle->demoSelect)
-				status << "follow path, ";
-			status << "avoid obstacle";
+				status << "follow path"/*,*/" steering";
+///			status << "avoid obstacle";
 
 			if (2 == vehicle->demoSelect)
 			{
-				status << "\n[F2] path following direction: ";
+				status << "\n"/*[F2] */"path following direction: ";
 				if (vehicle->pathFollowDirection > 0)
 					status << "+1";
 				else
 					status << "-1";
-				status << "\n[F3] path fence: ";
+				status << "\n"/*[F3] */"path fence: ";
 				if (usePathFences)
 					status << "on";
 				else
@@ -3116,7 +3202,7 @@ public:
 ///			status << "on";
 ///		else
 ///			status << "off";
-			status << "\n[F5] prediction: ";
+			status << "\n"/*[F5] */"prediction: ";
 			if (vehicle->curvedSteering)
 				status << "curved";
 			else
@@ -3209,6 +3295,7 @@ public:
 ///		vehicles.clear();
 ///		delete (vehicle);
 		delete map;
+		map = NULL;
 	}
 
 	void reset(void)
@@ -3282,24 +3369,38 @@ public:
 		{
 			return false;
 		}
-		// try to allocate a token for this pedestrian in the proximity database
-		MapDriver<Entity>* mapDriver = dynamic_cast<MapDriver<Entity>*>(vehicle);
-		if (mapDriver && map)
+		//pathway must be GCRoute (a.k.a. PolylineSegmentedPathwaySegmentRadii)
+		if(!dynamic_cast<GCRoute*>(m_pathway[0]))
 		{
-			//set map
-			mapDriver->map = map;
-			//set world size
-			mapDriver->worldSize = worldSize;
-			mapDriver->worldDiag = worldDiag;
-			//set path
-			mapDriver->path = dynamic_cast<GCRoute*>(m_pathway);
-			//set demo select
-			mapDriver->demoSelect = demoSelect;
-			//set curved steering
-			mapDriver->curvedSteering = curvedSteering;
-#ifdef OS_DEBUG
-			mapDriver->windowWidth = windowWidth;
+			return false;
+		}
+		// try to add a MapDriver
+		MapDriver<Entity>* mapDriverTmp = dynamic_cast<MapDriver<Entity>*>(vehicle);
+		if (mapDriverTmp)
+		{
+#ifndef NDEBUG
+			///addVehicle() must not change vehicle's settings
+			VehicleSettings settings = mapDriverTmp->getSettings();
 #endif
+			//set map
+			mapDriverTmp->map = map;
+			//set world size
+			mapDriverTmp->worldSize = worldSize;
+			mapDriverTmp->worldDiag = worldDiag;
+			//set path
+			mapDriverTmp->path = &m_pathway;
+			//set demo select
+			mapDriverTmp->demoSelect = demoSelect;
+			//set curved steering
+			mapDriverTmp->curvedSteering = curvedSteering;
+#ifdef OS_DEBUG
+			mapDriverTmp->windowWidth = windowWidth;
+#endif
+			mapDriverTmp->reset2();
+
+			///addVehicle() must not change vehicle's settings
+			assert(settings == mapDriverTmp->getSettings());
+
 			//set result
 			return true;
 		}
@@ -3315,27 +3416,27 @@ public:
 		pfd = (pfd > 0) ? -1 : +1;
 	}
 
-	void setOptions(int _demoSelect = 2, bool _usePathFences = true,
-			bool _curvedSteering = true)
-	{
-		bool dirty = false;
-		if (demoSelect != _demoSelect)
-		{
-			//update
-			demoSelect = _demoSelect;
-			dirty = true;
-		}
-		if (usePathFences != _usePathFences)
-		{
-			usePathFences = _usePathFences;
-			dirty = true;
-		}
-		if (dirty)
-		{
-			regenerateMap();
-		}
-		curvedSteering = _curvedSteering;
-	}
+///	void setOptions(int _demoSelect = 2, bool _usePathFences = true,
+///			bool _curvedSteering = true)
+///	{
+///		bool dirty = false;
+///		if (demoSelect != _demoSelect)
+///		{
+///			//update
+///			demoSelect = _demoSelect;
+///			dirty = true;
+///		}
+///		if (usePathFences != _usePathFences)
+///		{
+///			usePathFences = _usePathFences;
+///			dirty = true;
+///		}
+///		if (dirty)
+///		{
+///			makeMap(worldResolution);
+///		}
+///		curvedSteering = _curvedSteering;
+///	}
 
 	void setDemoSelect(int _demoSelect = 2)
 	{
@@ -3343,7 +3444,13 @@ public:
 		{
 			//update
 			demoSelect = _demoSelect;
-			regenerateMap();
+			makeMap(worldResolution);
+			// update demoSelect of each vehicles
+			iterator iter;
+			for (iter = vehicles.begin(); iter != vehicles.end(); ++iter)
+			{
+				(*iter)->demoSelect = demoSelect;
+			}
 		}
 	}
 
@@ -3357,7 +3464,7 @@ public:
 		if (usePathFences != _usePathFences)
 		{
 			usePathFences = _usePathFences;
-			regenerateMap();
+			makeMap(worldResolution);
 		}
 	}
 
@@ -3369,6 +3476,12 @@ public:
 	void setCurvedSteering(bool _curvedSteering = true)
 	{
 		curvedSteering = _curvedSteering;
+		// update curvedSteering of each vehicles
+		iterator iter;
+		for (iter = vehicles.begin(); iter != vehicles.end(); ++iter)
+		{
+			(*iter)->curvedSteering = curvedSteering;
+		}
 	}
 
 	bool getCurvedSteering() const
@@ -3449,7 +3562,7 @@ public:
 		// mark path-boundary map cells as obstacles
 		// (when in path following demo and appropriate mode is set)
 		if (usePathFences && (demoSelect == 2))
-			drawPathFencesOnMap(*map, dynamic_cast<GCRoute&>(*m_pathway));
+			drawPathFencesOnMap(*map, static_cast<GCRoute&>(*m_pathway[0]));
 	}
 
 #ifdef OS_DEBUG
@@ -3520,7 +3633,7 @@ public:
 		const Color color = interpolate(0.1f, sandColor, pathColor);
 
 		// draw a line along each segment of path
-		const GCRoute& path = dynamic_cast<GCRoute&>(*m_pathway);
+		const GCRoute& path = dynamic_cast<GCRoute&>(*m_pathway[0]);
 		const Vec3 down(0, -0.1f, 0);
 		for (OpenSteer::SegmentedPathway::size_type i = 1;
 				i < path.pointCount(); ++i)
@@ -4086,6 +4199,11 @@ public:
 
 	void clearCenterOfMap()
 	{
+		//if map not made return
+		if (map == NULL)
+		{
+			return;
+		}
 		const int o = map->cellwidth() >> 4;
 		const int p = (map->cellwidth() - o) >> 1;
 		const int q = (map->cellwidth() + o) >> 1;
@@ -4143,23 +4261,141 @@ public:
 		return (const AVGroup&) vehicles;
 	}
 
-	void makeMap(const Vec3& c, float _worldSize, int resolution)
+	//create the map based on the the defined pathway and obstacles:
+	//if any of them change you must recall this function to update the map
+	void makeMap(int resolution)
 	{
-		//if already made return
-		if (map != NULL)
+		//
+		typedef OpenSteer::SegmentedPathway::size_type size_type;
+		GCRoute* pathway = dynamic_cast<GCRoute*>(m_pathway[0]);
+		if (!pathway)
+		{
+#ifdef OS_DEBUG
+			cerr
+			<< "WARNING: MapDrivePlugIn::makeMap():\n"
+			"\tpathway is a 'OpenSteer::PolylineSegmentedPathwaySingleRadius'"
+			"\tpathway converting to 'OpenSteer::PolylineSegmentedPathwaySegmentRadii'"
+			<< endl;
+#endif
+			OpenSteer::PolylineSegmentedPathwaySingleRadius * path =
+					static_cast<PolylineSegmentedPathwaySingleRadius*>(m_pathway[0]);
+			//
+			size_type pointCount =
+					path->isCyclic() ?
+							path->pointCount() - 1 : path->pointCount();
+			OpenSteer::Vec3* points = new OpenSteer::Vec3[pointCount];
+			float* radii = new float[pointCount];
+			for (size_type idx = 0; idx < pointCount; ++idx)
+			{
+				points[idx] = path->point(idx);
+				radii[idx] = path->radius();
+			}
+			setPathway(pointCount, points, false, radii, path->isCyclic());
+			delete[] points;
+			delete[] radii;
+			//
+			return;
+		}
+		if (pathway->pointCount() < 2)
 		{
 			return;
 		}
-		//
-		worldSize = _worldSize;
+		//check if there is a map
+		if (map != NULL)
+		{
+			// remove old map
+			delete map;
+			map = NULL;
+		}
+		//take the pathway's center and min/max dimensions
+		float minMaxX[2] =
+		{ FLT_MAX, -FLT_MAX }; //min,max
+		float minMaxY[2] =
+		{ FLT_MAX, -FLT_MAX }; //min,max
+		float minMaxZ[2] =
+		{ FLT_MAX, -FLT_MAX }; //min,max
+		Vec3 center = Vec3::zero;
+		for (size_type i = 0; i < pathway->pointCount(); ++i)
+		{
+			Vec3 point = pathway->point(i);
+			//x
+			if (point.x < minMaxX[0])
+			{
+				minMaxX[0] = point.x;
+			}
+			if (point.x > minMaxX[1])
+			{
+				minMaxX[1] = point.x;
+			}
+			//y
+			if (point.y < minMaxY[0])
+			{
+				minMaxY[0] = point.y;
+			}
+			if (point.y > minMaxY[1])
+			{
+				minMaxY[1] = point.y;
+			}
+			//z
+			if (point.z < minMaxY[0])
+			{
+				minMaxY[0] = point.z;
+			}
+			if (point.z > minMaxY[1])
+			{
+				minMaxY[1] = point.z;
+			}
+			center = center + point;
+		}
+		center = center / (float) pathway->pointCount();
+		//take the max radius of the pathway's segment(s)
+		float maxRadius = 0.0;
+		for (size_type i = 0; i < pathway->segmentCount(); ++i)
+		{
+			if (pathway->segmentRadius(i) > maxRadius)
+			{
+				maxRadius = pathway->segmentRadius(i);
+			}
+		}
+		//take max spread of the pathway's points
+		float dX = minMaxX[1] - minMaxX[0];
+		float dY = minMaxY[1] - minMaxY[0];
+		float dZ = minMaxZ[1] - minMaxZ[0];
+		//set the map's values
+		float tolerance = 5.0;
+		worldSize = max(max(dX, dY), dZ) + maxRadius * tolerance;
 		worldDiag = sqrtXXX(square(worldSize) / 2);
+		worldCenter = center;
+		worldResolution = resolution;
 #ifdef OLDTERRAINMAP
-		map = new TerrainMap(c, worldSize, worldSize, resolution);
+		map = new (nothrow) TerrainMap(worldCenter, worldSize, worldSize,
+				resolution);
 #else
-		map = new TerrainMap (worldSize, worldSize, 1);
+		map = new(nothrow) TerrainMap (worldSize, worldSize, 1);
 #endif
 
-		regenerateMap();
+		if (map)
+		{
+			regenerateMap();
+		}
+		else
+		{
+			worldSize = 1.0;
+			worldDiag = sqrtXXX(square(worldSize) / 2);
+			worldCenter = Vec3();
+			worldResolution = 1;
+		}
+
+		// update references of all vehicles to the new map (may be NULL)
+		iterator iter;
+		for (iter = vehicles.begin(); iter != vehicles.end(); ++iter)
+		{
+			//set map
+			(*iter)->map = map;
+			//set world size
+			(*iter)->worldSize = worldSize;
+			(*iter)->worldDiag = worldSize;
+		}
 	}
 
 	// map of obstacles
@@ -4167,10 +4403,12 @@ public:
 	// size of the world (the map actually)
 	float worldSize;
 	float worldDiag;
+	Vec3 worldCenter;
+	int worldResolution;///serializable
 
 	// which of the three demo modes is selected
-	int demoSelect;
-	bool curvedSteering;
+	int demoSelect;///serializable
+	bool curvedSteering;///serializable
 
 #ifdef OS_DEBUG
 	float windowWidth;
@@ -4180,7 +4418,7 @@ public:
 	typename MapDriver<Entity>::groupType vehicles; // for allVehicles
 	typedef typename MapDriver<Entity>::groupType::const_iterator iterator;
 
-	bool usePathFences;
+	bool usePathFences;///serializable
 ///	bool useRandomRocks;
 };
 

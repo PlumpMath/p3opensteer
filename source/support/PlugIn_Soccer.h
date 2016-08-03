@@ -146,8 +146,6 @@ class Ball: public VehicleAddOnMixin<SimpleVehicle, Entity>
 {
 public:
 
-	virtual ~Ball(){}
-
 	// type for a ball: an STL vector of Ball pointers
 	typedef typename std::vector<Ball<Entity>*> groupType;
 
@@ -155,13 +153,15 @@ public:
 ///			m_bbox(bbox)
 	Ball():m_bbox(NULL)
 	{
-		//set default home
-		m_home = this->m_start;
 		reset();
 	}
 
+	virtual ~Ball()
+	{
+	}
+
 	// reset state
-	void reset(void)
+	virtual void reset(void)
 	{
 		SimpleVehicle::reset(); // reset the vehicle
 		VehicleAddOnMixin<SimpleVehicle, Entity>::reset();
@@ -176,6 +176,8 @@ public:
 		this->clearTrailHistory();    // prevent long streaks due to teleportation
 		this->setTrailParameters(100, 6000);
 #endif
+		//set default home
+		m_home = this->getStart();
 	}
 
 	// place in the center
@@ -196,17 +198,25 @@ public:
 		this->applyBrakingForce(1.5f, elapsedTime);
 		this->applySteeringForce(this->velocity(), elapsedTime);
 		// are we now outside the field?
-		if (!m_bbox->InsideX(this->position()))
+///		if (!m_bbox->InsideX(this->position()))
+///		{
+///			Vec3 d = this->velocity();
+///			this->regenerateOrthonormalBasis(Vec3(-d.x, d.y, d.z));
+///			this->applySteeringForce(this->velocity(), elapsedTime);
+///		}
+///		if (!m_bbox->InsideZ(this->position()))
+///		{
+///			Vec3 d = this->velocity();
+///			this->regenerateOrthonormalBasis(Vec3(d.x, d.y, -d.z));
+///			this->applySteeringForce(this->velocity(), elapsedTime);
+///		}
+		if (!m_bbox->InsideX(this->position())
+				|| !m_bbox->InsideZ(this->position()))
 		{
-			Vec3 d = this->velocity();
-			this->regenerateOrthonormalBasis(Vec3(-d.x, d.y, d.z));
-			this->applySteeringForce(this->velocity(), elapsedTime);
-		}
-		if (!m_bbox->InsideZ(this->position()))
-		{
-			Vec3 d = this->velocity();
-			this->regenerateOrthonormalBasis(Vec3(d.x, d.y, -d.z));
-			this->applySteeringForce(this->velocity(), elapsedTime);
+			Vec3 d = this->position() - this->m_home;
+			this->regenerateOrthonormalBasis(Vec3(-d.x, d.y, -d.z));
+			this->applySteeringForce(this->forward() * d.length(),
+					elapsedTime);
 		}
 
 		///call the entity update
@@ -276,13 +286,15 @@ public:
 		m_Ball = NULL;
 		b_ImTeamA = true;
 		m_TeamAssigned = false;
-		//set default home
-		m_home = this->m_start;
 		reset();
 	}
 
+	virtual ~Player()
+	{
+	}
+
 	// reset state
-	void reset(void)
+	virtual void reset(void)
 	{
 		SimpleVehicle::reset(); // reset the vehicle
 		VehicleAddOnMixin<SimpleVehicle, Entity>::reset();
@@ -310,6 +322,8 @@ public:
 		this->clearTrailHistory();    // prevent long streaks due to teleportation
 		this->setTrailParameters(10, 60);
 #endif
+		//set default home
+		m_home = this->getStart();
 	}
 
 	// per frame simulation update
@@ -413,11 +427,11 @@ public:
 ///	const std::vector<Player*> m_others;
 	std::vector<Player*>* m_AllPlayers;
 	Ball<Entity>* m_Ball;
-	bool b_ImTeamA;
+	bool b_ImTeamA;///serializable
 	bool m_TeamAssigned;
 ///	int m_MyID;
-	Vec3 m_home;
-	float m_distHomeToBall;
+	Vec3 m_home;///serializable
+	float m_distHomeToBall;///serializable
 };
 
 //Player externally updated.
@@ -443,9 +457,9 @@ public:
 				(AVGroup&) this->m_AllPlayers);
 		if (collisionAvoidance == Vec3::zero)
 		{
-			float distHomeToBall = Vec3::distance(this->m_start,
+			float distHomeToBall = Vec3::distance(this->getStart(),
 					this->m_Ball->position());
-			if (distHomeToBall < 12.0f)
+			if (distHomeToBall < this->m_distHomeToBall)
 			{
 				// go for ball if I'm on the 'right' side of the ball
 				if (! (
@@ -485,6 +499,21 @@ class MicTestPlugIn: public PlugIn
 {
 public:
 
+	MicTestPlugIn() :
+			m_Ball(NULL), m_bbox(NULL), m_TeamAGoal(NULL), m_TeamBGoal(NULL), m_redScore(
+					0), m_blueScore(0)
+	{
+		TeamA.clear();
+		TeamB.clear();
+		m_AllPlayers.clear();
+		m_AllVehicles.clear();
+	}
+
+	// be more "nice" to avoid a compiler warning
+	virtual ~MicTestPlugIn()
+	{
+	}
+
 	const char* name(void)
 	{
 		return "Michael's Simple Soccer";
@@ -493,11 +522,6 @@ public:
 	// float selectionOrderSortKey (void) {return 0.06f;}
 
 	// bool requestInitialSelection() { return true;}
-
-	// be more "nice" to avoid a compiler warning
-	virtual ~MicTestPlugIn()
-	{
-	}
 
 	void open(void)
 	{
@@ -696,35 +720,56 @@ public:
 		{
 			return false;
 		}
-		//check if this is a Ball
+		// try to add a Ball
 		Ball<Entity>* ballTmp =
 				dynamic_cast<Ball<Entity>*>(vehicle);
 		if (ballTmp)
 		{
+#ifndef NDEBUG
+			///addVehicle() must not change vehicle's settings
+			VehicleSettings settings = ballTmp->getSettings();
+#endif
 			// set the plugin's ball: the last added one
 			m_Ball = ballTmp;
 			// set the ball's AABB
 			m_Ball->m_bbox = m_bbox;
 			// update the ball home: the field center
 			m_Ball->m_home = (m_bbox->getMin() + m_bbox->getMax()) / 2.0;
-			m_Ball->reset();
-			m_Ball->placeInCenter();
+///			m_Ball->reset();
+///			// are ball now outside the field?
+///			if ((!m_bbox->InsideX(m_Ball->position()))
+///					|| (!m_bbox->InsideZ(m_Ball->position())))
+///			{
+///				m_Ball->placeInCenter();
+///			}
 			//update each player's ball
 			setAllPlayersBall();
+
+			///addVehicle() must not change vehicle's settings
+			assert(settings == ballTmp->getSettings());
+
 			//that's all
 			return true;
 		}
-		//or if this is a Player
+		// try to add a Player
 		Player<Entity>* playerTmp =
 			dynamic_cast<Player<Entity>*>(vehicle);
 		if (playerTmp)
 		{
+#ifndef NDEBUG
+			///addVehicle() must not change vehicle's settings
+			VehicleSettings settings = playerTmp->getSettings();
+#endif
 			// add player to all players' repo
 			m_AllPlayers.push_back(playerTmp);
 			// set the player's all player repo
 			playerTmp->m_AllPlayers = &m_AllPlayers;
 			// set the player's ball
 			playerTmp->m_Ball = m_Ball;
+
+			///addVehicle() must not change vehicle's settings
+			assert(settings == playerTmp->getSettings());
+
 			//that's all
 			return true;
 		}
@@ -987,12 +1032,12 @@ public:
 
 	typedef typename Player<Entity>::groupType::iterator iterator;
 
-	AABBox *m_bbox;
-	AABBox *m_TeamAGoal;
-	AABBox *m_TeamBGoal;
-	int junk;
-	int m_redScore;
-	int m_blueScore;
+	AABBox *m_bbox;///serializable (indirectly)
+	AABBox *m_TeamAGoal;///serializable (indirectly)
+	AABBox *m_TeamBGoal;///serializable (indirectly)
+///	int junk;
+	int m_redScore;///serializable
+	int m_blueScore;///serializable
 	//
 	AVGroup m_AllVehicles;
 };

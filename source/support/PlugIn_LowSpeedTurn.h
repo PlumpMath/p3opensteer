@@ -76,8 +76,12 @@ public:
 		steeringSpeed = 1.0;
 	}
 
+	virtual ~LowSpeedTurn()
+	{
+	}
+
 	// reset state
-	void reset(void)
+	virtual void reset(void)
 	{
 		// reset vehicle state
 		SimpleVehicle::reset();
@@ -171,6 +175,17 @@ class LowSpeedTurnPlugIn: public PlugIn
 {
 public:
 
+	LowSpeedTurnPlugIn() :
+			steeringSpeed(0.0)
+	{
+		all.clear();
+	}
+
+	// be more "nice" to avoid a compiler warning
+	virtual ~LowSpeedTurnPlugIn()
+	{
+	}
+
 	const char* name(void)
 	{
 		return "Low Speed Turn";
@@ -179,11 +194,6 @@ public:
 	float selectionOrderSortKey(void)
 	{
 		return 0.05f;
-	}
-
-	// be more "nice" to avoid a compiler warning
-	virtual ~LowSpeedTurnPlugIn()
-	{
 	}
 
 	void open(void)
@@ -255,13 +265,21 @@ public:
 		{
 			return false;
 		}
-		// get low speed turn
-		LowSpeedTurn<Entity>* lowSpeedTurn =
+		// try to add a LowSpeedTurn
+		LowSpeedTurn<Entity>* lowSpeedTurnTmp =
 				dynamic_cast<LowSpeedTurn<Entity>*>(vehicle);
-		if (lowSpeedTurn)
+		if (lowSpeedTurnTmp)
 		{
+#ifndef NDEBUG
+			///addVehicle() must not change vehicle's settings
+			VehicleSettings settings = lowSpeedTurnTmp->getSettings();
+#endif
 			//set steering speed
-			lowSpeedTurn->steeringSpeed = steeringSpeed;
+			lowSpeedTurnTmp->steeringSpeed = steeringSpeed;
+
+			///addVehicle() must not change vehicle's settings
+			assert(settings == lowSpeedTurnTmp->getSettings());
+
 			//set result
 			return true;
 		}
@@ -279,7 +297,7 @@ public:
 	typename LowSpeedTurn<Entity>::groupType all; // for allVehicles
 	typedef typename LowSpeedTurn<Entity>::groupType::const_iterator iterator;
 
-	float steeringSpeed;
+	float steeringSpeed;///serializable
 };
 
 //LowSpeedTurnPlugIn gLowSpeedTurnPlugIn;

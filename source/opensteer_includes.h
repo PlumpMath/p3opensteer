@@ -22,6 +22,7 @@ namespace ossup
 {
 	struct VehicleSettings;
 	template<typename T1, typename T2> struct VehicleAddOnMixin;
+	template<typename T1> struct CtfBase{enum seekerState;};
 }
 
 #endif //CPPPARSER

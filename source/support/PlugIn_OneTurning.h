@@ -70,8 +70,12 @@ public:
 		reset();
 	}
 
+	virtual ~OneTurning()
+	{
+	}
+
 	// reset state
-	void reset(void)
+	virtual void reset(void)
 	{
 		SimpleVehicle::reset(); // reset the vehicle
 		VehicleAddOnMixin<SimpleVehicle, Entity>::reset();
@@ -129,6 +133,16 @@ class OneTurningPlugIn: public PlugIn
 {
 public:
 
+	OneTurningPlugIn()
+	{
+		theVehicle.clear();
+	}
+
+	// be more "nice" to avoid a compiler warning
+	virtual ~OneTurningPlugIn()
+	{
+	}
+
 	const char* name(void)
 	{
 		return "One Turning Away";
@@ -137,11 +151,6 @@ public:
 	float selectionOrderSortKey(void)
 	{
 		return 0.06f;
-	}
-
-	// be more "nice" to avoid a compiler warning
-	virtual ~OneTurningPlugIn()
-	{
 	}
 
 	void open(void)
