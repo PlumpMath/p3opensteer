@@ -85,6 +85,15 @@ public:
 #endif
 	}
 
+	virtual void resetToStart()
+	{
+		this->setPosition(this->getStart());
+#ifdef OS_DEBUG
+		this->clearTrailHistory();    // prevent long streaks due to teleportation
+		this->gaudyPursuitAnnotation = true; // select use of 9-color annotation
+#endif
+	}
+
 #ifdef OS_DEBUG
 	// draw into the scene
 	void draw(void)
@@ -188,7 +197,7 @@ public:
 		const float r = this->radius() + wanderer->radius();
 		if (d < r)
 		{
-			reset();
+			this->resetToStart();
 		}
 
 		const float maxTime = 20; // xxx hard-to-justify value
@@ -207,13 +216,13 @@ public:
 	// randomize heading only
 	void randomizeStartingPositionAndHeading(void)
 	{
-///		// randomize position on a ring between inner and outer radii
-///		// centered around the home base
-///		const float inner = 20;
-///		const float outer = 30;
-///		const float radius = frandom2(inner, outer);
-///		const Vec3 randomOnRing = RandomUnitVectorOnXZPlane() * radius;
-///		this->setPosition(wanderer->position() + randomOnRing);
+		// randomize position on a ring between inner and outer radii
+		// centered around the home base
+		const float inner = 20;
+		const float outer = 30;
+		const float radius = frandom2(inner, outer);
+		const Vec3 randomOnRing = RandomUnitVectorOnXZPlane() * radius;
+		this->setPosition(wanderer->position() + randomOnRing);
 
 		// randomize 2D heading
 		this->randomizeHeadingOnXZPlane();
@@ -340,12 +349,12 @@ public:
 			dynamic_cast<MpPursuer<Entity>*>(vehicle);
 		if (pursuerTmp)
 		{
-			//if not ExternalMpPursuer then randomize
-			if (! dynamic_cast<ExternalMpPursuer<Entity>*>(pursuerTmp))
-			{
-				// randomize only 2D heading
-				pursuerTmp->randomizeStartingPositionAndHeading();
-			}
+///			//if not ExternalMpPursuer then randomize
+///			if (! dynamic_cast<ExternalMpPursuer<Entity>*>(pursuerTmp))
+///			{
+///				// randomize only 2D heading
+///				pursuerTmp->randomizeStartingPositionAndHeading();
+///			}
 			// set the pursuer's wanderer
 			pursuerTmp->wanderer = wanderer;
 			//that's all

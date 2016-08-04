@@ -443,7 +443,6 @@ void OSSteerVehicle::do_finalize()
 
 /**
  * Sets flock settings.
- * \note OSSteerVehicle should be not externally updated.
  * \note BOID OSSteerVehicle only.
  */
 void OSSteerVehicle::set_flock_settings(const OSFlockSettings& settings)
@@ -536,22 +535,116 @@ OSSteerVehicle::OSSeekerState OSSteerVehicle::get_seeker_state() const
 }
 
 /**
- * Sets steering speed.
- * \note OSSteerVehicle should be not externally updated.
- * \note LOW_SPEED_TURN OSSteerVehicle only.
+ * Sets OSSteerVehicle's base look ahead time.
+ * \note MAP_DRIVER OSSteerVehicle only.
  */
-void OSSteerVehicle::set_steering_speed(float steeringSpeed)
+void OSSteerVehicle::set_base_look_ahead_time(float time)
 {
-	if (mVehicleType == LOW_SPEED_TURN)
+	if (mVehicleType == MAP_DRIVER)
 	{
-		static_cast<ossup::LowSpeedTurn<OSSteerVehicle>*>(mVehicle)->steeringSpeed =
-				steeringSpeed;
+		static_cast<ossup::MapDriver<OSSteerVehicle>*>(mVehicle)->baseLookAheadTime =
+				time;
 	}
 }
 
 /**
- * Returns steering speed.
- * Returns a negative value on error.
+ * Returns OSSteerVehicle's base look ahead time, or a negative value on error.
+ * \note MAP_DRIVER OSSteerVehicle only.
+ */
+float OSSteerVehicle::get_base_look_ahead_time() const
+{
+	if (mVehicleType == MAP_DRIVER)
+	{
+		return static_cast<ossup::MapDriver<OSSteerVehicle>*>(mVehicle)->baseLookAheadTime;
+	}
+	return OS_ERROR;
+}
+
+/**
+ * Enables/disables OSSteerVehicle to use incremental steering.
+ * \note MAP_DRIVER OSSteerVehicle only.
+ */
+void OSSteerVehicle::set_incremental_steering(bool enable)
+{
+	if (mVehicleType == MAP_DRIVER)
+	{
+		static_cast<ossup::MapDriver<OSSteerVehicle>*>(mVehicle)->incrementalSteering =
+				enable;
+	}
+}
+
+/**
+ * Returns if OSSteerVehicle uses incremental steering, or a negative value on
+ * error.
+ * \note MAP_DRIVER OSSteerVehicle only.
+ */
+bool OSSteerVehicle::get_incremental_steering() const
+{
+	return (mVehicleType == MAP_DRIVER) ?
+			static_cast<ossup::MapDriver<OSSteerVehicle>*>(mVehicle)->incrementalSteering :
+			OS_ERROR;
+}
+
+/**
+ * Sets this OSSteerVehicle's prediction type on the map (curved or linear).
+ * \note MAP_DRIVER OSSteerVehicle only.
+ */
+void OSSteerVehicle::set_map_prediction_type(OSSteerPlugIn::OSMapPredictionType
+		type)
+{
+	if (mVehicleType == MAP_DRIVER)
+	{
+		ossup::MapDriver<OSSteerVehicle>* vehicle =
+				static_cast<ossup::MapDriver<OSSteerVehicle>*>(mVehicle);
+		if (type == OSSteerPlugIn::CURVED_PREDICTION)
+		{
+			vehicle->curvedSteering = true;
+		}
+		else
+		{
+			// LINEAR_PREDICTION:
+			vehicle->curvedSteering = false;
+		}
+	}}
+
+/**
+ * Returns this OSSteerVehicle's prediction type on the map, or a negative value
+ * on error.
+ * \note MAP_DRIVER OSSteerVehicle only.
+ */
+OSSteerPlugIn::OSMapPredictionType OSSteerVehicle::get_map_prediction_type() const
+{
+	if (mVehicleType == MAP_DRIVER)
+	{
+		ossup::MapDriver<OSSteerVehicle>* vehicle =
+				static_cast<ossup::MapDriver<OSSteerVehicle>*>(mVehicle);
+		if (vehicle->curvedSteering)
+		{
+			return OSSteerPlugIn::CURVED_PREDICTION;
+		}
+		else
+		{
+			return OSSteerPlugIn::LINEAR_PREDICTION;
+		}
+	}
+	return (OSSteerPlugIn::OSMapPredictionType) OS_ERROR;
+}
+
+/**
+ * Sets OSSteerVehicle's steering speed.
+ * \note LOW_SPEED_TURN OSSteerVehicle only.
+ */
+void OSSteerVehicle::set_steering_speed(float speed)
+{
+	if (mVehicleType == LOW_SPEED_TURN)
+	{
+		static_cast<ossup::LowSpeedTurn<OSSteerVehicle>*>(mVehicle)->steeringSpeed =
+				speed;
+	}
+}
+
+/**
+ * Returns OSSteerVehicle's steering speed, or a negative value on error.
  * \note LOW_SPEED_TURN OSSteerVehicle only.
  */
 float OSSteerVehicle::get_steering_speed() const
@@ -1157,6 +1250,9 @@ void OSSteerVehicle::write_datagram(BamWriter *manager, Datagram &dg)
 	if(mVehicleType == MAP_DRIVER)
 	{
 		dg.add_uint8((uint8_t) get_pathway_direction());
+		dg.add_stdfloat(get_base_look_ahead_time());
+		dg.add_bool(get_incremental_steering());
+		dg.add_uint8((uint8_t) get_map_prediction_type());
 	}
 }
 
@@ -1194,7 +1290,9 @@ void OSSteerVehicle::finalize(BamReader *manager)
 	//2: (re)set type
 	//create the new OpenSteer vehicle
 	do_create_vehicle(mVehicleType);
-	//3: add the new OpenSteer vehicle to real update list (if needed), by
+	//3: set the new OpenSteer vehicle's settings
+	set_settings(mVehicleSettings);
+	//4: add the new OpenSteer vehicle to real update list (if needed), by
 	//checking if plug-in has gained its final type (i.e. finalized)
 	if (mSteerPlugIn
 			&& (mSteerPlugIn->check_steer_vehicle_compatibility(
@@ -1203,8 +1301,6 @@ void OSSteerVehicle::finalize(BamReader *manager)
 		static_cast<ossup::PlugIn*>(&mSteerPlugIn->get_abstract_plug_in())->addVehicle(
 				mVehicle);
 	}
-	//4: set the new OpenSteer vehicle's settings
-	set_settings(mVehicleSettings);
 
 	///SERIALIZATION ONLY
 	nassertv_always(mSerializedDataTmpPtr != NULL)
@@ -1407,6 +1503,10 @@ void OSSteerVehicle::fillin(DatagramIterator &scan, BamReader *manager)
 	{
 		mSerializedDataTmpPtr->mPathwayDirection =
 				(OSPathDirection) scan.get_uint8();
+		mSerializedDataTmpPtr->mBaseLookAheadTime = scan.get_stdfloat();
+		mSerializedDataTmpPtr->mIncrementalSteering = scan.get_bool();
+		mSerializedDataTmpPtr->mMapPredictionType =
+				(OSSteerPlugIn::OSMapPredictionType)scan.get_uint8();
 	}
 }
 

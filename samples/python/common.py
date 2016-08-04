@@ -302,9 +302,10 @@ def handleVehicles(data = None):
             moveType = vehicleData.moveType
             steerPlugIn = vehicleData.steerPlugIn
             steerVehicles = vehicleData.steerVehicles
-            vehicleAnimCtls = vehicleData.vehicleAnimCtls            
+            vehicleAnimCtls = vehicleData.vehicleAnimCtls
+            deltaPos = vehicleData.deltaPos          
             # add vehicle
-            pos = entry0.get_surface_point(NodePath())
+            pos = entry0.get_surface_point(NodePath()) + deltaPos
             getVehicleModelAnims(meanScale, vehicleFileIdx, moveType, sceneNP, 
                                  steerPlugIn, steerVehicles, 
                                  vehicleAnimCtls, pos)

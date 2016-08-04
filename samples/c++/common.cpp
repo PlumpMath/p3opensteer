@@ -359,8 +359,9 @@ void handleVehicles(const Event* e, void* data)
 			PT(OSSteerPlugIn)steerPlugIn = vehicleData->steerPlugIn;
 			vector<PT(OSSteerVehicle)>&steerVehicles = vehicleData->steerVehicles;
 			vector<vector<PT(AnimControl)> >&vehicleAnimCtls = vehicleData->vehicleAnimCtls;
+			LVector3f deltaPos = vehicleData->deltaPos;
 			// add vehicle
-			LPoint3f pos = entry0->get_surface_point(NodePath());
+			LPoint3f pos = entry0->get_surface_point(NodePath()) + deltaPos;
 			getVehicleModelAnims(meanScale, vehicleFileIdx, moveType, sceneNP,
 					steerPlugIn, steerVehicles, vehicleAnimCtls, pos);
 			// show the added vehicles

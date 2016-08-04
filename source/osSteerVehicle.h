@@ -225,15 +225,20 @@ PUBLISHED:
 	 * \name MAP STEERING SETTINGS (MAP_DRIVER)
 	 */
 	///@{
-	void set_XXX(float steeringSpeed = 1.0);//XXX
-	float get_XXX() const;//XXX
+	void set_base_look_ahead_time(float time = 3.0);
+	float get_base_look_ahead_time() const;
+	void set_incremental_steering(bool enable = true);
+	bool get_incremental_steering() const;
+	void set_map_prediction_type(OSSteerPlugIn::OSMapPredictionType
+			type = OSSteerPlugIn::CURVED_PREDICTION);
+	OSSteerPlugIn::OSMapPredictionType get_map_prediction_type() const;
 	///@}
 
 	/**
 	 * \name STEERING SPEED SETTINGS (LOW_SPEED_TURN)
 	 */
 	///@{
-	void set_steering_speed(float steeringSpeed = 1.0);
+	void set_steering_speed(float speed = 1.0);
 	float get_steering_speed() const;
 	///@}
 
@@ -342,6 +347,10 @@ private:
 		OSFlockSettings mFlockSettings;
 		//low speed turn
 		float mSteeringSpeed;
+		//map driver
+		float mBaseLookAheadTime;
+		bool mIncrementalSteering;
+		OSSteerPlugIn::OSMapPredictionType mMapPredictionType;
 	}*mSerializedDataTmpPtr;
 	// persistent storage for serialized data
 	//soccer

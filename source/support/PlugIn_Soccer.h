@@ -156,7 +156,7 @@ public:
 	Ball():m_bbox(NULL)
 	{
 		//set default home
-		m_home = this->m_start;
+		m_home = this->getStart();
 		reset();
 	}
 
@@ -277,7 +277,7 @@ public:
 		b_ImTeamA = true;
 		m_TeamAssigned = false;
 		//set default home
-		m_home = this->m_start;
+		m_home = this->getStart();
 		reset();
 	}
 
@@ -443,7 +443,7 @@ public:
 				(AVGroup&) this->m_AllPlayers);
 		if (collisionAvoidance == Vec3::zero)
 		{
-			float distHomeToBall = Vec3::distance(this->m_start,
+			float distHomeToBall = Vec3::distance(this->getStart(),
 					this->m_Ball->position());
 			if (distHomeToBall < 12.0f)
 			{
@@ -707,8 +707,13 @@ public:
 			m_Ball->m_bbox = m_bbox;
 			// update the ball home: the field center
 			m_Ball->m_home = (m_bbox->getMin() + m_bbox->getMax()) / 2.0;
-			m_Ball->reset();
-			m_Ball->placeInCenter();
+///			m_Ball->reset();
+			// are ball now outside the field?
+			if ((!m_bbox->InsideX(m_Ball->position()))
+					|| (!m_bbox->InsideZ(m_Ball->position())))
+			{
+				m_Ball->placeInCenter();
+			}
 			//update each player's ball
 			setAllPlayersBall();
 			//that's all

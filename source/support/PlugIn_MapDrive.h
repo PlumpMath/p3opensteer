@@ -946,36 +946,14 @@ typedef PolylineSegmentedPathwaySegmentRadii GCRoute;
 
  */
 
-
-XXX;
-//// QQQ first pass at detecting "stuck" state
-//bool stuck;
-//Vec3 qqqLastNearestObstacle;
-//// QQQ temporary global QQQoaJustScraping
-//// QQQ replace this global flag with a cleaner mechanism
-//bool QQQoaJustScraping;
-//// for "curvature-based incremental steering" -- contains the current
-//// steering into which new incremental steering is blended
-//Vec3 currentSteering;
-//// use curved prediction and incremental steering:
-//bool curvedSteering;
-//bool incrementalSteering;
-//// which of the three demo modes is selected
-//int demoSelect;
-//// size of the world (the map actually)
-//float worldSize;
-//float worldDiag;
-
 /**
  * \note: Public class members for tweaking:
  * - \var pathFollowDirection: follow the path "upstream or downstream" (+1/-1)
  * (int)
  * - \var baseLookAheadTime: master look ahead (prediction) time (float)
- *
+ * - \var curvedSteering: use curved prediction (bool)
+ * - \var incrementalSteering: use incremental steering (bool)
  */
-
-
-
 // ----------------------------------------------------------------------------
 template<typename Entity>
 class MapDriver: public VehicleAddOnMixin<SimpleVehicle, Entity>
@@ -1110,9 +1088,45 @@ public:
 		//      annoteMaxRelSpeed = annoteMaxRelSpeedCurve = annoteMaxRelSpeedPath = 1;
 	}
 
+	// reset state along path and inside map
+	void resetForPathOrMap(void)
+	{
+		// init dynamically controlled radius
+		adjustVehicleRadiusForSpeed();
+#ifdef OS_DEBUG
+		// not previously avoiding
+		annotateAvoid = Vec3::zero;
+		// prevent long streaks due to teleportation
+		this->clearTrailHistory();
+#endif
+		// first pass at detecting "stuck" state
+		stuck = false;
+		// QQQ need to clean up this hack
+		qqqLastNearestObstacle = Vec3::zero;
+		if (demoSelect == 2)
+		{
+#ifdef OS_DEBUG
+			lapsStarted++;
+#endif
+			const float d = (float) pathFollowDirection;
+			this->regenerateOrthonormalBasisUF(Vec3::side * d);
+		}
+		// reset bookeeping to detect stuck cycles
+		resetStuckCycleDetection();
+		// assume no previous steering
+		currentSteering = Vec3::zero;
+#ifdef OS_DEBUG
+		// assume normal running state
+		dtZero = false;
+#endif
+		// QQQ temporary global QQQoaJustScraping
+		QQQoaJustScraping = false;
+	}
+
 	void resetToPath()
 	{
-		reset();
+///		reset();
+		resetForPathOrMap();
 		if(path && path->isValid())
 		{
 			Vec3 forward;
@@ -1143,7 +1157,8 @@ public:
 		}
 		else
 		{
-			reset();
+///			reset();
+			resetForPathOrMap();
 			float x = frandom2(map->center.x - map->xSize / 2.0 * 0.9,
 					map->center.x + map->xSize / 2.0 * 0.9);
 			float z = frandom2(map->center.z - map->zSize / 2.0 * 0.9,
@@ -3039,8 +3054,8 @@ public:
 		worldCenter = Vec3();
 		worldResolution = 1;
 
-		// reset this plugin
-		reset();
+///		// reset this plugin
+///		reset();
 	}
 
 	void update(const float currentTime, const float elapsedTime)
@@ -3335,6 +3350,9 @@ public:
 #ifdef OS_DEBUG
 			mapDriver->windowWidth = windowWidth;
 #endif
+			// vehicle is 2 * radius meters wide and 3 * radius meters long
+			mapDriver->halfWidth = mapDriver->radius() * 1.0f;
+			mapDriver->halfLength = mapDriver->radius() * 1.5f;
 			//set result
 			return true;
 		}

@@ -691,13 +691,14 @@ public:
 			//if not ExternalBoid then randomize
 			if (! dynamic_cast<ExternalBoid<Entity>*>(boid))
 			{
-				// randomize initial orientation
-				boid->regenerateOrthonormalBasisUF(RandomUnitVector());
-				// randomize initial position: inside the world sphere
-				boid->setPosition(
-						worldCenter
-								+ RandomVectorInUnitRadiusSphere()
-										* worldRadius);
+///				// randomize initial orientation
+///				boid->regenerateOrthonormalBasisUF(RandomUnitVector());
+				boid->regenerateOrthonormalBasisUF(boid->forward());
+///				// randomize initial position: inside the world sphere
+///				boid->setPosition(
+///						worldCenter
+///								+ RandomVectorInUnitRadiusSphere()
+///										* worldRadius);
 			}
 			// allocate a token for this boid in the proximity database
 			boid->newPD(*pd);

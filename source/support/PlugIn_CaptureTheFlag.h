@@ -159,7 +159,7 @@ public:
 	virtual void resetToStart(void)
 	{
 		avoiding = false;         // not activossup avoiding
-		randomizeStartingPositionAndHeading();  // new starting position
+///		randomizeStartingPositionAndHeading();  // new starting position
 		this->setPosition(this->getStart());
 #ifdef OS_DEBUG
 		this->clearTrailHistory();     // prevent long streaks due to teleportation
@@ -202,25 +202,27 @@ public:
 
 ///	void drawHomeBase(void);
 
-	void randomizeStartingPositionAndHeading(void)
+	void randomizeStartingPositionAndHeading(float gMinStartRadius = 30,
+			float gMaxStartRadius = 40)
 	{
-///		// randomize position on a ring between inner and outer radii
-///		// centered around the home base
+		// randomize position on a ring between inner and outer radii
+		// centered around the home base
 ///		const float rRadius = frandom2(gCtfPlugInData->gMinStartRadius, m_CtfPlugInData->gMaxStartRadius);
-///		const Vec3 randomOnRing = RandomUnitVectorOnXZPlane() * rRadius;
-///		this->setPosition(gCtfPlugInData->gHomeBaseCenter + randomOnRing);
-///		// are we are too close to an obstacle?
-///		if (minDistanceToObstacle(this->position()) < this->radius() * 5)
-///		{
-///			// if so, retry the randomization (this recursive call may not return
-///			// if there is too little free space)
-///			randomizeStartingPositionAndHeading();
-///		}
-///		else
-///		{
-		// otherwise, if the position is OK, randomize 2D heading
-		this->randomizeHeadingOnXZPlane();
-///		}
+		const float rRadius = frandom2(gMinStartRadius, gMaxStartRadius);
+		const Vec3 randomOnRing = RandomUnitVectorOnXZPlane() * rRadius;
+		this->setPosition(gCtfPlugInData->gHomeBaseCenter + randomOnRing);
+		// are we are too close to an obstacle?
+		if (minDistanceToObstacle(this->position()) < this->radius() * 5)
+		{
+			// if so, retry the randomization (this recursive call may not return
+			// if there is too little free space)
+			randomizeStartingPositionAndHeading();
+		}
+		else
+		{
+			// otherwise, if the position is OK, randomize 2D heading
+			this->randomizeHeadingOnXZPlane();
+		}
 	}
 
 	enum seekerState
@@ -1038,12 +1040,12 @@ public:
 				dynamic_cast<CtfSeeker<Entity>*>(vehicle);
 		if (ctfSeekerTmp)
 		{
-			//if not ExternalCtfSeeker then randomize
-			if (! dynamic_cast<ExternalCtfSeeker<Entity>*>(ctfSeekerTmp))
-			{
-				// randomize 2D heading
-				ctfSeekerTmp->randomizeStartingPositionAndHeading();
-			}
+///			//if not ExternalCtfSeeker then randomize
+///			if (! dynamic_cast<ExternalCtfSeeker<Entity>*>(ctfSeekerTmp))
+///			{
+///				// randomize 2D heading
+///				ctfSeekerTmp->randomizeStartingPositionAndHeading();
+///			}
 			// set seeker plugin data & obstacles
 			ctfSeekerTmp->gCtfPlugInData = &m_CtfPlugInData;
 			ctfSeekerTmp->allObstacles = obstacles;
@@ -1061,12 +1063,12 @@ public:
 			dynamic_cast<CtfEnemy<Entity>*>(vehicle);
 		if (ctfEnemyTmp)
 		{
-			//if not ExternalCtfEnemy then randomize
-			if (! dynamic_cast<ExternalCtfEnemy<Entity>*>(ctfEnemyTmp))
-			{
-				// randomize only 2D heading
-				ctfEnemyTmp->randomizeStartingPositionAndHeading();
-			}
+///			//if not ExternalCtfEnemy then randomize
+///			if (! dynamic_cast<ExternalCtfEnemy<Entity>*>(ctfEnemyTmp))
+///			{
+///				// randomize only 2D heading
+///				ctfEnemyTmp->randomizeStartingPositionAndHeading();
+///			}
 			// set enemy plugin data & obstacles
 			ctfEnemyTmp->gCtfPlugInData = &m_CtfPlugInData;
 			ctfEnemyTmp->allObstacles = obstacles;

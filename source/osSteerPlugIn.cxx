@@ -1051,8 +1051,7 @@ void OSSteerPlugIn::set_world_radius(float radius)
 }
 
 /**
- * Returns the world radius.
- * Returns a negative on error.
+ * Returns the world radius, or a negative value on error.
  * \note BOID OSSteerPlugIn only.
  */
 float OSSteerPlugIn::get_world_radius() const
