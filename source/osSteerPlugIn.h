@@ -240,6 +240,7 @@ PUBLISHED:
 	void enable_debug_drawing(NodePath debugCamera);
 	void disable_debug_drawing();
 	int toggle_debug_drawing(bool enable);
+	void debug_drawing_to_texture(const NodePath& scene, int resolution);
 	///@}
 
 public:
