@@ -495,6 +495,36 @@ public:
 		pathEndpoint1 = points[numOfPoints - 1];
 	}
 
+	virtual void drawPath(void)
+	{
+		typedef OpenSteer::SegmentedPathway::size_type size_type;
+
+		// draw a line along each segment of path
+		const OpenSteer::SegmentedPathway& path =
+				dynamic_cast<OpenSteer::SegmentedPathway&>(*m_pathway);
+		gDrawer3d->setTwoSided(true);
+		for (size_type i = 1; i < path.pointCount(); ++i)
+		{
+			drawLine(path.point(i), path.point(i - 1), OpenSteer::gRed);
+		}
+		gDrawer3d->setTwoSided(false);
+	}
+
+
+	virtual void drawObstacles(void)
+	{
+		gDrawer3d->setTwoSided(true);
+		// draw obstacles
+		OpenSteer::ObstacleIterator iterObstacle;
+		for (iterObstacle = localObstacles->begin();
+				iterObstacle != localObstacles->end(); ++iterObstacle)
+		{
+			(*iterObstacle)->draw(false, OpenSteer::Color(0, 0, 0),
+					OpenSteer::Vec3(0, 0, 0));
+		}
+		gDrawer3d->setTwoSided(false);
+	}
+
 	///A reference to global obstacles handled by all plugins.
 	OpenSteer::ObstacleGroup* obstacles;
 	///A reference to local obstacles handled by this plugins.

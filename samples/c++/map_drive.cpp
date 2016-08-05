@@ -142,6 +142,9 @@ int main(int argc, char *argv[])
 			window->get_aspect_2d());
 	// enable debug drawing
 	steerPlugIn->enable_debug_drawing(window->get_camera_group());
+	// print debug draw texture
+	steerPlugIn->debug_drawing_to_texture(sceneNP,
+			window->get_graphics_output());
 
 	/// set events' callbacks
 	// toggle debug draw

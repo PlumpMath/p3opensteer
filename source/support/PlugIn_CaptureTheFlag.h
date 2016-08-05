@@ -1162,22 +1162,22 @@ public:
 		drawXZDisk(m_CtfPlugInData.gHomeBaseRadius / 15, m_CtfPlugInData.gHomeBaseCenter + up, gBlack, 20);
 	}
 
-	void drawObstacles(void)
-	{
-		const Color color(0.8f, 0.6f, 0.4f);
+///	void drawObstacles(void)
+///	{
+///		const Color color(0.8f, 0.6f, 0.4f);
 ///		const SOG& allSO = CtfBase::allObstacles;
 ///		for (SOI so = allSO.begin(); so != allSO.end(); so++)
 ///		{
 ///			drawXZCircle((**so).radius, (**so).center, color, 40);
 ///		}
-		// draw obstacles
-		ObstacleIterator iterObstacle;
-		for (iterObstacle = localObstacles->begin();
-				iterObstacle != localObstacles->end(); ++iterObstacle)
-		{
-			(*iterObstacle)->draw(false, color, Vec3(0, 0, 0));
-		}
-	}
+///		// draw obstacles
+///		ObstacleIterator iterObstacle;
+///		for (iterObstacle = localObstacles->begin();
+///				iterObstacle != localObstacles->end(); ++iterObstacle)
+///		{
+///			(*iterObstacle)->draw(false, color, Vec3(0, 0, 0));
+///		}
+///	}
 #endif
 
 	// a group (STL vector) of all vehicles in the PlugIn

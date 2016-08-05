@@ -10,6 +10,8 @@
 #include "osSteerVehicle.h"
 #include "osSteerManager.h"
 #include "camera.h"
+#include "orthographicLens.h"
+#include "graphicsOutput.h"
 
 #ifndef CPPPARSER
 #include "support/PlugIn_OneTurning.h"
@@ -639,7 +641,7 @@ void OSSteerPlugIn::set_pathway(const ValueList<LPoint3f>& pointList,
 	mPathwaySingleRadius = singleRadius;
 	mPathwayClosedCycle = closedCycle;
 #ifdef OS_DEBUG
-	do_debug_draw_static_geometry();
+	do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
 #endif //OS_DEBUG
 }
 
@@ -780,7 +782,7 @@ int OSSteerPlugIn::do_add_obstacle(NodePath objectNP,
 		}
 	}
 #ifdef OS_DEBUG
-	do_debug_draw_static_geometry();
+	do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
 #endif //OS_DEBUG
 	return ref;
 }
@@ -854,7 +856,7 @@ NodePath OSSteerPlugIn::remove_obstacle(int ref)
 		mLocalObstacles.second().erase(iterAL);
 	}
 #ifdef OS_DEBUG
-	do_debug_draw_static_geometry();
+	do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
 #endif //OS_DEBUG
 	//
 	return resultNP;
@@ -1011,7 +1013,7 @@ void OSSteerPlugIn::set_world_center(const LPoint3f& center)
 				static_cast<ossup::BoidsPlugIn<OSSteerVehicle>*>(mPlugIn);
 		plugIn->worldCenter = ossup::LVecBase3fToOpenSteerVec3(center);
 #ifdef OS_DEBUG
-	do_debug_draw_static_geometry();
+	do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
 #endif //OS_DEBUG
 	}
 }
@@ -1045,7 +1047,7 @@ void OSSteerPlugIn::set_world_radius(float radius)
 				static_cast<ossup::BoidsPlugIn<OSSteerVehicle>*>(mPlugIn);
 		plugIn->worldRadius = radius;
 #ifdef OS_DEBUG
-	do_debug_draw_static_geometry();
+	do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
 #endif //OS_DEBUG
 	}
 }
@@ -1152,7 +1154,7 @@ void OSSteerPlugIn::set_playing_field(const LPoint3f& min, const LPoint3f& max,
 		plugIn->setSoccerField(ossup::LVecBase3fToOpenSteerVec3(min),
 				ossup::LVecBase3fToOpenSteerVec3(max), goalFraction);
 #ifdef OS_DEBUG
-	do_debug_draw_static_geometry();
+	do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
 #endif //OS_DEBUG
 	}
 }
@@ -1221,7 +1223,7 @@ void OSSteerPlugIn::set_home_base_center(const LPoint3f& center)
 		plugIn->m_CtfPlugInData.gHomeBaseCenter =
 				ossup::LVecBase3fToOpenSteerVec3(center);
 #ifdef OS_DEBUG
-	do_debug_draw_static_geometry();
+	do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
 #endif //OS_DEBUG
 	}
 }
@@ -1256,7 +1258,7 @@ void OSSteerPlugIn::set_home_base_radius(float radius)
 		plugIn->m_CtfPlugInData.gHomeBaseRadius = (
 				radius >= 0 ? radius : -radius);
 #ifdef OS_DEBUG
-	do_debug_draw_static_geometry();
+	do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
 #endif //OS_DEBUG
 	}
 }
@@ -1384,6 +1386,9 @@ void OSSteerPlugIn::make_map(const LPoint3f& center, float dimension,
 				static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn);
 		plugIn->makeMap(ossup::LVecBase3fToOpenSteerVec3(center), dimension,
 				resolution);
+#ifdef OS_DEBUG
+	do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
+#endif //OS_DEBUG
 	}
 }
 
@@ -1454,6 +1459,9 @@ void OSSteerPlugIn::set_map_steering_mode(OSMapSteeringMode mode)
 		default:
 			break;
 		}
+#ifdef OS_DEBUG
+	do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
+#endif //OS_DEBUG
 	}
 }
 
@@ -1485,8 +1493,8 @@ OSSteerPlugIn::OSMapSteeringMode OSSteerPlugIn::get_map_steering_mode() const
 /**
  * Sets the default prediction type on the map (curved or linear): each newly
  * added OSSteerVehicle will use it by default.
- * \note Also the already added OSSteerVehicle(s) will replace their type of
- * prediction with this one.
+ * \note Also the type of prediction of the already added OSSteerVehicle(s) will
+ * be replaced by this one.
  * \note MAP_DRIVE OSSteerPlugIn only.
  */
 void OSSteerPlugIn::set_map_prediction_type(OSMapPredictionType type)
@@ -1680,7 +1688,7 @@ int OSSteerPlugIn::toggle_debug_drawing(bool enable)
 			mDrawer3dStatic->clear();
 			mDrawer3dStaticNP.show();
 			//draw static geometry
-			do_debug_draw_static_geometry();
+			do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
 		}
 		if (mDrawer2dNP.is_hidden())
 		{
@@ -1729,32 +1737,217 @@ int OSSteerPlugIn::toggle_debug_drawing(bool enable)
 	return OS_SUCCESS;
 }
 
+/**
+ * Writes the OSSteerPlugIn's (static) debug drawing into a (square) texture.
+ */
+void OSSteerPlugIn::debug_drawing_to_texture(const NodePath& scene,
+		PT(GraphicsOutput)window, int resolution)
+{
+#ifdef OS_DEBUG
+	//continue if mDebugCamera is not empty
+	CONTINUE_IF_ELSE_V(!mDebugCamera.is_empty())
+//XXX
+//	//first render textures on terrain
+//	if (drawStaticGeometryInitDone)
+//	{
+//		//render-to-texture already initialized: re-render next frame
+//		rttBuffer->set_one_shot(true);
+//	}
+//	else
+//	{
+//		SMARTPTR (Object)
+//		terrainObj = ObjectTemplateManager::GetSingletonPtr()->getCreatedObject(
+//				ENVIRONMENTOBJECT);
+//		RETURN_ON_COND(not terrainObj, AsyncTask::DS_done)
+//
+//		SMARTPTR (Terrain)
+//		terrain = DCAST(Terrain,
+//				terrainObj->getComponent(ComponentFamilyType("Scene")));
+//		RETURN_ON_COND(not terrain, AsyncTask::DS_done)
+
+	///1: render-to-texture will be initialized (this is executed only once)
+//		GeoMipTerrainRef& terrainRef = terrain->getGeoMipTerrain();
+//		float xScale = terrainObj->getNodePath().get_sx();
+//		float yScale = terrainObj->getNodePath().get_sy();
+//		float terrainWidthX = (terrainRef.heightfield().get_x_size() - 1)
+//				* xScale;
+//		float terrainWidthY = (terrainRef.heightfield().get_y_size() - 1)
+//				* yScale;
+
+	//get scene dimensions
+	LVecBase3f sceneDims;
+	LVector3f sceneDeltaCenter;
+	OSSteerManager::get_global_ptr()->get_bounding_dimensions(scene, sceneDims, sceneDeltaCenter);
+
+	NodePath rttRender2d = NodePath("rttRender2d");
+	rttRender2d.set_depth_test(false);
+	rttRender2d.set_depth_write(false);
+	NodePath rttCamera2d = NodePath(new Camera("rttCamera2d"));
+	rttCamera2d.reparent_to(rttRender2d);
+
+//	//set the output texture
+//	PT(Texture) outTexure;
+//	// setup 2d texture
+//	outTexure->setup_2d_texture(resolution, resolution, Texture::T_unsigned_byte,
+//			Texture::F_rgb8);
+
+	//create a graphic output buffer where to render
+	PT(GraphicsOutput) rttBuffer = window->make_texture_buffer("rttBuffer", resolution, resolution
+			/*, new Texture, true*/);
+	//set it "one shot"
+	rttBuffer->set_one_shot(true);
+	//create a display region
+	PT (DisplayRegion) rttRegion = rttBuffer->make_display_region();
+	rttRegion->set_sort(20);
+	rttRegion->set_clear_color_active(true);
+	rttRegion->set_clear_color(LColorf(1, 1, 1, 1));
+	rttRegion->set_clear_depth_active(true);
+	rttRegion->set_clear_depth(1.0);
+	//set the camera for the buffer display region
+	DCAST(Camera, rttCamera2d.node())->set_lens(new OrthographicLens());
+	DCAST(Camera, rttCamera2d.node())->get_lens()->set_film_size(sceneDims.get_x(), sceneDims.get_y());
+	DCAST(Camera, rttCamera2d.node())->get_lens()->set_near_far(-1000.0,
+	1000.0);
+	rttRegion->set_camera(rttCamera2d);
+	//look down
+	rttCamera2d.set_hpr(0, -90, 0);
+
+///	//set up texture where to render XXX
+///	PT (TextureStage) rttTexStage = new TextureStage("rttTexStage");
+///	rttTexStage->set_mode(TextureStage::M_modulate);
+///	scene.set_texture(rttTexStage, rttBuffer->get_texture(), 10);
+	//allocate the mesh drawer for texture drawing
+	ossup::DrawMeshDrawer* rttMeshDrawer2d = new ossup::DrawMeshDrawer(rttRender2d, rttCamera2d, 100, 0.04);
+	rttMeshDrawer2d->setSize(40.0);
+	//draw static geometry
+	do_debug_draw_static_geometry(rttCamera2d, rttMeshDrawer2d);
+	//get the output texture
+	PT(Texture) outTexure = rttBuffer->get_texture();
+//	// setup 2d texture
+//	outTexure->setup_2d_texture(resolution, resolution, Texture::T_unsigned_byte,
+//			Texture::F_rgb8);
+	//write to file
+	outTexure->write("debug_texture.png", 0, 0, true, true);
+	//deallocate the mesh drawer for texture drawing
+	delete rttMeshDrawer2d;
+
+//	//flag rtt initialized
+//	drawStaticGeometryInitDone = true;
+
+//	///2: create the mesh drawer for static drawing
+//	//get render node path
+//	NodePath render =
+//	ObjectTemplateManager::GetSingletonPtr()->getCreatedObject(
+//	ObjectId("render"))->getNodePath();
+//	//get the camera node path
+//	NodePath camera =
+//	ObjectTemplateManager::GetSingletonPtr()->getCreatedObject(
+//	ObjectId("camera"))->getNodePath().get_child(0);
+//	staticMeshDrawer3d = new DrawMeshDrawer(render, camera, 100, 0.04);
+//	staticMeshDrawer3d->setSize(8.0);
+//	}
+	///1: draw textures on terrain
+///	//set mesh drawer
+///	rttMeshDrawer2d->reset();
+///	gDrawer3d = rttMeshDrawer2d;
+//	//ctf: render home base
+//	if (steerPlugIns.find(capture_the_flag) != steerPlugIns.end())
+//	{
+//		//render to texture
+//		CtfPlugIn < SteerVehicle > *plugIn =
+//		dynamic_cast<CtfPlugIn<SteerVehicle>*>(&(steerPlugIns[capture_the_flag])->getAbstractPlugIn());
+//		plugIn->drawHomeBase();
+//	}
+//	//map drive: render path and map
+//	if (steerPlugIns.find(map_drive) != steerPlugIns.end())
+//	{
+//		//render to texture
+//		MapDrivePlugIn < SteerVehicle > *plugIn =
+//		dynamic_cast<MapDrivePlugIn<SteerVehicle>*>(&(steerPlugIns[map_drive])->getAbstractPlugIn());
+//		plugIn->drawMap();
+//		plugIn->drawPath();
+//	}
+//	//pedestrian: render path
+//	if (steerPlugIns.find(pedestrian) != steerPlugIns.end())
+//	{
+//		//render to texture
+//		PedestrianPlugIn < SteerVehicle > *plugIn =
+//		dynamic_cast<PedestrianPlugIn<SteerVehicle>*>(&(steerPlugIns[pedestrian])->getAbstractPlugIn());
+//		// draw a line along each segment of path
+//		//		const OpenSteer::PolylineSegmentedPathwaySingleRadius& path =
+//		//		dynamic_cast<PolylineSegmentedPathwaySingleRadius&>(*plugIn->getPathway());
+//		plugIn->drawPath();
+//	}
+//	//soccer: render path
+//	if (steerPlugIns.find(soccer) != steerPlugIns.end())
+//	{
+//		//render to texture
+//		MicTestPlugIn < SteerVehicle > *plugIn = dynamic_cast<MicTestPlugIn<
+//		SteerVehicle>*>(&(steerPlugIns[soccer])->getAbstractPlugIn());
+//		plugIn->drawSoccerField();
+//	}
+
+//	///2: draw other static geometry
+//	//set mesh drawer
+//	staticMeshDrawer3d->reset();
+//	gDrawer3d = staticMeshDrawer3d;
+//	//boids: render obstacles
+//	if (steerPlugIns.find(boid) != steerPlugIns.end())
+//	{
+//		//render static geometry
+//		BoidsPlugIn < SteerVehicle > *plugIn = dynamic_cast<BoidsPlugIn<
+//		SteerVehicle>*>(&(steerPlugIns[boid])->getAbstractPlugIn());
+//		plugIn->drawObstacles();
+//	}
+//	//ctf: render obstacles
+//	if (steerPlugIns.find(capture_the_flag) != steerPlugIns.end())
+//	{
+//		//render static geometry
+//		CtfPlugIn < SteerVehicle > *plugIn =
+//		dynamic_cast<CtfPlugIn<SteerVehicle>*>(&(steerPlugIns[capture_the_flag])->getAbstractPlugIn());
+//		plugIn->drawObstacles();
+//	}
+//	//pedestrian: render obstacles
+//	if (steerPlugIns.find(pedestrian) != steerPlugIns.end())
+//	{
+//		//render static geometry
+//		PedestrianPlugIn < SteerVehicle > *plugIn =
+//		dynamic_cast<PedestrianPlugIn<SteerVehicle>*>(&(steerPlugIns[pedestrian])->getAbstractPlugIn());
+//		plugIn->drawObstacles();
+//	}
+#endif //OS_DEBUG
+}
+
 #ifdef OS_DEBUG
 /**
  * Draws static geometry.
  * \note Internal use only.
  */
-void OSSteerPlugIn::do_debug_draw_static_geometry()
+void OSSteerPlugIn::do_debug_draw_static_geometry(const NodePath& camera,
+		ossup::DrawMeshDrawer * drawer)
 {
 	//continue if mDrawer3dStaticNP is not empty
-	CONTINUE_IF_ELSE_V(
-			(!mDebugCamera.is_empty()) && (!mDrawer3dStaticNP.is_empty()))
+	CONTINUE_IF_ELSE_V((!camera.is_empty()) && (drawer != NULL))
 
 	//set drawer
 	ossup::DrawMeshDrawer * currentDrawer = gDrawer3d;
-	gDrawer3d = mDrawer3dStatic;
+	gDrawer3d = drawer;
 
 	//drawers' initializations
-	mDrawer3dStatic->initialize();
+	drawer->initialize();
 
 	//draw static geometry
+	//common elements: pathway and obstacles
+	static_cast<ossup::PlugIn*>(mPlugIn)->drawPath();
+	static_cast<ossup::PlugIn*>(mPlugIn)->drawObstacles();
+
+	//specific elements
 	//ctf: render home base and obstacles
 	if (mPlugInType == CAPTURE_THE_FLAG)
 	{
 		ossup::CtfPlugIn<OSSteerVehicle>* plugIn = static_cast<ossup::CtfPlugIn<
 				OSSteerVehicle>*>(mPlugIn);
 		plugIn->drawHomeBase();
-		plugIn->drawObstacles();
 	}
 	//map drive: render path and map
 	if (mPlugInType == MAP_DRIVE)
@@ -1762,29 +1955,15 @@ void OSSteerPlugIn::do_debug_draw_static_geometry()
 		ossup::MapDrivePlugIn<OSSteerVehicle>* plugIn =
 				static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn);
 		plugIn->drawMap();
-		plugIn->drawPath();
-	}
-	//pedestrian: render path and obstacles
-	if (mPlugInType == PEDESTRIAN)
-	{
-		ossup::PedestrianPlugIn<OSSteerVehicle>* plugIn =
-				static_cast<ossup::PedestrianPlugIn<OSSteerVehicle>*>(mPlugIn);
-		plugIn->drawPath();
-		plugIn->drawObstacles();
 	}
 	//soccer: render path
 	if (mPlugInType == SOCCER)
 	{
 		static_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(mPlugIn)->drawSoccerField();
 	}
-	//boid: render obstacles
-	if (mPlugInType == BOID)
-	{
-		static_cast<ossup::BoidsPlugIn<OSSteerVehicle>*>(mPlugIn)->drawObstacles();
-	}
 
 	//drawer finalizations
-	mDrawer3dStatic->finalize();
+	drawer->finalize();
 
 	//(re)set drawer
 	gDrawer3d = currentDrawer;

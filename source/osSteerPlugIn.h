@@ -240,7 +240,8 @@ PUBLISHED:
 	void enable_debug_drawing(NodePath debugCamera);
 	void disable_debug_drawing();
 	int toggle_debug_drawing(bool enable);
-	void debug_drawing_to_texture(const NodePath& scene, int resolution);
+	void debug_drawing_to_texture(const NodePath& scene,
+			PT(GraphicsOutput) window,int resolution = 512);
 	///@}
 
 public:
@@ -340,7 +341,8 @@ private:
 	///Enable Debug Draw update.
 	bool mEnableDebugDrawUpdate;
 	///Draw static geometry
-	void do_debug_draw_static_geometry();
+	void do_debug_draw_static_geometry(const NodePath& camera,
+			ossup::DrawMeshDrawer * drawer);
 #endif
 
 	// Explicitly disabled copy constructor and copy assignment operator.

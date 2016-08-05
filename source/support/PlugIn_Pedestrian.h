@@ -604,33 +604,33 @@ public:
 		}
 	}
 
-	void drawPath(void)
-	{
-		typedef PolylineSegmentedPathwaySingleRadius::size_type size_type;
+///	void drawPath(void)
+///	{
+///		typedef PolylineSegmentedPathwaySingleRadius::size_type size_type;
+///
+///		// draw a line along each segment of path
+/////		const PolylineSegmentedPathwaySingleRadius& path = *getTestPath();
+///		const PolylineSegmentedPathwaySingleRadius& path =
+///				dynamic_cast<PolylineSegmentedPathwaySingleRadius&>(*m_pathway);
+///		gDrawer3d->setTwoSided(true);
+///		for (size_type i = 1; i < path.pointCount(); ++i)
+///		{
+///			drawLine(path.point(i), path.point(i - 1), gRed);
+///		}
+///		gDrawer3d->setTwoSided(false);
+///	}
 
-		// draw a line along each segment of path
-///		const PolylineSegmentedPathwaySingleRadius& path = *getTestPath();
-		const PolylineSegmentedPathwaySingleRadius& path =
-				dynamic_cast<PolylineSegmentedPathwaySingleRadius&>(*m_pathway);
-		gDrawer3d->setTwoSided(true);
-		for (size_type i = 1; i < path.pointCount(); ++i)
-		{
-			drawLine(path.point(i), path.point(i - 1), gRed);
-		}
-		gDrawer3d->setTwoSided(false);
-	}
-
-	void drawObstacles(void)
-	{
-		gDrawer3d->setTwoSided(true);
-		// draw obstacles
-		ObstacleIterator iterObstacle;
-		for (iterObstacle = localObstacles->begin();
-				iterObstacle != localObstacles->end(); ++iterObstacle)
-		{
-			(*iterObstacle)->draw(false, Color(0, 0, 0),
-					Vec3(0, 0, 0));
-		}
+///	void drawObstacles(void)
+///	{
+///		gDrawer3d->setTwoSided(true);
+///		// draw obstacles
+///		ObstacleIterator iterObstacle;
+///		for (iterObstacle = localObstacles->begin();
+///				iterObstacle != localObstacles->end(); ++iterObstacle)
+///		{
+///			(*iterObstacle)->draw(false, Color(0, 0, 0),
+///					Vec3(0, 0, 0));
+///		}
 ///		drawXZCircle(gObstacle1.radius, gObstacle1.center, gWhite, 40);
 ///		drawXZCircle(gObstacle2.radius, gObstacle2.center, gWhite, 40);
 ///		// ------------------------------------ xxxcwr11-1-04 fixing steerToAvoid
@@ -649,9 +649,9 @@ public:
 ///			drawLine(v3, v4, gWhite);
 ///			drawLine(v4, v1, gWhite);
 ///		}
-		// ------------------------------------ xxxcwr11-1-04 fixing steerToAvoid
-		gDrawer3d->setTwoSided(false);
-	}
+///		// ------------------------------------ xxxcwr11-1-04 fixing steerToAvoid
+///		gDrawer3d->setTwoSided(false);
+///	}
 #endif
 
 	void close(void)

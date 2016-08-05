@@ -777,13 +777,14 @@ public:
 #ifdef OS_DEBUG
 	void drawObstacles(void)
 	{
-		// draw obstacles
-		ObstacleIterator iterObstacle;
-		for (iterObstacle = localObstacles->begin();
-				iterObstacle != localObstacles->end(); ++iterObstacle)
-		{
-			(*iterObstacle)->draw(false, Color(0, 0, 0), Vec3(0, 0, 0));
-		}
+///		// draw obstacles
+///		ObstacleIterator iterObstacle;
+///		for (iterObstacle = localObstacles->begin();
+///				iterObstacle != localObstacles->end(); ++iterObstacle)
+///		{
+///			(*iterObstacle)->draw(false, Color(0, 0, 0), Vec3(0, 0, 0));
+///		}
+		ossup::PlugIn::drawObstacles();
 
 		gDrawer3d->setTwoSided(true);
 		//draw world sphere
