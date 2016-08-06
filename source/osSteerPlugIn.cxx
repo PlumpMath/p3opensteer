@@ -640,6 +640,8 @@ void OSSteerPlugIn::set_pathway(const ValueList<LPoint3f>& pointList,
 	mPathwayRadii = radiusList;
 	mPathwaySingleRadius = singleRadius;
 	mPathwayClosedCycle = closedCycle;
+	//update static geometry if needed
+	do_update_static_geometry();
 #ifdef OS_DEBUG
 	do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
 #endif //OS_DEBUG
@@ -780,11 +782,25 @@ int OSSteerPlugIn::do_add_obstacle(NodePath objectNP,
 		{
 			objectNP.reparent_to(mReferenceNP);
 		}
-	}
+		//update static geometry if needed
+		do_update_static_geometry();
 #ifdef OS_DEBUG
-	do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
+		do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
 #endif //OS_DEBUG
+	}
 	return ref;
+}
+
+/**
+ * Updates the OSSteerPlugIn static geometry if needed.
+ * \note Internal use only.
+ */
+void OSSteerPlugIn::do_update_static_geometry()//XXX
+{
+	if (mPlugInType == MAP_DRIVE)
+	{
+		static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn)->regenerateMap();
+	}
 }
 
 /**
@@ -854,10 +870,12 @@ NodePath OSSteerPlugIn::remove_obstacle(int ref)
 		pvector<OSSteerManager::ObstacleAttributes>::iterator iterAL =
 				mLocalObstacles.second().begin() + pointerIdx;
 		mLocalObstacles.second().erase(iterAL);
-	}
+		//update static geometry if needed
+		do_update_static_geometry();
 #ifdef OS_DEBUG
-	do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
+		do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
 #endif //OS_DEBUG
+	}
 	//
 	return resultNP;
 }
@@ -1372,20 +1390,18 @@ float OSSteerPlugIn::get_avoidance_predict_time_max() const
 }
 
 /**
- * Makes the map, given its center, its dimension and its resolution.
+ * Makes the map based on the defined pathway and on its resolution.
  * \note The map is square, and it is divided into resolution x resolution
  * square elements
  * \note MAP_DRIVE OSSteerPlugIn only.
  */
-void OSSteerPlugIn::make_map(const LPoint3f& center, float dimension,
-		int resolution)
+void OSSteerPlugIn::make_map(int resolution)
 {
 	if (mPlugInType == MAP_DRIVE)
 	{
 		ossup::MapDrivePlugIn<OSSteerVehicle>* plugIn =
 				static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn);
-		plugIn->makeMap(ossup::LVecBase3fToOpenSteerVec3(center), dimension,
-				resolution);
+		plugIn->makeMap(resolution);
 #ifdef OS_DEBUG
 	do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
 #endif //OS_DEBUG
@@ -2080,9 +2096,6 @@ void OSSteerPlugIn::write_datagram(BamWriter *manager, Datagram &dg)
 	{
 		dg.add_uint8((uint8_t) get_map_steering_mode());
 		dg.add_uint8((uint8_t) get_map_prediction_type());
-		LPoint3f center = get_map_center();
-		center.write_datagram(dg);
-		dg.add_stdfloat(get_map_dimension());
 		dg.add_int32(get_map_resolution());
 	}
 }
@@ -2243,9 +2256,7 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 	{
 		set_map_steering_mode(mSerializedDataTmpPtr->mMapSteeringMode);
 		set_map_prediction_type(mSerializedDataTmpPtr->mMapPredictionType);
-		make_map(mSerializedDataTmpPtr->mMapCenter,
-				mSerializedDataTmpPtr->mMapDimension,
-				mSerializedDataTmpPtr->mMapResolution);
+		make_map(mSerializedDataTmpPtr->mMapResolution);
 	}
 	// deallocate SerializedDataTmp
 	delete mSerializedDataTmpPtr;
@@ -2400,8 +2411,6 @@ void OSSteerPlugIn::fillin(DatagramIterator &scan, BamReader *manager)
 				(OSMapSteeringMode) scan.get_uint8();
 		mSerializedDataTmpPtr->mMapPredictionType =
 				(OSMapPredictionType) scan.get_uint8();
-		mSerializedDataTmpPtr->mMapCenter.read_datagram(scan);
-		mSerializedDataTmpPtr->mMapDimension = scan.get_stdfloat();
 		mSerializedDataTmpPtr->mMapResolution = scan.get_int32();
 	}
 }

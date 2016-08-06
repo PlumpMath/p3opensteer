@@ -370,7 +370,7 @@ void OSSteerManager::set_parameters_defaults(OSType type)
 				ParameterNameValue("plugin_type", "one_turning"));
 		mSteerPlugInsParameterTable.insert(
 				ParameterNameValue("pathway",
-						"0.0,0.0,0.0:1.0,1.0,1.0$1.0$false"));
+						"0.0,0.0,0.0:1E-5,1E-5,1E-5$0.0$false"));
 	}
 	else if (type == STEERVEHICLE)
 	{

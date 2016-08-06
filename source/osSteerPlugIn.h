@@ -207,8 +207,7 @@ PUBLISHED:
 	 * \name MAP STEERING SETTINGS (MAP_DRIVE)
 	 */
 	///@{
-	void make_map(const LPoint3f& center, float dimension,
-			int resolution = 200);
+	void make_map(int resolution = 200);
 	LPoint3f get_map_center() const;
 	float get_map_dimension() const;
 	int get_map_resolution() const;
@@ -297,6 +296,7 @@ private:
 			float width, float height,	float depth, float radius,
 			const LVector3f& side, const LVector3f& up,
 			const LVector3f& forward, const LPoint3f& position);
+	void do_update_static_geometry();
 	///@}
 
 	/**
@@ -322,8 +322,6 @@ private:
 		//map drive
 		OSMapSteeringMode mMapSteeringMode;
 		OSMapPredictionType mMapPredictionType;
-		LPoint3f mMapCenter;
-		float mMapDimension;
 		int mMapResolution;
 		//low speed turn
 		float mSteeringSpeed;

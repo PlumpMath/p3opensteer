@@ -158,20 +158,23 @@ public:
 		if (useDirectedPathFollowing)
 		{
 			const Color darkRed(0.7f, 0, 0);
-			float const pathRadius = path->radius();
+///			float const pathRadius =
+///					dynamic_cast<PolylineSegmentedPathwaySingleRadius*>((*path)[0])->radius();
 
-			if (Vec3::distance(this->position(), pathEndpoint0) < pathRadius)
+			if (Vec3::distance(this->position(), (*pathEndpoint0)[0])
+					< radiusEndpoint0)
 			{
 				pathDirection = +1;
 #ifdef OS_DEBUG
-				this->annotationXZCircle(pathRadius, pathEndpoint0, darkRed, 20);
+				this->annotationXZCircle(radiusEndpoint0, (*pathEndpoint0)[0], darkRed, 20);
 #endif
 			}
-			if (Vec3::distance(this->position(), pathEndpoint1) < pathRadius)
+			if (Vec3::distance(this->position(), (*pathEndpoint1)[0])
+					< radiusEndpoint1)
 			{
 				pathDirection = -1;
 #ifdef OS_DEBUG
-				this->annotationXZCircle(pathRadius, pathEndpoint1, darkRed, 20);
+				this->annotationXZCircle(radiusEndpoint1, (*pathEndpoint1)[0], darkRed, 20);
 #endif
 			}
 		}
@@ -248,11 +251,11 @@ public:
 
 				// do (interactivossup) selected type of path following
 				const float pfLeadTime = 3;
-				const Vec3 pathFollow = (
-						useDirectedPathFollowing ?
+				const Vec3 pathFollow =
+						(useDirectedPathFollowing ?
 								this->steerToFollowPath(pathDirection,
-										pfLeadTime, *path) :
-								this->steerToStayOnPath(pfLeadTime, *path));
+										pfLeadTime, *(*path)[0]) :
+								this->steerToStayOnPath(pfLeadTime, *(*path)[0]));
 
 				// add in to steeringForce
 				steeringForce += pathFollow * 0.5;
@@ -395,9 +398,13 @@ public:
 	// XXX getTotalPathLength and radius methods (currently defined only
 	// XXX on PolylinePathway) to set random initial positions.  Could
 	// XXX there be a "random position inside path" method on Pathway?
-	PolylineSegmentedPathwaySingleRadius* path;
-	Vec3 pathEndpoint0;
-	Vec3 pathEndpoint1;
+///	PolylineSegmentedPathwaySingleRadius* path;
+	PathwayGroup* path;
+//	Vec3 pathEndpoint0;
+	PointGroup* pathEndpoint0;
+//	Vec3 pathEndpoint1;
+	PointGroup* pathEndpoint1;
+	float radiusEndpoint0, radiusEndpoint1;
 
 	// direction for path following (upstream or downstream)
 	int pathDirection;
@@ -731,10 +738,11 @@ public:
 			pedestrian->proximityToken->updateForNewPosition(
 					pedestrian->position());
 			//set path
-			pedestrian->path =
-					dynamic_cast<PolylineSegmentedPathwaySingleRadius*>(m_pathway);
-			pedestrian->pathEndpoint0 = pathEndpoint0;
-			pedestrian->pathEndpoint1 = pathEndpoint1;
+			pedestrian->path = &m_pathway;
+			pedestrian->pathEndpoint0 = &pathEndpoint0;
+			pedestrian->pathEndpoint1 = &pathEndpoint1;
+			pedestrian->radiusEndpoint0 = radiusEndpoint0;
+			pedestrian->radiusEndpoint1 = radiusEndpoint1;
 			//set obstacles
 			pedestrian->obstacles = obstacles;
 			//set neighbors
