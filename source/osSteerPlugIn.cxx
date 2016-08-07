@@ -11,7 +11,7 @@
 #include "osSteerManager.h"
 #include "camera.h"
 #include "orthographicLens.h"
-#include "graphicsOutput.h"
+#include "graphicsEngine.h"
 
 #ifndef CPPPARSER
 #include "support/PlugIn_OneTurning.h"
@@ -1772,183 +1772,72 @@ int OSSteerPlugIn::toggle_debug_drawing(bool enable)
 }
 
 /**
- * Writes the OSSteerPlugIn's (static) debug drawing into a (square) texture.
+ * Writes the OSSteerPlugIn's (static) debug drawing projected to the x,y plane
+ * into a (square) texture, given the world scene, a GraphicsOutput and the
+ * size.
+ * Output will be a size x size texture, written to the "fileName" file into
+ * current directory.
  */
 void OSSteerPlugIn::debug_drawing_to_texture(const NodePath& scene,
-		PT(GraphicsOutput)window, int resolution)
+		PT(GraphicsOutput)window, int size, const string& fileName)
 {
 #ifdef OS_DEBUG
 	//continue if mDebugCamera is not empty
 	CONTINUE_IF_ELSE_V(!mDebugCamera.is_empty())
-//XXX
-//	//first render textures on terrain
-//	if (drawStaticGeometryInitDone)
-//	{
-//		//render-to-texture already initialized: re-render next frame
-//		rttBuffer->set_one_shot(true);
-//	}
-//	else
-//	{
-//		SMARTPTR (Object)
-//		terrainObj = ObjectTemplateManager::GetSingletonPtr()->getCreatedObject(
-//				ENVIRONMENTOBJECT);
-//		RETURN_ON_COND(not terrainObj, AsyncTask::DS_done)
-//
-//		SMARTPTR (Terrain)
-//		terrain = DCAST(Terrain,
-//				terrainObj->getComponent(ComponentFamilyType("Scene")));
-//		RETURN_ON_COND(not terrain, AsyncTask::DS_done)
 
-	///1: render-to-texture will be initialized (this is executed only once)
-//		GeoMipTerrainRef& terrainRef = terrain->getGeoMipTerrain();
-//		float xScale = terrainObj->getNodePath().get_sx();
-//		float yScale = terrainObj->getNodePath().get_sy();
-//		float terrainWidthX = (terrainRef.heightfield().get_x_size() - 1)
-//				* xScale;
-//		float terrainWidthY = (terrainRef.heightfield().get_y_size() - 1)
-//				* yScale;
+	{
+		//https://www.panda3d.org/forums/viewtopic.php?t=12009
+		mTexture = new Texture("DrawTexture");
+		mTextureFileName = fileName;
 
-	//get scene dimensions
-	LVecBase3f sceneDims;
-	LVector3f sceneDeltaCenter;
-	OSSteerManager::get_global_ptr()->get_bounding_dimensions(scene, sceneDims, sceneDeltaCenter);
+		//get scene dimensions
+		LVecBase3f sceneDims;
+		LVector3f sceneDeltaCenter;
+		OSSteerManager::get_global_ptr()->get_bounding_dimensions(scene,
+				sceneDims, sceneDeltaCenter);
 
-	NodePath rttRender2d = NodePath("rttRender2d");
-	rttRender2d.set_depth_test(false);
-	rttRender2d.set_depth_write(false);
-	NodePath rttCamera2d = NodePath(new Camera("rttCamera2d"));
-	rttCamera2d.reparent_to(rttRender2d);
+		mTextureRender2d = NodePath("rttRender2d");
+		mTextureRender2d.set_depth_test(false);
+		mTextureRender2d.set_depth_write(false);
+		mTextureCamera2d = NodePath(new Camera("rttCamera2d"));
+		mTextureCamera2d.reparent_to(mTextureRender2d);
 
-//	//set the output texture
-//	PT(Texture) outTexure;
-//	// setup 2d texture
-//	outTexure->setup_2d_texture(resolution, resolution, Texture::T_unsigned_byte,
-//			Texture::F_rgb8);
+		//create a graphic output buffer where to render
+		mTextureBuffer = window->make_texture_buffer("rttBuffer", size,
+				size, mTexture, true);
+		//set it "one shot"
+		mTextureBuffer->set_one_shot(true);
+		//create a display region
+		PT (DisplayRegion)rttRegion = mTextureBuffer->make_display_region();
+		rttRegion->set_sort(20);
+		rttRegion->set_clear_color_active(true);
+		rttRegion->set_clear_color(LColorf(1, 1, 1, 0));
+		rttRegion->set_clear_depth_active(true);
+		rttRegion->set_clear_depth(1.0);
+		//set the camera for the buffer display region
+		DCAST(Camera, mTextureCamera2d.node())->set_lens(new OrthographicLens());
+		DCAST(Camera, mTextureCamera2d.node())->get_lens()->set_film_size(
+				sceneDims.get_x(), sceneDims.get_y());
+		DCAST(Camera, mTextureCamera2d.node())->get_lens()->set_near_far(-1000.0,
+				1000.0);
+		rttRegion->set_camera(mTextureCamera2d);
+		//look down
+		mTextureCamera2d.set_hpr(0, -90, 0);
 
-	//create a graphic output buffer where to render
-	PT(GraphicsOutput) rttBuffer = window->make_texture_buffer("rttBuffer", resolution, resolution
-			/*, new Texture, true*/);
-	//set it "one shot"
-	rttBuffer->set_one_shot(true);
-	//create a display region
-	PT (DisplayRegion) rttRegion = rttBuffer->make_display_region();
-	rttRegion->set_sort(20);
-	rttRegion->set_clear_color_active(true);
-	rttRegion->set_clear_color(LColorf(1, 1, 1, 1));
-	rttRegion->set_clear_depth_active(true);
-	rttRegion->set_clear_depth(1.0);
-	//set the camera for the buffer display region
-	DCAST(Camera, rttCamera2d.node())->set_lens(new OrthographicLens());
-	DCAST(Camera, rttCamera2d.node())->get_lens()->set_film_size(sceneDims.get_x(), sceneDims.get_y());
-	DCAST(Camera, rttCamera2d.node())->get_lens()->set_near_far(-1000.0,
-	1000.0);
-	rttRegion->set_camera(rttCamera2d);
-	//look down
-	rttCamera2d.set_hpr(0, -90, 0);
+		//allocate the mesh drawer for texture drawing XXX
+		mTextureDrawer2d = new ossup::DrawMeshDrawer(mTextureRender2d, mTextureCamera2d,
+				100, 0.04);
+		mTextureDrawer2d->setSize(40.0);
+	}
+	//create the task for drawing to texture
+	mTextureTaskData = new TaskInterface<OSSteerPlugIn>::TaskData(this,
+			&OSSteerPlugIn::do_debug_draw_to_texture_task);
+	mTextureTask = new GenericAsyncTask(string("OSSteerPlugIn::do_debug_draw_to_texture_task"),
+			&TaskInterface<OSSteerManager>::taskFunction,
+	reinterpret_cast<void*>(mTextureTaskData.p()));
+	//Adds mDrawTextureTask to the active queue.
+	AsyncTaskManager::get_global_ptr()->add(mTextureTask);
 
-///	//set up texture where to render XXX
-///	PT (TextureStage) rttTexStage = new TextureStage("rttTexStage");
-///	rttTexStage->set_mode(TextureStage::M_modulate);
-///	scene.set_texture(rttTexStage, rttBuffer->get_texture(), 10);
-	//allocate the mesh drawer for texture drawing
-	ossup::DrawMeshDrawer* rttMeshDrawer2d = new ossup::DrawMeshDrawer(rttRender2d, rttCamera2d, 100, 0.04);
-	rttMeshDrawer2d->setSize(40.0);
-	//draw static geometry
-	do_debug_draw_static_geometry(rttCamera2d, rttMeshDrawer2d);
-	//get the output texture
-	PT(Texture) outTexure = rttBuffer->get_texture();
-//	// setup 2d texture
-//	outTexure->setup_2d_texture(resolution, resolution, Texture::T_unsigned_byte,
-//			Texture::F_rgb8);
-	//write to file
-	outTexure->write("debug_texture.png", 0, 0, true, true);
-	//deallocate the mesh drawer for texture drawing
-	delete rttMeshDrawer2d;
-
-//	//flag rtt initialized
-//	drawStaticGeometryInitDone = true;
-
-//	///2: create the mesh drawer for static drawing
-//	//get render node path
-//	NodePath render =
-//	ObjectTemplateManager::GetSingletonPtr()->getCreatedObject(
-//	ObjectId("render"))->getNodePath();
-//	//get the camera node path
-//	NodePath camera =
-//	ObjectTemplateManager::GetSingletonPtr()->getCreatedObject(
-//	ObjectId("camera"))->getNodePath().get_child(0);
-//	staticMeshDrawer3d = new DrawMeshDrawer(render, camera, 100, 0.04);
-//	staticMeshDrawer3d->setSize(8.0);
-//	}
-	///1: draw textures on terrain
-///	//set mesh drawer
-///	rttMeshDrawer2d->reset();
-///	gDrawer3d = rttMeshDrawer2d;
-//	//ctf: render home base
-//	if (steerPlugIns.find(capture_the_flag) != steerPlugIns.end())
-//	{
-//		//render to texture
-//		CtfPlugIn < SteerVehicle > *plugIn =
-//		dynamic_cast<CtfPlugIn<SteerVehicle>*>(&(steerPlugIns[capture_the_flag])->getAbstractPlugIn());
-//		plugIn->drawHomeBase();
-//	}
-//	//map drive: render path and map
-//	if (steerPlugIns.find(map_drive) != steerPlugIns.end())
-//	{
-//		//render to texture
-//		MapDrivePlugIn < SteerVehicle > *plugIn =
-//		dynamic_cast<MapDrivePlugIn<SteerVehicle>*>(&(steerPlugIns[map_drive])->getAbstractPlugIn());
-//		plugIn->drawMap();
-//		plugIn->drawPath();
-//	}
-//	//pedestrian: render path
-//	if (steerPlugIns.find(pedestrian) != steerPlugIns.end())
-//	{
-//		//render to texture
-//		PedestrianPlugIn < SteerVehicle > *plugIn =
-//		dynamic_cast<PedestrianPlugIn<SteerVehicle>*>(&(steerPlugIns[pedestrian])->getAbstractPlugIn());
-//		// draw a line along each segment of path
-//		//		const OpenSteer::PolylineSegmentedPathwaySingleRadius& path =
-//		//		dynamic_cast<PolylineSegmentedPathwaySingleRadius&>(*plugIn->getPathway());
-//		plugIn->drawPath();
-//	}
-//	//soccer: render path
-//	if (steerPlugIns.find(soccer) != steerPlugIns.end())
-//	{
-//		//render to texture
-//		MicTestPlugIn < SteerVehicle > *plugIn = dynamic_cast<MicTestPlugIn<
-//		SteerVehicle>*>(&(steerPlugIns[soccer])->getAbstractPlugIn());
-//		plugIn->drawSoccerField();
-//	}
-
-//	///2: draw other static geometry
-//	//set mesh drawer
-//	staticMeshDrawer3d->reset();
-//	gDrawer3d = staticMeshDrawer3d;
-//	//boids: render obstacles
-//	if (steerPlugIns.find(boid) != steerPlugIns.end())
-//	{
-//		//render static geometry
-//		BoidsPlugIn < SteerVehicle > *plugIn = dynamic_cast<BoidsPlugIn<
-//		SteerVehicle>*>(&(steerPlugIns[boid])->getAbstractPlugIn());
-//		plugIn->drawObstacles();
-//	}
-//	//ctf: render obstacles
-//	if (steerPlugIns.find(capture_the_flag) != steerPlugIns.end())
-//	{
-//		//render static geometry
-//		CtfPlugIn < SteerVehicle > *plugIn =
-//		dynamic_cast<CtfPlugIn<SteerVehicle>*>(&(steerPlugIns[capture_the_flag])->getAbstractPlugIn());
-//		plugIn->drawObstacles();
-//	}
-//	//pedestrian: render obstacles
-//	if (steerPlugIns.find(pedestrian) != steerPlugIns.end())
-//	{
-//		//render static geometry
-//		PedestrianPlugIn < SteerVehicle > *plugIn =
-//		dynamic_cast<PedestrianPlugIn<SteerVehicle>*>(&(steerPlugIns[pedestrian])->getAbstractPlugIn());
-//		plugIn->drawObstacles();
-//	}
 #endif //OS_DEBUG
 }
 
@@ -2001,6 +1890,31 @@ void OSSteerPlugIn::do_debug_draw_static_geometry(const NodePath& camera,
 
 	//(re)set drawer
 	gDrawer3d = currentDrawer;
+}
+
+/**
+ * Drawing to texture one shot task.
+ * \note Internal use only.
+ */
+AsyncTask::DoneStatus OSSteerPlugIn::do_debug_draw_to_texture_task(
+		GenericAsyncTask* task)
+{
+	//draw static geometry
+	do_debug_draw_static_geometry(mTextureCamera2d, mTextureDrawer2d);
+	//
+	if (! mTexture->has_ram_image())
+	{
+       return AsyncTask::DS_cont;
+	}
+	// got texture
+	mTexture->write("debug_texture.png");
+	// deallocate resources
+	delete mTextureDrawer2d;
+	GraphicsEngine::get_global_ptr()->remove_window(mTextureBuffer);
+	mTextureCamera2d.remove_node();
+	mTextureRender2d.remove_node();
+	// the work was accomplished
+	return AsyncTask::DS_done;
 }
 #endif //OS_DEBUG
 

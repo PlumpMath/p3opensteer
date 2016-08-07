@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
 		pointList.add_value(LPoint3f(141.597, 73.496, 2.14218));
 		pointList.add_value(LPoint3f(105.917, 107.032, 3.06428));
 		pointList.add_value(LPoint3f(61.2637, 109.622, 3.03588));
-		// note: pedestrian handles single radius pathway only
+		// use single radius pathway
 		ValueList<float> radiusList;
 		radiusList.add_value(4);
 		steerPlugIn->set_pathway(pointList, radiusList, true, true);

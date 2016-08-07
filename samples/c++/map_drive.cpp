@@ -72,18 +72,26 @@ int main(int argc, char *argv[])
 
 		// set the pathway
 		ValueList<LPoint3f> pointList;
-        pointList.add_value(LPoint3f(-33.2366, 20.8779, 0.224516));
-        pointList.add_value(LPoint3f(-2.17519, 31.4712, 0.157774));
-        pointList.add_value(LPoint3f(7.57217, 11.0209, -0.147097));
-        pointList.add_value(LPoint3f(31.4319, 6.31322, -0.142874));
-        pointList.add_value(LPoint3f(33.0984, -21.5953, -0.158049));
-        pointList.add_value(LPoint3f(10.8928, -33.0309, -0.331787));
-        pointList.add_value(LPoint3f(0.649722, -16.8083, 0.227074));
-        pointList.add_value(LPoint3f(-25.1445, -28.6898, 0.0573864));
-        pointList.add_value(LPoint3f(-43.6806, -14.6532, -0.0712051));
-        pointList.add_value(LPoint3f(-46.9489, 8.38837, -0.222353));
-		// note: pedestrian handles single radius pathway only
 		ValueList<float> radiusList;
+        pointList.add_value(LPoint3f(-33.2366, 20.8779, 0.224516));
+		radiusList.add_value(4);
+        pointList.add_value(LPoint3f(-2.17519, 31.4712, 0.157774));
+		radiusList.add_value(5);
+        pointList.add_value(LPoint3f(7.57217, 11.0209, -0.147097));
+		radiusList.add_value(6);
+        pointList.add_value(LPoint3f(31.4319, 6.31322, -0.142874));
+		radiusList.add_value(6);
+        pointList.add_value(LPoint3f(33.0984, -21.5953, -0.158049));
+		radiusList.add_value(5);
+        pointList.add_value(LPoint3f(10.8928, -33.0309, -0.331787));
+		radiusList.add_value(5);
+        pointList.add_value(LPoint3f(0.649722, -16.8083, 0.227074));
+		radiusList.add_value(4);
+        pointList.add_value(LPoint3f(-25.1445, -28.6898, 0.0573864));
+		radiusList.add_value(3);
+        pointList.add_value(LPoint3f(-43.6806, -14.6532, -0.0712051));
+		radiusList.add_value(3);
+        pointList.add_value(LPoint3f(-46.9489, 8.38837, -0.222353));
 		radiusList.add_value(4);
 		steerPlugIn->set_pathway(pointList, radiusList, true, true);
 	}
@@ -143,8 +151,7 @@ int main(int argc, char *argv[])
 	// enable debug drawing
 	steerPlugIn->enable_debug_drawing(window->get_camera_group());
 	// print debug draw texture
-	steerPlugIn->debug_drawing_to_texture(sceneNP,
-			window->get_graphics_output());
+	steerPlugIn->debug_drawing_to_texture(sceneNP, window->get_graphics_output());
 
 	/// set events' callbacks
 	// toggle debug draw
