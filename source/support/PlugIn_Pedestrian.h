@@ -740,15 +740,10 @@ public:
 			pedestrian->path = &m_pathway;
 			//set the default end points
 			pedestrian->indexEndpoint0 = 0;
-			pedestrian->indexEndpoint1 =
-					(int) dynamic_cast<OpenSteer::SegmentedPathway*>(m_pathway[0])->pointCount()
-							- 1;
-			getPathwayEndPointData(
-					pedestrian->indexEndpoint0,
-					pedestrian->indexEndpoint1,
-					pedestrian->pathEndpoint0,
-					pedestrian->pathEndpoint1,
-					pedestrian->radiusEndpoint0,
+			pedestrian->indexEndpoint1 = m_pathway[0]->pointCount() - 1;
+			getPathwayEndPointData(pedestrian->indexEndpoint0,
+					pedestrian->indexEndpoint1, pedestrian->pathEndpoint0,
+					pedestrian->pathEndpoint1, pedestrian->radiusEndpoint0,
 					pedestrian->radiusEndpoint1);
 			//set obstacles
 			pedestrian->obstacles = obstacles;

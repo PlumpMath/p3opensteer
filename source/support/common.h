@@ -64,7 +64,7 @@ inline LVecBase4f OpenSteerColorToLVecBase4f(const OpenSteer::Color& c)
 	return LVecBase4f(c.r(), c.g(), c.b(), c.a());
 }
 
-typedef std::vector<OpenSteer::Pathway*> PathwayGroup;
+typedef std::vector<OpenSteer::SegmentedPathway*> PathwayGroup;
 
 /**
  * \brief Vehicle settings.
@@ -501,17 +501,15 @@ public:
 			OpenSteer::Vec3& pathEndpoint0, OpenSteer::Vec3& pathEndpoint1,
 			float& radiusEndpoint0, float&radiusEndpoint1)
 	{
-		OpenSteer::SegmentedPathway* pathway =
-				dynamic_cast<OpenSteer::SegmentedPathway*>(m_pathway[0]);
-		int maxPointIdx = (int) pathway->pointCount() - 1;
+		int maxPointIdx = (int) m_pathway[0]->pointCount() - 1;
 		//check bounds
 		if ((idx0 < 0) || (idx0 > maxPointIdx) || (idx1 < 0)
 				|| (idx1 > maxPointIdx))
 		{
 			return;
 		}
-		pathEndpoint0 = pathway->point(idx0);
-		pathEndpoint1 = pathway->point(idx1);
+		pathEndpoint0 = m_pathway[0]->point(idx0);
+		pathEndpoint1 = m_pathway[0]->point(idx1);
 		OpenSteer::PolylineSegmentedPathwaySegmentRadii* pathRadii =
 				dynamic_cast<OpenSteer::PolylineSegmentedPathwaySegmentRadii*>(m_pathway[0]);
 		if (pathRadii)
@@ -540,12 +538,11 @@ public:
 		typedef OpenSteer::SegmentedPathway::size_type size_type;
 
 		// draw a line along each segment of path
-		const OpenSteer::SegmentedPathway& path =
-				dynamic_cast<OpenSteer::SegmentedPathway&>(*m_pathway[0]);
 		gDrawer3d->setTwoSided(true);
-		for (size_type i = 1; i < path.pointCount(); ++i)
+		for (size_type i = 1; i < (*m_pathway[0]).pointCount(); ++i)
 		{
-			drawLine(path.point(i), path.point(i - 1), OpenSteer::gRed);
+			drawLine((*m_pathway[0]).point(i), (*m_pathway[0]).point(i - 1),
+					OpenSteer::gRed);
 		}
 		gDrawer3d->setTwoSided(false);
 	}
