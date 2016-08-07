@@ -195,8 +195,8 @@ PUBLISHED:
 	bool get_reverse_at_end_point() const;
 	void set_wander_behavior(bool enable = false);
 	bool get_wander_behavior() const;
-	void set_pathway_end_points(const ValueList<LPoint3f>& points);
-	ValueList<LPoint3f> get_pathway_end_points() const;
+	void set_pathway_end_points(const ValueList<int>& points);
+	ValueList<int> get_pathway_end_points() const;
 	///@}
 
 	/**
@@ -340,7 +340,7 @@ private:
 		//pedestrian
 		bool mReverseAtEndPoint;
 		bool mWanderBehavior;
-		ValueList<LPoint3f> mPathwayEndPoints;
+		ValueList<int> mPathwayEndPointIdx;
 		//pedestrian, map driver
 		OSPathDirection mPathwayDirection;
 		//boid

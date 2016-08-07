@@ -705,40 +705,44 @@ bool OSSteerVehicle::get_wander_behavior() const
 }
 
 /**
- * Sets first/second pathway end points (default: first/last specified points in
- * the pathway of the OSSteerPlugIn).
+ * Sets two of the pathway's points (given their indexes) as end points for this
+ * OSSteerVehicle (default: first/last specified points in the pathway of
+ * the OSSteerPlugIn).
  * \note PEDESTRIAN OSSteerVehicle only.
  */
-void OSSteerVehicle::set_pathway_end_points(const ValueList<LPoint3f>& points)
+void OSSteerVehicle::set_pathway_end_points(const ValueList<int>& indexes)
 {
 	if (mVehicleType == PEDESTRIAN)
 	{
-		CONTINUE_IF_ELSE_V(points.size() >= 2)
+		CONTINUE_IF_ELSE_V(indexes.size() >= 2)
 
-		static_cast<ossup::Pedestrian<OSSteerVehicle>*>(mVehicle)->pathEndpoint0 =
-				ossup::LVecBase3fToOpenSteerVec3(points[0]);
-		static_cast<ossup::Pedestrian<OSSteerVehicle>*>(mVehicle)->pathEndpoint1 =
-				ossup::LVecBase3fToOpenSteerVec3(points[1]);
+		ossup::Pedestrian<OSSteerVehicle>* vehicle =
+				dynamic_cast<ossup::Pedestrian<OSSteerVehicle>*>(mVehicle);
+		vehicle->indexEndpoint0 = indexes[0];
+		vehicle->indexEndpoint1 = indexes[1];
+		static_cast<ossup::PlugIn*>(&mSteerPlugIn->get_abstract_plug_in())->getPathwayEndPointData(
+				vehicle->indexEndpoint0, vehicle->indexEndpoint1,
+				vehicle->pathEndpoint0, vehicle->pathEndpoint1,
+				vehicle->radiusEndpoint0, vehicle->radiusEndpoint1);
 	}
 }
 
 /**
- * Returns first/second pathway end points, or empty list on error.
+ * Returns the indexes of the two points on the pathway that are the end points
+ * for this OSSteerVehicle, or an empty list on error.
  * \note PEDESTRIAN OSSteerVehicle only.
  */
-ValueList<LPoint3f> OSSteerVehicle::get_pathway_end_points() const
+ValueList<int> OSSteerVehicle::get_pathway_end_points() const
 {
-	ValueList<LPoint3f> points;
+	ValueList<int> indexes;
 	if (mVehicleType == PEDESTRIAN)
 	{
 		ossup::Pedestrian<OSSteerVehicle>* vehicle =
 				static_cast<ossup::Pedestrian<OSSteerVehicle>*>(mVehicle);
-		points.add_value(
-				ossup::OpenSteerVec3ToLVecBase3f(vehicle->pathEndpoint0));
-		points.add_value(
-				ossup::OpenSteerVec3ToLVecBase3f(vehicle->pathEndpoint1));
+		indexes.add_value(vehicle->indexEndpoint0);
+		indexes.add_value(vehicle->indexEndpoint1);
 	}
-	return points;
+	return indexes;
 }
 
 /**
@@ -1207,11 +1211,11 @@ void OSSteerVehicle::write_datagram(BamWriter *manager, Datagram &dg)
 	{
 		dg.add_bool(get_reverse_at_end_point());
 		dg.add_bool(get_wander_behavior());
-		ValueList<LPoint3f> points = get_pathway_end_points();
-		dg.add_uint32(points.size());
-		for (int i = 0; i != points.size(); ++i)
+		ValueList<int> indexes = get_pathway_end_points();
+		dg.add_uint32(indexes.size());
+		for (int i = 0; i != indexes.size(); ++i)
 		{
-			points[i].write_datagram(dg);
+			dg.add_int32(indexes[i]);
 		}
 		dg.add_uint8((uint8_t) get_pathway_direction());
 	}
@@ -1313,8 +1317,7 @@ void OSSteerVehicle::finalize(BamReader *manager)
 	{
 		set_reverse_at_end_point(mSerializedDataTmpPtr->mReverseAtEndPoint);
 		set_wander_behavior(mSerializedDataTmpPtr->mWanderBehavior);
-		set_pathway_end_points(mSerializedDataTmpPtr->mPathwayEndPoints);
-		mSerializedDataTmpPtr->mPathwayEndPoints.clear();
+		set_pathway_end_points(mSerializedDataTmpPtr->mPathwayEndPointIdx);
 		set_pathway_direction(mSerializedDataTmpPtr->mPathwayDirection);
 	}
 	if(mVehicleType == BOID)
@@ -1456,13 +1459,12 @@ void OSSteerVehicle::fillin(DatagramIterator &scan, BamReader *manager)
 	{
 		mSerializedDataTmpPtr->mReverseAtEndPoint = scan.get_bool();
 		mSerializedDataTmpPtr->mWanderBehavior = scan.get_bool();
-		mSerializedDataTmpPtr->mPathwayEndPoints.clear();
+		mSerializedDataTmpPtr->mPathwayEndPointIdx.clear();
 		unsigned int sizeP = scan.get_uint32();
 		for (unsigned int i = 0; i < sizeP; ++i)
 		{
-			LPoint3f point;
-			point.read_datagram(scan);
-			mSerializedDataTmpPtr->mPathwayEndPoints.add_value(point);
+			mSerializedDataTmpPtr->mPathwayEndPointIdx.add_value(
+					scan.get_int32());
 		}
 		mSerializedDataTmpPtr->mPathwayDirection =
 				(OSPathDirection) scan.get_uint8();

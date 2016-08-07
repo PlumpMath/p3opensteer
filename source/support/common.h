@@ -65,7 +65,6 @@ inline LVecBase4f OpenSteerColorToLVecBase4f(const OpenSteer::Color& c)
 }
 
 typedef std::vector<OpenSteer::Pathway*> PathwayGroup;
-typedef std::vector<OpenSteer::Vec3> PointGroup;
 
 /**
  * \brief Vehicle settings.
@@ -393,20 +392,12 @@ public:
 	{
 		m_pathway.resize(1);
 		m_pathway[0] = NULL;
-		pathEndpoint0.resize(1);
-		pathEndpoint0[0] = OpenSteer::Vec3::zero;
-		pathEndpoint1.resize(1);
-		pathEndpoint1[0] = OpenSteer::Vec3::zero;
-		radiusEndpoint0 = 1.0;
-		radiusEndpoint1 = 1.0;
 	}
 
 	virtual ~PlugInAddOnMixin()
 	{
 		delete m_pathway[0];
 		m_pathway.clear();
-		pathEndpoint0.clear();
-		pathEndpoint1.clear();
 	}
 
 	virtual bool addVehicle(OpenSteer::AbstractVehicle* vehicle)
@@ -497,17 +488,50 @@ public:
 		{
 			m_pathway[0] = new OpenSteer::PolylineSegmentedPathwaySingleRadius(
 					numOfPoints, points, radii[0], closedCycle);
-			radiusEndpoint1 = radii[0];
 		}
 		else
 		{
 			m_pathway[0] = new OpenSteer::PolylineSegmentedPathwaySegmentRadii(
 					numOfPoints, points, radii, closedCycle);
-			radiusEndpoint1 = radii[numOfPoints - 1];
 		}
-		pathEndpoint0[0] = points[0];
-		pathEndpoint1[0] = points[numOfPoints - 1];
-		radiusEndpoint0 = radii[0];
+	}
+
+	//will compute point, radius
+	void getPathwayEndPointData(int idx0, int idx1,
+			OpenSteer::Vec3& pathEndpoint0, OpenSteer::Vec3& pathEndpoint1,
+			float& radiusEndpoint0, float&radiusEndpoint1)
+	{
+		OpenSteer::SegmentedPathway* pathway =
+				dynamic_cast<OpenSteer::SegmentedPathway*>(m_pathway[0]);
+		int maxPointIdx = (int) pathway->pointCount() - 1;
+		//check bounds
+		if ((idx0 < 0) || (idx0 > maxPointIdx) || (idx1 < 0)
+				|| (idx1 > maxPointIdx))
+		{
+			return;
+		}
+		pathEndpoint0 = pathway->point(idx0);
+		pathEndpoint1 = pathway->point(idx1);
+		OpenSteer::PolylineSegmentedPathwaySegmentRadii* pathRadii =
+				dynamic_cast<OpenSteer::PolylineSegmentedPathwaySegmentRadii*>(m_pathway[0]);
+		if (pathRadii)
+		{
+			//depending if path is closed cycle:
+			//segment count == point count || point count - 1
+			int maxSegmentIdx = (int) pathRadii->segmentCount() - 1;
+			radiusEndpoint0 = pathRadii->segmentRadius(
+					min(idx0, maxSegmentIdx));
+			radiusEndpoint1 = pathRadii->segmentRadius(
+					min(idx1, maxSegmentIdx));
+		}
+		else
+		{
+			//single radius
+			float radius =
+					static_cast<OpenSteer::PolylineSegmentedPathwaySingleRadius*>(m_pathway[0])->radius();
+			radiusEndpoint0 = radius;
+			radiusEndpoint1 = radius;
+		}
 	}
 
 #ifdef OS_DEBUG
@@ -551,9 +575,6 @@ protected:
 	OpenSteer::AbstractVehicle* selectedVehicle;
 	///The pathway(s) handled by this plugin.
 	PathwayGroup m_pathway;
-	///The pathway(s') endpoints.
-	PointGroup  pathEndpoint0, pathEndpoint1;
-	float radiusEndpoint0, radiusEndpoint1;
 };
 
 //common typedef

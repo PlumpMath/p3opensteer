@@ -641,7 +641,7 @@ void OSSteerPlugIn::set_pathway(const ValueList<LPoint3f>& pointList,
 	mPathwaySingleRadius = singleRadius;
 	mPathwayClosedCycle = closedCycle;
 	//update static geometry if needed
-	do_update_static_geometry();
+	do_update_static_geometry(true, false);
 #ifdef OS_DEBUG
 	do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
 #endif //OS_DEBUG
@@ -783,24 +783,12 @@ int OSSteerPlugIn::do_add_obstacle(NodePath objectNP,
 			objectNP.reparent_to(mReferenceNP);
 		}
 		//update static geometry if needed
-		do_update_static_geometry();
+		do_update_static_geometry(false, true);
 #ifdef OS_DEBUG
 		do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
 #endif //OS_DEBUG
 	}
 	return ref;
-}
-
-/**
- * Updates the OSSteerPlugIn static geometry if needed.
- * \note Internal use only.
- */
-void OSSteerPlugIn::do_update_static_geometry()//XXX
-{
-	if (mPlugInType == MAP_DRIVE)
-	{
-		static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn)->regenerateMap();
-	}
 }
 
 /**
@@ -871,13 +859,43 @@ NodePath OSSteerPlugIn::remove_obstacle(int ref)
 				mLocalObstacles.second().begin() + pointerIdx;
 		mLocalObstacles.second().erase(iterAL);
 		//update static geometry if needed
-		do_update_static_geometry();
+		do_update_static_geometry(false, true);
 #ifdef OS_DEBUG
 		do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
 #endif //OS_DEBUG
 	}
 	//
 	return resultNP;
+}
+
+/**
+ * Updates the OSSteerPlugIn static geometry if needed.
+ * \note It is called on pathway and/or obstacles changes.
+ * \note Internal use only.
+ */
+void OSSteerPlugIn::do_update_static_geometry(bool dirtyPathway,
+		bool dirtyObstacles)
+{
+	CONTINUE_IF_ELSE_V(dirtyPathway || dirtyObstacles)
+
+	if ((mPlugInType == PEDESTRIAN) && (dirtyPathway))
+	{
+		//(re)set the end points of all added OSSteerVehicle(s)
+		//as the first and last point of the pathway
+		ValueList<int> idxList;
+		idxList.add_value(0);
+		idxList.add_value(get_pathway_points().size() - 1);
+		for (int i = 0; i < get_num_steer_vehicles(); ++i)
+		{
+			get_steer_vehicle(i)->set_pathway_end_points(idxList);
+		}
+	}
+	if (mPlugInType == MAP_DRIVE)
+	{
+		//(re)make the map
+		make_map(
+				static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn)->worldResolution);
+	}
 }
 
 /**

@@ -768,7 +768,6 @@ private:
 #endif
 
 typedef PolylineSegmentedPathwaySegmentRadii GCRoute;
-//typedef SegmentedPathway GCRoute;
 
 
 /*
@@ -3410,7 +3409,7 @@ public:
 		}
 		if (dirty)
 		{
-			regenerateMap();
+			makeMap(worldResolution);
 		}
 		curvedSteering = _curvedSteering;
 	}
@@ -3421,7 +3420,7 @@ public:
 		{
 			//update
 			demoSelect = _demoSelect;
-			regenerateMap();
+			makeMap(worldResolution);
 		}
 	}
 
@@ -3435,7 +3434,7 @@ public:
 		if (usePathFences != _usePathFences)
 		{
 			usePathFences = _usePathFences;
-			regenerateMap();
+			makeMap(worldResolution);
 		}
 	}
 
@@ -3534,17 +3533,6 @@ public:
 		// (when in path following demo and appropriate mode is set)
 		if (usePathFences && (demoSelect == 2))
 			drawPathFencesOnMap(*map, static_cast<GCRoute&>(*m_pathway[0]));
-
-		// update references of all vehicles to the new map
-		iterator iter;
-		for (iter = vehicles.begin(); iter != vehicles.end(); ++iter)
-		{
-			//set map
-			(*iter)->map = map;
-			//set world size
-			(*iter)->worldSize = worldSize;
-			(*iter)->worldDiag = worldDiag;
-		}
 	}
 
 #ifdef OS_DEBUG
@@ -4247,11 +4235,6 @@ public:
 	//if any of them change you must recall this function to update the map
 	void makeMap(int resolution)
 	{
-		//if already made return
-		if (map != NULL)
-		{
-			return;
-		}
 		//
 		typedef OpenSteer::SegmentedPathway::size_type size_type;
 		GCRoute* pathway = dynamic_cast<GCRoute*>(m_pathway[0]);
@@ -4266,6 +4249,13 @@ public:
 		if (pathway->pointCount() < 2)
 		{
 			return;
+		}
+		//check if there is a map
+		if (map != NULL)
+		{
+			// remove old map
+			delete map;
+			map = NULL;
 		}
 		//take the pathway's center and min/max dimensions
 		float minMaxX[2] =
@@ -4336,19 +4326,40 @@ public:
 		float dX = minMaxX[1] - minMaxX[0];
 		float dY = minMaxY[1] - minMaxY[0];
 		float dZ = minMaxZ[1] - minMaxZ[0];
-		//
+		//set the map's values
 		float tolerance = 5.0;
 		worldSize = max(max(dX, dY), dZ) + maxRadius * tolerance;
 		worldDiag = sqrtXXX(square(worldSize) / 2);
 		worldCenter = center;
 		worldResolution = resolution;
 #ifdef OLDTERRAINMAP
-		map = new TerrainMap(worldCenter, worldSize, worldSize, resolution);
+		map = new(nothrow) TerrainMap(worldCenter, worldSize, worldSize, resolution);
 #else
-		map = new TerrainMap (worldSize, worldSize, 1);
+		map = new(nothrow) TerrainMap (worldSize, worldSize, 1);
 #endif
 
-		regenerateMap();
+		if (map)
+		{
+			regenerateMap();
+		}
+		else
+		{
+			worldSize = 1.0;
+			worldDiag = sqrtXXX(square(worldSize) / 2);
+			worldCenter = Vec3();
+			worldResolution = 1;
+		}
+
+		// update references of all vehicles to the new map
+		iterator iter;
+		for (iter = vehicles.begin(); iter != vehicles.end(); ++iter)
+		{
+			//set map
+			(*iter)->map = map;
+			//set world size
+			(*iter)->worldSize = worldSize;
+			(*iter)->worldDiag = worldSize;
+		}
 	}
 
 	// map of obstacles

@@ -161,20 +161,20 @@ public:
 ///			float const pathRadius =
 ///					dynamic_cast<PolylineSegmentedPathwaySingleRadius*>((*path)[0])->radius();
 
-			if (Vec3::distance(this->position(), (*pathEndpoint0)[0])
+			if (Vec3::distance(this->position(), pathEndpoint0)
 					< radiusEndpoint0)
 			{
 				pathDirection = +1;
 #ifdef OS_DEBUG
-				this->annotationXZCircle(radiusEndpoint0, (*pathEndpoint0)[0], darkRed, 20);
+				this->annotationXZCircle(radiusEndpoint0, pathEndpoint0, darkRed, 20);
 #endif
 			}
-			if (Vec3::distance(this->position(), (*pathEndpoint1)[0])
+			if (Vec3::distance(this->position(), pathEndpoint1)
 					< radiusEndpoint1)
 			{
 				pathDirection = -1;
 #ifdef OS_DEBUG
-				this->annotationXZCircle(radiusEndpoint1, (*pathEndpoint1)[0], darkRed, 20);
+				this->annotationXZCircle(radiusEndpoint1, pathEndpoint1, darkRed, 20);
 #endif
 			}
 		}
@@ -400,11 +400,10 @@ public:
 	// XXX there be a "random position inside path" method on Pathway?
 ///	PolylineSegmentedPathwaySingleRadius* path;
 	PathwayGroup* path;
-//	Vec3 pathEndpoint0;
-	PointGroup* pathEndpoint0;
-//	Vec3 pathEndpoint1;
-	PointGroup* pathEndpoint1;
+	Vec3 pathEndpoint0;
+	Vec3 pathEndpoint1;
 	float radiusEndpoint0, radiusEndpoint1;
+	int indexEndpoint0, indexEndpoint1;
 
 	// direction for path following (upstream or downstream)
 	int pathDirection;
@@ -717,7 +716,7 @@ public:
 
 	virtual bool addVehicle(AbstractVehicle* vehicle)
 	{
-		if (! PlugInAddOnMixin<OpenSteer::PlugIn>::addVehicle(vehicle))
+		if (!PlugInAddOnMixin<OpenSteer::PlugIn>::addVehicle(vehicle))
 		{
 			return false;
 		}
@@ -739,10 +738,18 @@ public:
 					pedestrian->position());
 			//set path
 			pedestrian->path = &m_pathway;
-			pedestrian->pathEndpoint0 = &pathEndpoint0;
-			pedestrian->pathEndpoint1 = &pathEndpoint1;
-			pedestrian->radiusEndpoint0 = radiusEndpoint0;
-			pedestrian->radiusEndpoint1 = radiusEndpoint1;
+			//set the default end points
+			pedestrian->indexEndpoint0 = 0;
+			pedestrian->indexEndpoint1 =
+					(int) dynamic_cast<OpenSteer::SegmentedPathway*>(m_pathway[0])->pointCount()
+							- 1;
+			getPathwayEndPointData(
+					pedestrian->indexEndpoint0,
+					pedestrian->indexEndpoint1,
+					pedestrian->pathEndpoint0,
+					pedestrian->pathEndpoint1,
+					pedestrian->radiusEndpoint0,
+					pedestrian->radiusEndpoint1);
 			//set obstacles
 			pedestrian->obstacles = obstacles;
 			//set neighbors
