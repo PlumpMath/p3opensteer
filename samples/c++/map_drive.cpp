@@ -14,7 +14,6 @@ PT(OSSteerPlugIn)steerPlugIn;
 vector<PT(OSSteerVehicle)>steerVehicles;
 //
 void setParametersBeforeCreation();
-void toggleWanderBehavior(const Event*, void*);
 AsyncTask::DoneStatus updatePlugIn(GenericAsyncTask*, void*);
 
 int main(int argc, char *argv[])
@@ -94,6 +93,8 @@ int main(int argc, char *argv[])
         pointList.add_value(LPoint3f(-46.9489, 8.38837, -0.222353));
 		radiusList.add_value(4);
 		steerPlugIn->set_pathway(pointList, radiusList, true, true);
+		// make the map
+		steerPlugIn->make_map(200);
 	}
 	else
 	{
@@ -160,7 +161,7 @@ int main(int argc, char *argv[])
 			(void*) steerPlugIn.p());
 
 	// handle addition steer vehicles, models and animations
-	HandleVehicleData vehicleData(0.7, 0, "opensteer", sceneNP,
+	HandleVehicleData vehicleData(0.7, 0, "kinematic", sceneNP,
 						steerPlugIn, steerVehicles, vehicleAnimCtls);
 	framework.define_key("a", "addVehicle", &handleVehicles,
 			(void*) &vehicleData);
@@ -193,7 +194,7 @@ int main(int argc, char *argv[])
 	// handle OSSteerVehicle(s)' events
 	framework.define_key("avoid_obstacle", "handleVehicleEvent",
 			&handleVehicleEvent, nullptr);
-	framework.define_key("avoid_close_neighbor", "handleVehicleEvent",
+	framework.define_key("path_following", "handleVehicleEvent",
 			&handleVehicleEvent, nullptr);
 
 	// write to bam file on exit
@@ -201,10 +202,6 @@ int main(int argc, char *argv[])
 			"close_request_event");
 	framework.define_key("close_request_event", "writeToBamFile",
 			&writeToBamFileAndExit, (void*) &bamFileName);
-
-	// 'pedestrian' specific: toggle wander behavior
-	framework.define_key("t", "toggleWanderBehavior", &toggleWanderBehavior,
-			nullptr);
 
 	// place camera trackball (local coordinate)
 	PT(Trackball)trackball = DCAST(Trackball, window->get_mouse().find("**/+Trackball").node());
@@ -224,42 +221,22 @@ void setParametersBeforeCreation()
 	ValueList<string> valueList;
 	// set plug-in type
 	steerMgr->set_parameter_value(OSSteerManager::STEERPLUGIN, "plugin_type",
-			"pedestrian");
+			"map_drive");
 
 	// set vehicle's type, mass, speed
 	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "vehicle_type",
-			"pedestrian");
+			"map_driver");
 	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "mass", "2.0");
 	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "speed",
 			"0.01");
 
 	// set vehicle throwing events
 	valueList.clear();
-	valueList.add_value("avoid_obstacle@avoid_obstacle@1.0:avoid_close_neighbor@avoid_close_neighbor@");
+	valueList.add_value("avoid_obstacle@avoid_obstacle@:path_following@path_following@");
 	steerMgr->set_parameter_values(OSSteerManager::STEERVEHICLE,
 			"thrown_events", valueList);
 	//
 	printCreationParameters();
-}
-
-// toggle wander behavior of last inserted vehicle
-void toggleWanderBehavior(const Event*, void*)
-{
-    if (steerVehicles.size() == 0)
-    {
-        return;
-    }
-
-	if (steerVehicles.back()->get_wander_behavior())
-	{
-		steerVehicles.back()->set_wander_behavior(false);
-	}
-	else
-	{
-		steerVehicles.back()->set_wander_behavior(true);
-	}
-	cout << *steerVehicles.back() << "'s wander behavior is "
-			<< steerVehicles.back()->get_wander_behavior() << endl;
 }
 
 // custom update task for plug-ins

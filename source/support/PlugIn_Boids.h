@@ -406,8 +406,12 @@ class BoidsPlugIn: public PlugIn
 public:
 
 	//set default world radius in constructor
-	BoidsPlugIn(): worldRadius(10.0f), worldCenter(Vec3::zero)
+	BoidsPlugIn() :
+			pd(NULL), pdIdx(0), cyclePD(0), worldRadius(1.0f), worldCenter(
+					Vec3::zero)
 	{
+		flock.clear();
+		neighbors.clear();
 	}
 
 	const char* name(void)

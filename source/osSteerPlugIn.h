@@ -298,7 +298,7 @@ private:
 			float width, float height,	float depth, float radius,
 			const LVector3f& side, const LVector3f& up,
 			const LVector3f& forward, const LPoint3f& position);
-	void do_update_static_geometry(bool dirtyPathway, bool dirtyObstacles);
+	void do_on_static_geometry_change(bool dirtyPathway, bool dirtyObstacles);
 	///@}
 
 	/**

@@ -256,6 +256,16 @@ class MpPlugIn: public PlugIn
 {
 public:
 
+	MpPlugIn() :
+			wanderer(NULL)
+	{
+		allMP.clear();
+	}
+
+	virtual ~MpPlugIn()
+	{
+	} // be more "nice" to avoid a compiler warning
+
 	const char* name(void)
 	{
 		return "Multiple Pursuit";
@@ -265,10 +275,6 @@ public:
 	{
 		return 0.04f;
 	}
-
-	virtual ~MpPlugIn()
-	{
-	} // be more "nice" to avoid a compiler warning
 
 	void open(void)
 	{

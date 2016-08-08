@@ -3031,6 +3031,23 @@ class MapDrivePlugIn: public PlugIn
 {
 public:
 
+	MapDrivePlugIn() :
+			map(NULL), worldSize(1.0), worldDiag(1.414), worldCenter(
+					Vec3::zero), worldResolution(1.0), demoSelect(0), curvedSteering(
+					true),
+#ifdef OS_DEBUG
+					windowWidth(1.0),
+#endif
+					usePathFences(false)
+	{
+		vehicles.clear();
+	}
+
+	// be more "nice" to avoid a compiler warning
+	virtual ~MapDrivePlugIn()
+	{
+	}
+
 	const char* name(void)
 	{
 		return "Driving through map based obstacles";
@@ -3039,11 +3056,6 @@ public:
 	float selectionOrderSortKey(void)
 	{
 		return 0.07f;
-	}
-
-	// be more "nice" to avoid a compiler warning
-	virtual ~MapDrivePlugIn()
-	{
 	}
 
 	void open(void)
@@ -4240,10 +4252,28 @@ public:
 		GCRoute* pathway = dynamic_cast<GCRoute*>(m_pathway[0]);
 		if (!pathway)
 		{
+#ifdef OS_DEBUG
 			cerr
-					<< "ERROR: MapDrivePlugIn::makeMap():\n"
-					"pathway must be a 'PolylineSegmentedPathwaySegmentRadii'"
+					<< "WARNING: MapDrivePlugIn::makeMap():\n"
+							"\tpathway is a 'OpenSteer::PolylineSegmentedPathwaySingleRadius'"
+							"\tpathway converting to 'OpenSteer::PolylineSegmentedPathwaySegmentRadii'"
 					<< endl;
+#endif
+			OpenSteer::PolylineSegmentedPathwaySingleRadius * path =
+					static_cast<PolylineSegmentedPathwaySingleRadius*>(m_pathway[0]);
+			//
+			OpenSteer::Vec3* points = new OpenSteer::Vec3[path->pointCount()];
+			float* radii = new float[path->pointCount()];
+			for (unsigned int idx = 0; idx < path->pointCount(); ++idx)
+			{
+				points[idx] = path->point(idx);
+				radii[idx] = path->radius();
+			}
+			setPathway(path->pointCount(), points, false, radii,
+					path->isCyclic());
+			delete[] points;
+			delete[] radii;
+			//
 			return;
 		}
 		if (pathway->pointCount() < 2)
@@ -4259,11 +4289,11 @@ public:
 		}
 		//take the pathway's center and min/max dimensions
 		float minMaxX[2] =
-		{	FLT_MAX, -FLT_MAX}; //min,max
+		{ FLT_MAX, -FLT_MAX }; //min,max
 		float minMaxY[2] =
-		{	FLT_MAX, -FLT_MAX}; //min,max
+		{ FLT_MAX, -FLT_MAX }; //min,max
 		float minMaxZ[2] =
-		{	FLT_MAX, -FLT_MAX}; //min,max
+		{ FLT_MAX, -FLT_MAX }; //min,max
 		Vec3 center = Vec3::zero;
 		for (size_type i = 0; i < pathway->pointCount(); ++i)
 		{
@@ -4300,27 +4330,12 @@ public:
 		center = center / (float) pathway->pointCount();
 		//take the max radius of the pathway's segment(s)
 		float maxRadius = 0.0;
-		OpenSteer::PolylineSegmentedPathwaySegmentRadii* pathwayRadii =
-				dynamic_cast<OpenSteer::PolylineSegmentedPathwaySegmentRadii*>(pathway);
-		OpenSteer::PolylineSegmentedPathwaySingleRadius* pathwaySingle =
-				dynamic_cast<OpenSteer::PolylineSegmentedPathwaySingleRadius*>(pathway);
-		if (pathwayRadii)
+		for (size_type i = 0; i < pathway->segmentCount(); ++i)
 		{
-			for (size_type i = 0; i < pathwayRadii->segmentCount(); ++i)
+			if (pathway->segmentRadius(i) > maxRadius)
 			{
-				if (pathwayRadii->segmentRadius(i) > maxRadius)
-				{
-					maxRadius = pathwayRadii->segmentRadius(i);
-				}
+				maxRadius = pathway->segmentRadius(i);
 			}
-		}
-		else if (pathwaySingle)
-		{
-			pathwaySingle->radius();
-		}
-		else
-		{
-			return;
 		}
 		//take max spread of the pathway's points
 		float dX = minMaxX[1] - minMaxX[0];
@@ -4333,7 +4348,8 @@ public:
 		worldCenter = center;
 		worldResolution = resolution;
 #ifdef OLDTERRAINMAP
-		map = new(nothrow) TerrainMap(worldCenter, worldSize, worldSize, resolution);
+		map = new (nothrow) TerrainMap(worldCenter, worldSize, worldSize,
+				resolution);
 #else
 		map = new(nothrow) TerrainMap (worldSize, worldSize, 1);
 #endif

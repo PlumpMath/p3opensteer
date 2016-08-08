@@ -878,6 +878,17 @@ class CtfPlugIn: public PlugIn
 {
 public:
 
+	CtfPlugIn() :
+			ctfSeeker(NULL), m_CtfPlugInData()
+	{
+		all.clear();
+		ctfEnemies.clear();
+	}
+
+	virtual ~CtfPlugIn()
+	{
+	} // be more "nice" to avoid a compiler warning
+
 	const char* name(void)
 	{
 		return "Capture the Flag";
@@ -887,10 +898,6 @@ public:
 	{
 		return 0.01f;
 	}
-
-	virtual ~CtfPlugIn()
-	{
-	} // be more "nice" to avoid a compiler warning
 
 	void open(void)
 	{

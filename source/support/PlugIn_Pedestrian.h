@@ -473,6 +473,18 @@ class PedestrianPlugIn: public PlugIn
 {
 public:
 
+	PedestrianPlugIn() :
+			pd(NULL), pdIdx(0), cyclePD(0)
+	{
+		crowd.clear();
+		neighbors.clear();
+	}
+
+	// be more "nice" to avoid a compiler warning
+	virtual ~PedestrianPlugIn()
+	{
+	}
+
 	const char* name(void)
 	{
 		return "Pedestrians";
@@ -481,11 +493,6 @@ public:
 	float selectionOrderSortKey(void)
 	{
 		return 0.02f;
-	}
-
-	// be more "nice" to avoid a compiler warning
-	virtual ~PedestrianPlugIn()
-	{
 	}
 
 	void open(void)

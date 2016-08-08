@@ -32,11 +32,11 @@ def setParametersBeforeCreation():
     valueList = ValueList_string()
     # set plug-in type
     steerMgr.set_parameter_value(OSSteerManager.STEERPLUGIN, "plugin_type",
-            "pedestrian")
+            "map_drive")
 
     # set vehicle's type, mass, speed
     steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "vehicle_type",
-            "pedestrian")
+            "map_driver")
     steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "mass",
             "2.0")
     steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "speed",
@@ -44,24 +44,11 @@ def setParametersBeforeCreation():
 
     # set vehicle throwing events
     valueList.clear()
-    valueList.add_value("avoid_obstacle@avoid_obstacle@1.0:avoid_close_neighbor@avoid_close_neighbor@")
+    valueList.add_value("avoid_obstacle@avoid_obstacle@:path_following@path_following@")
     steerMgr.set_parameter_values(OSSteerManager.STEERVEHICLE,
             "thrown_events", valueList)
     #
     printCreationParameters()
-
-def toggleWanderBehavior():
-    """toggle wander behavior of last inserted vehicle"""
-    
-    global steerVehicles
-    if len(steerVehicles) == 0:
-        return
-    
-    if steerVehicles[-1].get_wander_behavior():
-        steerVehicles[-1].set_wander_behavior(False)
-    else:
-        steerVehicles[-1].set_wander_behavior(True)
-    print(str(steerVehicles[-1]) + "'s wander behavior is " + str(steerVehicles[-1].get_wander_behavior()))
 
 def updatePlugIn(steerPlugIn, task):
     """custom update task for plug-ins"""
@@ -169,6 +156,8 @@ if __name__ == '__main__':
         pointList.add_value(LPoint3f(-46.9489, 8.38837, -0.222353))
         radiusList.add_value(4)
         steerPlugIn.set_pathway(pointList, radiusList, True, True)
+        # make the map
+        steerPlugIn.make_map(200)
     else:
         # valid bamFile
         # restore plug-in: through steer manager
@@ -220,7 +209,7 @@ if __name__ == '__main__':
     app.accept("d", toggleDebugDraw, [steerPlugIn])
 
     # handle addition steer vehicles, models and animations 
-    vehicleData = HandleVehicleData(0.7, 0, "opensteer", sceneNP, 
+    vehicleData = HandleVehicleData(0.7, 0, "kinematic", sceneNP, 
                         steerPlugIn, steerVehicles, vehicleAnimCtls)
     app.accept("a", handleVehicles, [vehicleData])
     vehicleDataKinematic = HandleVehicleData(0.7, 1, "kinematic", sceneNP, 
@@ -244,14 +233,11 @@ if __name__ == '__main__':
     
     # handle OSSteerVehicle(s)' events
     app.accept("avoid_obstacle", handleVehicleEvent, ["avoid_obstacle"])
-    app.accept("avoid_close_neighbor", handleVehicleEvent, ["avoid_close_neighbor"])
+    app.accept("path_following", handleVehicleEvent, ["path_following"])
     
     # write to bam file on exit
     app.win.set_close_request_event("close_request_event")
     app.accept("close_request_event", writeToBamFileAndExit, [bamFileName])
-
-    # 'pedestrian' specific: toggle wander behavior
-    app.accept("t", toggleWanderBehavior)
     
     # place camera
     trackball = app.trackball.node()

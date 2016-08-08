@@ -129,6 +129,16 @@ class OneTurningPlugIn: public PlugIn
 {
 public:
 
+	OneTurningPlugIn()
+	{
+		theVehicle.clear();
+	}
+
+	// be more "nice" to avoid a compiler warning
+	virtual ~OneTurningPlugIn()
+	{
+	}
+
 	const char* name(void)
 	{
 		return "One Turning Away";
@@ -137,11 +147,6 @@ public:
 	float selectionOrderSortKey(void)
 	{
 		return 0.06f;
-	}
-
-	// be more "nice" to avoid a compiler warning
-	virtual ~OneTurningPlugIn()
-	{
 	}
 
 	void open(void)

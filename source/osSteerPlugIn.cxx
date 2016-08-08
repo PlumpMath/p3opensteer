@@ -641,7 +641,7 @@ void OSSteerPlugIn::set_pathway(const ValueList<LPoint3f>& pointList,
 	mPathwaySingleRadius = singleRadius;
 	mPathwayClosedCycle = closedCycle;
 	//update static geometry if needed
-	do_update_static_geometry(true, false);
+	do_on_static_geometry_change(true, false);
 #ifdef OS_DEBUG
 	do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
 #endif //OS_DEBUG
@@ -783,7 +783,7 @@ int OSSteerPlugIn::do_add_obstacle(NodePath objectNP,
 			objectNP.reparent_to(mReferenceNP);
 		}
 		//update static geometry if needed
-		do_update_static_geometry(false, true);
+		do_on_static_geometry_change(false, true);
 #ifdef OS_DEBUG
 		do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
 #endif //OS_DEBUG
@@ -859,7 +859,7 @@ NodePath OSSteerPlugIn::remove_obstacle(int ref)
 				mLocalObstacles.second().begin() + pointerIdx;
 		mLocalObstacles.second().erase(iterAL);
 		//update static geometry if needed
-		do_update_static_geometry(false, true);
+		do_on_static_geometry_change(false, true);
 #ifdef OS_DEBUG
 		do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
 #endif //OS_DEBUG
@@ -873,7 +873,7 @@ NodePath OSSteerPlugIn::remove_obstacle(int ref)
  * \note It is called on pathway and/or obstacles changes.
  * \note Internal use only.
  */
-void OSSteerPlugIn::do_update_static_geometry(bool dirtyPathway,
+void OSSteerPlugIn::do_on_static_geometry_change(bool dirtyPathway,
 		bool dirtyObstacles)
 {
 	CONTINUE_IF_ELSE_V(dirtyPathway || dirtyObstacles)
@@ -892,9 +892,12 @@ void OSSteerPlugIn::do_update_static_geometry(bool dirtyPathway,
 	}
 	if (mPlugInType == MAP_DRIVE)
 	{
-		//(re)make the map
-		make_map(
-				static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn)->worldResolution);
+		if (!static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn)->map)
+		{
+			//map is present: re-make the map
+			make_map(
+					static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn)->worldResolution);
+		}
 	}
 }
 

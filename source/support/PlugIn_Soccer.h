@@ -485,6 +485,21 @@ class MicTestPlugIn: public PlugIn
 {
 public:
 
+	MicTestPlugIn() :
+			m_Ball(NULL), m_bbox(NULL), m_TeamAGoal(NULL), m_TeamBGoal(NULL), junk(
+					0), m_redScore(0), m_blueScore(0)
+	{
+		TeamA.clear();
+		TeamB.clear();
+		m_AllPlayers.clear();
+		m_AllVehicles.clear();
+	}
+
+	// be more "nice" to avoid a compiler warning
+	virtual ~MicTestPlugIn()
+	{
+	}
+
 	const char* name(void)
 	{
 		return "Michael's Simple Soccer";
@@ -493,11 +508,6 @@ public:
 	// float selectionOrderSortKey (void) {return 0.06f;}
 
 	// bool requestInitialSelection() { return true;}
-
-	// be more "nice" to avoid a compiler warning
-	virtual ~MicTestPlugIn()
-	{
-	}
 
 	void open(void)
 	{

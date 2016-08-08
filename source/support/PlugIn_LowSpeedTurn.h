@@ -171,6 +171,17 @@ class LowSpeedTurnPlugIn: public PlugIn
 {
 public:
 
+	LowSpeedTurnPlugIn() :
+			steeringSpeed(0.0)
+	{
+		all.clear();
+	}
+
+	// be more "nice" to avoid a compiler warning
+	virtual ~LowSpeedTurnPlugIn()
+	{
+	}
+
 	const char* name(void)
 	{
 		return "Low Speed Turn";
@@ -179,11 +190,6 @@ public:
 	float selectionOrderSortKey(void)
 	{
 		return 0.05f;
-	}
-
-	// be more "nice" to avoid a compiler warning
-	virtual ~LowSpeedTurnPlugIn()
-	{
 	}
 
 	void open(void)
