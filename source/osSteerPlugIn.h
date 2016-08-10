@@ -87,6 +87,7 @@ PUBLISHED:
 	 */
 	enum OSMapSteeringMode
 	{
+		FREE_STEERING,
 		WANDER_STEERING,
 		PATH_FOLLOW_STEERING
 	};

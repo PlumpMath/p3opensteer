@@ -15,6 +15,8 @@ vector<PT(OSSteerVehicle)>steerVehicles;
 //
 void setParametersBeforeCreation();
 AsyncTask::DoneStatus updatePlugIn(GenericAsyncTask*, void*);
+void debugDrawToTexture(const Event*, void*);
+void onTextureReady(const Event*, void*);
 
 int main(int argc, char *argv[])
 {
@@ -28,13 +30,13 @@ int main(int argc, char *argv[])
 	text->set_text(
             msg + "\n\n"
             "- press \"d\" to toggle debug drawing\n"
-			"- press \"a\"/\"k\" to add 'opensteer'/'kinematic' vehicle\n"
+			"- press \"a\"/\"b\" to add vehicle\n"
             "- press \"s\"/\"shift-s\" to increase/decrease last inserted vehicle's max speed\n"
             "- press \"f\"/\"shift-f\" to increase/decrease last inserted vehicle's max force\n"
             "- press \"t\" to toggle last inserted vehicle's wander behavior\n"
 			"- press \"o\"/\"shift-o\" to add/remove obstacle\n");
 	NodePath textNodePath = window->get_aspect_2d().attach_new_node(text);
-	textNodePath.set_pos(-1.25, 0.0, 0.6);
+	textNodePath.set_pos(-1.25, 0.0, -0.5);
 	textNodePath.set_scale(0.035);
 
 	// create a steer manager; set root and mask to manage 'kinematic' vehicles
@@ -72,27 +74,27 @@ int main(int argc, char *argv[])
 		// set the pathway
 		ValueList<LPoint3f> pointList;
 		ValueList<float> radiusList;
-        pointList.add_value(LPoint3f(-33.2366, 20.8779, 0.224516));
-		radiusList.add_value(4);
-        pointList.add_value(LPoint3f(-2.17519, 31.4712, 0.157774));
-		radiusList.add_value(5);
-        pointList.add_value(LPoint3f(7.57217, 11.0209, -0.147097));
-		radiusList.add_value(6);
-        pointList.add_value(LPoint3f(31.4319, 6.31322, -0.142874));
-		radiusList.add_value(6);
-        pointList.add_value(LPoint3f(33.0984, -21.5953, -0.158049));
-		radiusList.add_value(5);
-        pointList.add_value(LPoint3f(10.8928, -33.0309, -0.331787));
-		radiusList.add_value(5);
-        pointList.add_value(LPoint3f(0.649722, -16.8083, 0.227074));
-		radiusList.add_value(4);
-        pointList.add_value(LPoint3f(-25.1445, -28.6898, 0.0573864));
-		radiusList.add_value(3);
-        pointList.add_value(LPoint3f(-43.6806, -14.6532, -0.0712051));
-		radiusList.add_value(3);
-        pointList.add_value(LPoint3f(-46.9489, 8.38837, -0.222353));
-		radiusList.add_value(4);
-		steerPlugIn->set_pathway(pointList, radiusList, true, true);
+        pointList.add_value(LPoint3f(-41.80, 34.46, -0.17));
+        radiusList.add_value(6.0);
+        pointList.add_value(LPoint3f(-2.21, 49.15, -0.36));
+        radiusList.add_value(7.0);
+        pointList.add_value(LPoint3f(10.78, 16.65, 0.14));
+        radiusList.add_value(8.0);
+        pointList.add_value(LPoint3f(40.44, 17.58, -0.22));
+        radiusList.add_value(8.0);
+        pointList.add_value(LPoint3f(49.04, -22.15, -0.60));
+        radiusList.add_value(7.0);
+        pointList.add_value(LPoint3f(13.99, -52.70, 0.39));
+        radiusList.add_value(7.0);
+        pointList.add_value(LPoint3f(-3.46, -31.90, 0.71));
+        radiusList.add_value(6.0);
+        pointList.add_value(LPoint3f(-30.0, -39.97, -0.35));
+        radiusList.add_value(5.0);
+        pointList.add_value(LPoint3f(-47.12, -17.31, -0.43));
+        radiusList.add_value(5.0);
+        pointList.add_value(LPoint3f(-51.31, 9.08, -0.25));
+        radiusList.add_value(6.0);
+		steerPlugIn->set_pathway(pointList, radiusList, false, true);
 		// make the map
 		steerPlugIn->make_map(200);
 	}
@@ -152,7 +154,11 @@ int main(int argc, char *argv[])
 	// enable debug drawing
 	steerPlugIn->enable_debug_drawing(window->get_camera_group());
 	// print debug draw texture
-	steerPlugIn->debug_drawing_to_texture(sceneNP, window->get_graphics_output());
+	framework.define_key("t", "debugDrawToTexture", &debugDrawToTexture,
+			(void*) NULL);
+	PT(TextureStage)rttTexStage = new TextureStage("rttTexStage");
+	framework.define_key("debug_drawing_texture_ready", "onTextureReady",
+			&onTextureReady, (void*) rttTexStage.p());
 
 	/// set events' callbacks
 	// toggle debug draw
@@ -167,7 +173,7 @@ int main(int argc, char *argv[])
 			(void*) &vehicleData);
 	HandleVehicleData vehicleDataKinematic(0.7, 1, "kinematic", sceneNP,
 			steerPlugIn, steerVehicles, vehicleAnimCtls);
-	framework.define_key("k", "addVehicle", &handleVehicles,
+	framework.define_key("b", "addVehicle", &handleVehicles,
 			(void*) &vehicleDataKinematic);
 
 	// handle obstacle addition
@@ -226,13 +232,17 @@ void setParametersBeforeCreation()
 	// set vehicle's type, mass, speed
 	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "vehicle_type",
 			"map_driver");
-	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "mass", "2.0");
-	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "speed",
-			"0.01");
+	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "max_speed",
+			"20.0");
+	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "max_force",
+			"8.0");
+	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "up_axis_fixed",
+			"true");
 
 	// set vehicle throwing events
 	valueList.clear();
-	valueList.add_value("avoid_obstacle@avoid_obstacle@:path_following@path_following@");
+	valueList.add_value(
+			"avoid_obstacle@avoid_obstacle@:path_following@path_following@");
 	steerMgr->set_parameter_values(OSSteerManager::STEERVEHICLE,
 			"thrown_events", valueList);
 	//
@@ -278,4 +288,27 @@ AsyncTask::DoneStatus updatePlugIn(GenericAsyncTask* task, void* data)
 	}
 	//
 	return AsyncTask::DS_cont;
+}
+
+// debug draw to texture
+void debugDrawToTexture(const Event* e, void* data)
+{
+	steerPlugIn->debug_drawing_to_texture(sceneNP,
+			window->get_graphics_output());
+}
+
+// debug drawing texture is ready
+void onTextureReady(const Event* e, void* data)
+{
+	PT(Texture)texture = DCAST(Texture,
+			e->get_parameter(0).get_ptr());
+	PT(TextureStage)rttTexStage = reinterpret_cast<TextureStage*>(data);
+	//set up texture where to render
+	sceneNP.clear_texture(rttTexStage);
+	rttTexStage->set_mode(TextureStage::M_modulate);
+	// take into account sceneNP dimensions
+	sceneNP.set_tex_offset(rttTexStage, 0.5, 0.5);
+	sceneNP.set_tex_scale(rttTexStage, 1.0 / 128.0, 1.0 / 128.0);
+	sceneNP.set_tex_gen(rttTexStage, TexGenAttrib::M_world_position);
+	sceneNP.set_texture(rttTexStage, texture, 10);
 }

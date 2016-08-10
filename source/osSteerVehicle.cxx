@@ -53,21 +53,22 @@ void OSSteerVehicle::set_vehicle_type(OSSteerVehicleType type)
 }
 
 /**
- * Enables/disables OSSteerVehicle's external update.
- * Returns the value actually set.
+ * Requires that OSSteerVehicle should be externally updated.
  * \note OSSteerVehicle's external update can only be enabled/disabled if it
  * is not attached to any OSSteerPlugIn(s).
  */
-bool OSSteerVehicle::enable_external_update(bool enable)
+void OSSteerVehicle::set_external_update(bool enable)
 {
-	CONTINUE_IF_ELSE_R(!mSteerPlugIn, mExternalUpdate)
+	CONTINUE_IF_ELSE_V(!mSteerPlugIn)
 
-	//set the external update
-	mExternalUpdate = enable;
-	//we need to re-create an OpenSteer vehicle with the same type
-	set_vehicle_type(mVehicleType);
-	//return the value set
-	return mExternalUpdate;
+	//update only if needed
+	if (mExternalUpdate != enable)
+	{
+		//set the external update
+		mExternalUpdate = enable;
+		//we need to re-create an OpenSteer vehicle with the same type
+		set_vehicle_type(mVehicleType);
+	}
 }
 
 /**
@@ -258,6 +259,21 @@ void OSSteerVehicle::do_initialize()
 			mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
 					string("up_axis_fixed")) ==
 			string("true") ? true : false);
+	//up axis fixed mode
+	param = mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
+					string("up_axis_fixed_mode"));
+	if (param == string("strong"))
+	{
+		mUpAxisFixedMode = UP_AXIS_FIXED_STRONG;
+	}
+	else if (param == string("medium"))
+	{
+		mUpAxisFixedMode = UP_AXIS_FIXED_MEDIUM;
+	}
+	else
+	{
+		mUpAxisFixedMode = UP_AXIS_FIXED_LIGHT;
+	}
 	//initialize settings with underlying OpenSteer vehicle's ones
 	settings = static_cast<VehicleAddOn*>(mVehicle)->getSettings();
 	//mass
@@ -875,18 +891,63 @@ void OSSteerVehicle::do_update_steer_vehicle(const float currentTime,
 	if (mVehicle->speed() > 0.0)
 	{
 		//update node path dir
-		mUpAxisFixed ?
-		//up axis fixed: z
-				thisNP.heads_up(
-						updatedPos
-								- ossup::OpenSteerVec3ToLVecBase3f(
-										mVehicle->forward()), LVector3f::up()) :
+		if (mUpAxisFixed)
+		{
+			//up axis fixed: z
+			thisNP.heads_up(
+					updatedPos
+							- ossup::OpenSteerVec3ToLVecBase3f(
+									mVehicle->forward()), LVector3f::up());
+			if (mUpAxisFixedMode == UP_AXIS_FIXED_LIGHT)
+			{
+				//1: up axis fixed light
+				//regenerate mVehicle's orthonormal basis
+				mVehicle->regenerateOrthonormalBasis(mVehicle->forward(),
+						ossup::LVecBase3fToOpenSteerVec3(LVector3f::up()));
+			}
+			else if (mUpAxisFixedMode == UP_AXIS_FIXED_MEDIUM)
+			{
+				//2: up axis fixed medium
+				//set forward as x,y (ie OpeenSteer x,z) plane projection
+				mVehicle->setForward(
+						OpenSteer::Vec3(mVehicle->forward().x, 0.0,
+								mVehicle->forward().z));
+				//regenerate mVehicle's orthonormal basis
+				mVehicle->regenerateOrthonormalBasis(mVehicle->forward(),
+						ossup::LVecBase3fToOpenSteerVec3(LVector3f::up()));
+			}
+			else
+			{
+				//mUpAxisFixedMode == UP_AXIS_FIXED_STRONG
+				//3: up axis fixed strong
+				//set forward as x,y (ie OpeenSteer x,z) plane projection preserving length()
+				float xzProj2 = mVehicle->forward().x * mVehicle->forward().x
+						+ mVehicle->forward().z * mVehicle->forward().z;
+				float cosThetaInv2 = (xzProj2
+						+ mVehicle->forward().y * mVehicle->forward().y)
+						/ xzProj2;
+				mVehicle->setForward(
+						OpenSteer::Vec3(
+								mVehicle->forward().x
+										* OpenSteer::sqrtXXX(cosThetaInv2), //x
+								0.0, //y
+								mVehicle->forward().z
+										* OpenSteer::sqrtXXX(cosThetaInv2)) //z
+						);
+				//regenerate mVehicle's orthonormal basis
+				mVehicle->regenerateOrthonormalBasis(mVehicle->forward(),
+						ossup::LVecBase3fToOpenSteerVec3(LVector3f::up()));
+			}
+		}
+		else
+		{
 				//up axis free: from mVehicle
 				thisNP.heads_up(
 						updatedPos
 								- ossup::OpenSteerVec3ToLVecBase3f(
 										mVehicle->forward()),
 						ossup::OpenSteerVec3ToLVecBase3f(mVehicle->up()));
+		}
 
 		//handle Move/Steady events
 		//throw Move event (if enabled)
@@ -1177,6 +1238,9 @@ void OSSteerVehicle::write_datagram(BamWriter *manager, Datagram &dg)
 	///Flag for up axis fixed (z).
 	dg.add_bool(mUpAxisFixed);
 
+	///Up axis fixed mode.
+	dg.add_uint8((uint8_t) mUpAxisFixedMode);
+
 	///External update.
 	dg.add_bool(mExternalUpdate);
 
@@ -1420,6 +1484,9 @@ void OSSteerVehicle::fillin(DatagramIterator &scan, BamReader *manager)
 
 	///Flag for up axis fixed (z).
 	mUpAxisFixed = scan.get_bool();
+
+	///Up axis fixed mode.
+	mUpAxisFixedMode = (OSSteerVehicleUpAxisFixedMode)scan.get_uint8();
 
 	///External update.
 	mExternalUpdate = scan.get_bool();

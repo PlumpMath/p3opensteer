@@ -1036,9 +1036,10 @@ public:
 		// steering force is clipped to this magnitude
 ///		setMaxForce(maxSpeed() * 0.4f);
 
-		// vehicle is 2 meters wide and 3 meters long
-		halfWidth = this->radius() * 1.0f;
-		halfLength = this->radius() * 1.5f;
+///		// vehicle is 2 meters wide and 3 meters long
+		// w = 2/3 *r, l = r
+		halfWidth = this->radius() * (2.0f / 3.0f) * 0.5;
+		halfLength = this->radius() * (3.0f / 3.0f) * 0.5;
 
 		// init dynamically controlled radius
 		adjustVehicleRadiusForSpeed();
@@ -3170,21 +3171,23 @@ public:
 			status << "\n\nStuck count: " << vehicle->stuckCount << " ("
 					<< vehicle->stuckCycleCount << " cycles, "
 					<< vehicle->stuckOffPathCount << " off path)";
-			status << "\n\n[F1] ";
+			status << "\n\n"/*[F1] */"";
+			if (0 == vehicle->demoSelect)
+				status << "free steering";
 			if (1 == vehicle->demoSelect)
-				status << "wander, ";
+				status << "wander"/*,*/" steering";
 			if (2 == vehicle->demoSelect)
-				status << "follow path, ";
-			status << "avoid obstacle";
+				status << "follow path"/*,*/" steering";
+///			status << "avoid obstacle";
 
 			if (2 == vehicle->demoSelect)
 			{
-				status << "\n[F2] path following direction: ";
+				status << "\n"/*[F2] */"path following direction: ";
 				if (vehicle->pathFollowDirection > 0)
 					status << "+1";
 				else
 					status << "-1";
-				status << "\n[F3] path fence: ";
+				status << "\n"/*[F3] */"path fence: ";
 				if (usePathFences)
 					status << "on";
 				else
@@ -3196,7 +3199,7 @@ public:
 ///			status << "on";
 ///		else
 ///			status << "off";
-			status << "\n[F5] prediction: ";
+			status << "\n"/*[F5] */"prediction: ";
 			if (vehicle->curvedSteering)
 				status << "curved";
 			else
@@ -4254,23 +4257,25 @@ public:
 		{
 #ifdef OS_DEBUG
 			cerr
-					<< "WARNING: MapDrivePlugIn::makeMap():\n"
-							"\tpathway is a 'OpenSteer::PolylineSegmentedPathwaySingleRadius'"
-							"\tpathway converting to 'OpenSteer::PolylineSegmentedPathwaySegmentRadii'"
-					<< endl;
+			<< "WARNING: MapDrivePlugIn::makeMap():\n"
+			"\tpathway is a 'OpenSteer::PolylineSegmentedPathwaySingleRadius'"
+			"\tpathway converting to 'OpenSteer::PolylineSegmentedPathwaySegmentRadii'"
+			<< endl;
 #endif
 			OpenSteer::PolylineSegmentedPathwaySingleRadius * path =
 					static_cast<PolylineSegmentedPathwaySingleRadius*>(m_pathway[0]);
 			//
-			OpenSteer::Vec3* points = new OpenSteer::Vec3[path->pointCount()];
-			float* radii = new float[path->pointCount()];
-			for (unsigned int idx = 0; idx < path->pointCount(); ++idx)
+			size_type pointCount =
+					path->isCyclic() ?
+							path->pointCount() - 1 : path->pointCount();
+			OpenSteer::Vec3* points = new OpenSteer::Vec3[pointCount];
+			float* radii = new float[pointCount];
+			for (size_type idx = 0; idx < pointCount; ++idx)
 			{
 				points[idx] = path->point(idx);
 				radii[idx] = path->radius();
 			}
-			setPathway(path->pointCount(), points, false, radii,
-					path->isCyclic());
+			setPathway(pointCount, points, false, radii, path->isCyclic());
 			delete[] points;
 			delete[] radii;
 			//
@@ -4357,6 +4362,17 @@ public:
 		if (map)
 		{
 			regenerateMap();
+
+			// update references of all vehicles to the new map
+			iterator iter;
+			for (iter = vehicles.begin(); iter != vehicles.end(); ++iter)
+			{
+				//set map
+				(*iter)->map = map;
+				//set world size
+				(*iter)->worldSize = worldSize;
+				(*iter)->worldDiag = worldSize;
+			}
 		}
 		else
 		{
@@ -4364,17 +4380,21 @@ public:
 			worldDiag = sqrtXXX(square(worldSize) / 2);
 			worldCenter = Vec3();
 			worldResolution = 1;
-		}
 
-		// update references of all vehicles to the new map
-		iterator iter;
-		for (iter = vehicles.begin(); iter != vehicles.end(); ++iter)
-		{
-			//set map
-			(*iter)->map = map;
-			//set world size
-			(*iter)->worldSize = worldSize;
-			(*iter)->worldDiag = worldSize;
+			//no map: remove all vehicles from update
+			iterator iter = vehicles.begin();
+			while (iter != vehicles.end())
+			{
+				//set map (==NULL)
+				(*iter)->map = map;
+				//set world size
+				(*iter)->worldSize = worldSize;
+				(*iter)->worldDiag = worldDiag;
+				//set path
+				(*iter)->path = NULL;
+				removeVehicle((*iter));
+				iter = vehicles.begin();
+			}
 		}
 	}
 

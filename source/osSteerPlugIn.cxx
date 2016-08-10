@@ -12,6 +12,7 @@
 #include "camera.h"
 #include "orthographicLens.h"
 #include "graphicsEngine.h"
+#include "throw_event.h"
 
 #ifndef CPPPARSER
 #include "support/PlugIn_OneTurning.h"
@@ -892,7 +893,7 @@ void OSSteerPlugIn::do_on_static_geometry_change(bool dirtyPathway,
 	}
 	if (mPlugInType == MAP_DRIVE)
 	{
-		if (!static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn)->map)
+		if (static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn)->map)
 		{
 			//map is present: re-make the map
 			make_map(
@@ -1487,6 +1488,9 @@ void OSSteerPlugIn::set_map_steering_mode(OSMapSteeringMode mode)
 				static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn);
 		switch (mode)
 		{
+		case FREE_STEERING:
+			plugIn->setDemoSelect(0);
+			break;
 		case WANDER_STEERING:
 			plugIn->setDemoSelect(1);
 			break;
@@ -1514,6 +1518,9 @@ OSSteerPlugIn::OSMapSteeringMode OSSteerPlugIn::get_map_steering_mode() const
 				static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn);
 		switch (plugIn->getDemoSelect())
 		{
+		case 0:
+			return FREE_STEERING;
+			break;
 		case 1:
 			return WANDER_STEERING;
 			break;
@@ -1779,7 +1786,8 @@ int OSSteerPlugIn::toggle_debug_drawing(bool enable)
  * into a (square) texture, given the world scene, a GraphicsOutput and the
  * size.
  * Output will be a size x size texture, written to the "fileName" file into
- * current directory.
+ * current directory and the event "debug_drawing_texture_ready" (with the
+ * texture as parameter) is thrown when all is ready.
  */
 void OSSteerPlugIn::debug_drawing_to_texture(const NodePath& scene,
 		PT(GraphicsOutput)window, int size, const string& fileName)
@@ -1916,7 +1924,9 @@ AsyncTask::DoneStatus OSSteerPlugIn::do_debug_draw_to_texture_task(
 	GraphicsEngine::get_global_ptr()->remove_window(mTextureBuffer);
 	mTextureCamera2d.remove_node();
 	mTextureRender2d.remove_node();
-	// the work was accomplished
+	// the work was accomplished: signal with an event
+	throw_event("debug_drawing_texture_ready", EventParameter(mTexture));
+	//done
 	return AsyncTask::DS_done;
 }
 #endif //OS_DEBUG

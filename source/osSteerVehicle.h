@@ -65,6 +65,7 @@
  * | *max_force*				|single| 0.1 | -
  * | *max_speed*				|single| 1.0 | -
  * | *up_axis_fixed*			|single| *false* | -
+ * | *up_axis_fixed_mode*		|single| *light* | valid when up_axis_fixed = true; values: light,medium,strong
  * | *external_update*			|single| *false* | -
  *
  * \note parts inside [] are optional.\n
@@ -99,6 +100,16 @@ PUBLISHED:
 		OPENSTEER,
 		OPENSTEER_KINEMATIC,
 		VehicleMovType_NONE
+	};
+
+	/**
+	 * OSSteerVehicle up axis fixed mode.
+	 */
+	enum OSSteerVehicleUpAxisFixedMode
+	{
+		UP_AXIS_FIXED_LIGHT,
+		UP_AXIS_FIXED_MEDIUM,
+		UP_AXIS_FIXED_STRONG
 	};
 
 	/**
@@ -174,8 +185,12 @@ PUBLISHED:
 	INLINE LVector3f get_up() const;
 	INLINE void set_position(const LPoint3f& position);
 	INLINE LPoint3f get_position() const;
-	bool enable_external_update(bool enable);
-	INLINE bool enable_up_axis_fixed(bool enable);
+	void set_external_update(bool enable);
+	INLINE bool get_external_update() const;
+	INLINE void set_up_axis_fixed(bool enable);
+	INLINE bool get_up_axis_fixed() const;
+	INLINE void set_up_axis_fixed_mode(OSSteerVehicleUpAxisFixedMode mode);
+	INLINE OSSteerVehicleUpAxisFixedMode get_up_axis_fixed_mode() const;
 	INLINE PT(OSSteerPlugIn) get_steer_plug_in() const;
 	///@}
 
@@ -246,7 +261,8 @@ PUBLISHED:
 	 * \name EVENTS' CONFIGURATION
 	 */
 	///@{
-	INLINE void enable_steer_vehicle_event(OSEventThrown event, ThrowEventData eventData);
+	INLINE void enable_steer_vehicle_event(OSEventThrown event,
+			ThrowEventData eventData);
 	///@}
 
 	/**
@@ -289,6 +305,8 @@ private:
 	LVector3f mHeigthCorrection;
 	///Flag for up axis fixed (z).
 	bool mUpAxisFixed;
+	///Up axis fixed mode
+	OSSteerVehicleUpAxisFixedMode mUpAxisFixedMode;
 
 	inline void do_reset();
 	void do_initialize();
