@@ -38,15 +38,16 @@ def setParametersBeforeCreation():
     steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "vehicle_type",
             "map_driver")
     steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "max_speed",
-            "20.0");
+            "20.0")
     steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "max_force",
-            "8.0");
+            "8.0")
     steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "up_axis_fixed",
-            "true");
+            "true")
 
     # set vehicle throwing events
     valueList.clear()
-    valueList.add_value("avoid_obstacle@avoid_obstacle@:path_following@path_following@")
+    valueList.add_value(
+            "avoid_obstacle@avoid_obstacle@1.0:path_following@path_following@1.0")
     steerMgr.set_parameter_values(OSSteerManager.STEERVEHICLE,
             "thrown_events", valueList)
     #
@@ -114,13 +115,11 @@ if __name__ == '__main__':
     text.set_text(
             msg + "\n\n"      
             "- press \"d\" to toggle debug drawing\n"
-            "- press \"a\"/\"b\" to add vehicle\n"
-            "- press \"s\"/\"shift-s\" to increase/decrease last inserted vehicle's max speed\n"
-            "- press \"f\"/\"shift-f\" to increase/decrease last inserted vehicle's max force\n"
-            "- press \"t\" to toggle last inserted vehicle's wander behavior\n"
-            "- press \"o\"/\"shift-o\" to add/remove obstacle\n")
+            "- press \"o\"/\"shift-o\" to add/remove obstacle\n"
+            "- press \"t\" to draw the map of the path\n"
+            "- press \"a\" to add vehicle\n")
     textNodePath = app.aspect2d.attach_new_node(text)
-    textNodePath.set_pos(-1.25, 0.0, -0.5)
+    textNodePath.set_pos(0.25, 0.0, 0.8)
     textNodePath.set_scale(0.035)
     
     # create a steer manager; set root and mask to manage 'kinematic' vehicles
@@ -158,25 +157,25 @@ if __name__ == '__main__':
         pointList = ValueList_LPoint3f()
         radiusList = ValueList_float()
         pointList.add_value(LPoint3f(-41.80, 34.46, -0.17))
-        radiusList.add_value(6.0)
+        radiusList.add_value(7.0)
         pointList.add_value(LPoint3f(-2.21, 49.15, -0.36))
-        radiusList.add_value(7.0)
+        radiusList.add_value(8.0)
         pointList.add_value(LPoint3f(10.78, 16.65, 0.14))
-        radiusList.add_value(8.0)
+        radiusList.add_value(9.0)
         pointList.add_value(LPoint3f(40.44, 17.58, -0.22))
-        radiusList.add_value(8.0)
+        radiusList.add_value(9.0)
         pointList.add_value(LPoint3f(49.04, -22.15, -0.60))
-        radiusList.add_value(7.0)
+        radiusList.add_value(8.0)
         pointList.add_value(LPoint3f(13.99, -52.70, 0.39))
-        radiusList.add_value(7.0)
+        radiusList.add_value(8.0)
         pointList.add_value(LPoint3f(-3.46, -31.90, 0.71))
-        radiusList.add_value(6.0)
+        radiusList.add_value(7.0)
         pointList.add_value(LPoint3f(-30.0, -39.97, -0.35))
-        radiusList.add_value(5.0)
-        pointList.add_value(LPoint3f(-47.12, -17.31, -0.43))
-        radiusList.add_value(5.0)
-        pointList.add_value(LPoint3f(-51.31, 9.08, -0.25))
         radiusList.add_value(6.0)
+        pointList.add_value(LPoint3f(-47.12, -17.31, -0.43))
+        radiusList.add_value(6.0)
+        pointList.add_value(LPoint3f(-51.31, 9.08, -0.25))
+        radiusList.add_value(7.0)
         steerPlugIn.set_pathway(pointList, radiusList, False, True)
         # make the map
         steerPlugIn.make_map(200)
@@ -202,7 +201,7 @@ if __name__ == '__main__':
             # restore animations
             tmpAnims = AnimControlCollection()
             auto_bind(steerVehicles[i], tmpAnims)
-            vehicleAnimCtls[i] = [None, None];
+            vehicleAnimCtls[i] = [None, None]
             for j in range(tmpAnims.get_num_anims()):
                 vehicleAnimCtls[i][j] = tmpAnims.get_anim(j)
 
@@ -219,7 +218,7 @@ if __name__ == '__main__':
 
     # DEBUG DRAWING: make the debug reference node paths sibling of the reference node
     steerMgr.get_reference_node_path_debug().reparent_to(app.render)
-    steerMgr.get_reference_node_path_debug_2d().reparent_to(app.aspect2d);
+    steerMgr.get_reference_node_path_debug_2d().reparent_to(app.aspect2d)
     # enable debug drawing
     steerPlugIn.enable_debug_drawing(app.camera)
     # print debug draw texture
@@ -246,7 +245,7 @@ if __name__ == '__main__':
     app.accept("o", handleObstacles, [obstacleAddition])
     # handle obstacle removal
     obstacleRemoval = HandleObstacleData(False, sceneNP, steerPlugIn)
-    app.accept("shift-o", handleObstacles, [obstacleRemoval]);
+    app.accept("shift-o", handleObstacles, [obstacleRemoval])
 
     # increase/decrease last inserted vehicle's max speed
     app.accept("s", changeVehicleMaxSpeed, ["s", steerVehicles])
@@ -265,8 +264,8 @@ if __name__ == '__main__':
     
     # place camera
     trackball = app.trackball.node()
-    trackball.set_pos(0.0, 180.0, -10.0);
-    trackball.set_hpr(0.0, 20.0, 0.0);
+    trackball.set_pos(0.0, 160.0, -5.0)
+    trackball.set_hpr(0.0, 20.0, 0.0)
    
     # app.run(), equals to do the main loop in C++
     app.run()

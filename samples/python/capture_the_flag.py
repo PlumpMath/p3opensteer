@@ -238,7 +238,7 @@ if __name__ == '__main__':
             # restore animations
             tmpAnims = AnimControlCollection()
             auto_bind(steerVehicles[i], tmpAnims)
-            vehicleAnimCtls[i] = [None, None];
+            vehicleAnimCtls[i] = [None, None]
             for j in range(tmpAnims.get_num_anims()):
                 vehicleAnimCtls[i][j] = tmpAnims.get_anim(j)
 
@@ -261,7 +261,7 @@ if __name__ == '__main__':
 
     # DEBUG DRAWING: make the debug reference node paths sibling of the reference node
     steerMgr.get_reference_node_path_debug().reparent_to(app.render)
-    steerMgr.get_reference_node_path_debug_2d().reparent_to(app.aspect2d);
+    steerMgr.get_reference_node_path_debug_2d().reparent_to(app.aspect2d)
     # enable debug drawing
     steerPlugIn.enable_debug_drawing(app.camera)
 
@@ -287,7 +287,7 @@ if __name__ == '__main__':
     app.accept("o", handleObstacles, [obstacleAddition])
     # handle obstacle removal
     obstacleRemoval = HandleObstacleData(False, sceneNP, steerPlugIn)
-    app.accept("shift-o", handleObstacles, [obstacleRemoval]);
+    app.accept("shift-o", handleObstacles, [obstacleRemoval])
 
     # increase/decrease last inserted vehicle's max speed
     app.accept("s", changeVehicleMaxSpeed, ["s", steerVehicles])
@@ -305,8 +305,8 @@ if __name__ == '__main__':
     
     # place camera
     trackball = app.trackball.node()
-    trackball.set_pos(0.0, 320.0, -10.0);
-    trackball.set_hpr(0.0, 20.0, 0.0);
+    trackball.set_pos(0.0, 320.0, -10.0)
+    trackball.set_hpr(0.0, 20.0, 0.0)
    
     # app.run(), equals to do the main loop in C++
     app.run()
