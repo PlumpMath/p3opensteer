@@ -233,7 +233,7 @@ if __name__ == '__main__':
     app.accept("d", toggleDebugDraw, [steerPlugIn])
 
     # handle addition steer vehicles, models and animations 
-    vehicleData = HandleVehicleData(0.7, 0, "kinematic", sceneNP, 
+    vehicleData = HandleVehicleData(0.4, 4, "kinematic", sceneNP, 
                         steerPlugIn, steerVehicles, vehicleAnimCtls)
     app.accept("a", handleVehicles, [vehicleData])
     vehicleDataKinematic = HandleVehicleData(0.7, 1, "kinematic", sceneNP, 

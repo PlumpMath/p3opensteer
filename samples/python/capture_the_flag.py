@@ -98,7 +98,7 @@ def createCtfVehicle(data, vehicleType):
         steerVehicles[-1].set_max_force(maxForce)
         steerVehicles[-1].set_max_speed(maxSpeed)
         steerVehicles[-1].set_speed(speed)
-        steerVehicles[-1].enable_up_axis_fixed(True)
+        steerVehicles[-1].set_up_axis_fixed(True)
         return True
     return False
 

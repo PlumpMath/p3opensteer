@@ -908,7 +908,8 @@ void OSSteerVehicle::do_update_steer_vehicle(const float currentTime,
 			else if (mUpAxisFixedMode == UP_AXIS_FIXED_MEDIUM)
 			{
 				//2: up axis fixed medium
-				//set forward as x,y (ie OpeenSteer x,z) plane projection
+				//set forward as x,y (ie OpeenSteer x,z) plane
+				//projection (length is not preserved)
 				mVehicle->setForward(
 						OpenSteer::Vec3(mVehicle->forward().x, 0.0,
 								mVehicle->forward().z));
@@ -920,7 +921,8 @@ void OSSteerVehicle::do_update_steer_vehicle(const float currentTime,
 			{
 				//mUpAxisFixedMode == UP_AXIS_FIXED_STRONG
 				//3: up axis fixed strong
-				//set forward as x,y (ie OpeenSteer x,z) plane projection preserving length()
+				//rotate forward so that it is parallel to the x,y
+				//(ie OpeenSteer x,z) plane (length is preserved)
 				float xzProj2 = mVehicle->forward().x * mVehicle->forward().x
 						+ mVehicle->forward().z * mVehicle->forward().z;
 				float cosThetaInv2 = (xzProj2

@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
 			(void*) steerPlugIn.p());
 
 	// handle addition steer vehicles, models and animations
-	HandleVehicleData vehicleData(0.7, 0, "kinematic", sceneNP,
+	HandleVehicleData vehicleData(0.4, 4, "kinematic", sceneNP,
 						steerPlugIn, steerVehicles, vehicleAnimCtls);
 	framework.define_key("a", "addVehicle", &handleVehicles,
 			(void*) &vehicleData);
