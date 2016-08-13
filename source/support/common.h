@@ -72,8 +72,10 @@ typedef std::vector<OpenSteer::SegmentedPathway*> PathwayGroup;
 struct VehicleSettings
 {
 	VehicleSettings() :
-			m_mass(), m_radius(), m_speed(), m_maxForce(),
-			m_maxSpeed(), m_forward(), m_side(), m_up(), m_position()
+			m_mass(1.0), m_radius(1.0), m_speed(0.0), m_maxForce(1.0), m_maxSpeed(
+					1.0), m_forward(OpenSteer::Vec3::forward), m_side(
+					OpenSteer::Vec3::side), m_up(OpenSteer::Vec3::up), m_position(
+					OpenSteer::Vec3::zero)
 	{
 	}
 	// mass

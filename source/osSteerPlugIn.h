@@ -213,6 +213,8 @@ PUBLISHED:
 	LPoint3f get_map_center() const;
 	float get_map_dimension() const;
 	int get_map_resolution() const;
+	void set_map_path_fences(bool enable = true);
+	bool get_map_path_fences() const;
 	void set_map_steering_mode(OSMapSteeringMode mode = PATH_FOLLOW_STEERING);
 	OSMapSteeringMode get_map_steering_mode() const;
 	void set_map_prediction_type(OSMapPredictionType type = CURVED_PREDICTION);
@@ -322,10 +324,12 @@ private:
 		LPoint3f mHomeBaseCenter;
 		float mHomeBaseRadius, mBrakingRate, mAvoidancePredictTimeMin,
 		mAvoidancePredictTimeMax;
+		bool mGDelayedResetPlugInXXX;
 		//map drive
 		OSMapSteeringMode mMapSteeringMode;
 		OSMapPredictionType mMapPredictionType;
 		int mMapResolution;
+		bool mUsePathFences;
 		//low speed turn
 		float mSteeringSpeed;
 	}*mSerializedDataTmpPtr;

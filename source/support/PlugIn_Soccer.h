@@ -413,11 +413,11 @@ public:
 ///	const std::vector<Player*> m_others;
 	std::vector<Player*>* m_AllPlayers;
 	Ball<Entity>* m_Ball;
-	bool b_ImTeamA;
+	bool b_ImTeamA;///serializable
 	bool m_TeamAssigned;
 ///	int m_MyID;
-	Vec3 m_home;
-	float m_distHomeToBall;
+	Vec3 m_home;///serializable
+	float m_distHomeToBall;///serializable
 };
 
 //Player externally updated.
@@ -445,7 +445,7 @@ public:
 		{
 			float distHomeToBall = Vec3::distance(this->getStart(),
 					this->m_Ball->position());
-			if (distHomeToBall < 12.0f)
+			if (distHomeToBall < this->m_distHomeToBall)
 			{
 				// go for ball if I'm on the 'right' side of the ball
 				if (! (
@@ -486,8 +486,8 @@ class MicTestPlugIn: public PlugIn
 public:
 
 	MicTestPlugIn() :
-			m_Ball(NULL), m_bbox(NULL), m_TeamAGoal(NULL), m_TeamBGoal(NULL), junk(
-					0), m_redScore(0), m_blueScore(0)
+			m_Ball(NULL), m_bbox(NULL), m_TeamAGoal(NULL), m_TeamBGoal(NULL), m_redScore(
+					0), m_blueScore(0)
 	{
 		TeamA.clear();
 		TeamB.clear();
@@ -1002,12 +1002,12 @@ public:
 
 	typedef typename Player<Entity>::groupType::iterator iterator;
 
-	AABBox *m_bbox;
-	AABBox *m_TeamAGoal;
-	AABBox *m_TeamBGoal;
-	int junk;
-	int m_redScore;
-	int m_blueScore;
+	AABBox *m_bbox;///serializable (indirectly)
+	AABBox *m_TeamAGoal;///serializable (indirectly)
+	AABBox *m_TeamBGoal;///serializable (indirectly)
+///	int junk;
+	int m_redScore;///serializable
+	int m_blueScore;///serializable
 	//
 	AVGroup m_AllVehicles;
 };

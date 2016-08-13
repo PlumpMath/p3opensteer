@@ -888,7 +888,12 @@ void OSSteerPlugIn::do_on_static_geometry_change(bool dirtyPathway,
 		idxList.add_value(get_pathway_points().size() - 1);
 		for (int i = 0; i < get_num_steer_vehicles(); ++i)
 		{
-			get_steer_vehicle(i)->set_pathway_end_points(idxList);
+			//NOTE: this check is needed during de-serialization
+			if (check_steer_vehicle_compatibility(
+					NodePath::any_path(get_steer_vehicle(i))))
+			{
+				get_steer_vehicle(i)->set_pathway_end_points(idxList);
+			}
 		}
 	}
 	if (mPlugInType == MAP_DRIVE)
@@ -1010,7 +1015,7 @@ OSSteerPlugIn::OSProximityDatabase OSSteerPlugIn::get_proximity_database() const
 	{
 		ossup::PedestrianPlugIn<OSSteerVehicle>* plugIn =
 				static_cast<ossup::PedestrianPlugIn<OSSteerVehicle>*>(mPlugIn);
-		switch (plugIn->pdIdx)
+		switch (plugIn->getPD())
 		{
 		case 0:
 			return LQ_PD;
@@ -1026,7 +1031,7 @@ OSSteerPlugIn::OSProximityDatabase OSSteerPlugIn::get_proximity_database() const
 	{
 		ossup::BoidsPlugIn<OSSteerVehicle>* plugIn =
 				static_cast<ossup::BoidsPlugIn<OSSteerVehicle>*>(mPlugIn);
-		switch (plugIn->pdIdx)
+		switch (plugIn->getPD())
 		{
 		case 0:
 			return LQ_PD;
@@ -1477,6 +1482,35 @@ int OSSteerPlugIn::get_map_resolution() const
 }
 
 /**
+ * Sets the use of path fences on the map.
+ * \note MAP_DRIVE OSSteerPlugIn only.
+ */
+void OSSteerPlugIn::set_map_path_fences(bool enable)
+{
+	if (mPlugInType == MAP_DRIVE)
+	{
+		static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn)->usePathFences =
+				enable;
+#ifdef OS_DEBUG
+		do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
+#endif //OS_DEBUG
+	}
+}
+
+/**
+ * Returns the use of path fences on the map, or a negative value on error.
+ * \note MAP_DRIVE OSSteerPlugIn only.
+ */
+bool OSSteerPlugIn::get_map_path_fences() const
+{
+	if (mPlugInType == MAP_DRIVE)
+	{
+		return static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn)->usePathFences;
+	}
+	return (OSMapSteeringMode) OS_ERROR;
+}
+
+/**
  * Sets the steering mode on the map: path follow or wander steering.
  * \note MAP_DRIVE OSSteerPlugIn only.
  */
@@ -1507,7 +1541,7 @@ void OSSteerPlugIn::set_map_steering_mode(OSMapSteeringMode mode)
 }
 
 /**
- * Returns the steering mode on the map.
+ * Returns the steering mode on the map, or a negative value on error.
  * \note MAP_DRIVE OSSteerPlugIn only.
  */
 OSSteerPlugIn::OSMapSteeringMode OSSteerPlugIn::get_map_steering_mode() const
@@ -1835,7 +1869,7 @@ void OSSteerPlugIn::debug_drawing_to_texture(const NodePath& scene,
 		//look down
 		mTextureCamera2d.set_hpr(0, -90, 0);
 
-		//allocate the mesh drawer for texture drawing XXX
+		//allocate the mesh drawer for texture drawing
 		mTextureDrawer2d = new ossup::DrawMeshDrawer(mTextureRender2d, mTextureCamera2d,
 				100, 0.04);
 		mTextureDrawer2d->setSize(40.0);
@@ -2032,6 +2066,8 @@ void OSSteerPlugIn::write_datagram(BamWriter *manager, Datagram &dg)
 		dg.add_stdfloat(get_braking_rate());
 		dg.add_stdfloat(get_avoidance_predict_time_min());
 		dg.add_stdfloat(get_avoidance_predict_time_max());
+		dg.add_bool(
+				static_cast<ossup::CtfPlugIn<OSSteerVehicle>*>(mPlugIn)->m_CtfPlugInData.gDelayedResetPlugInXXX);
 	}
 	if(mPlugInType == LOW_SPEED_TURN)
 	{
@@ -2042,6 +2078,8 @@ void OSSteerPlugIn::write_datagram(BamWriter *manager, Datagram &dg)
 		dg.add_uint8((uint8_t) get_map_steering_mode());
 		dg.add_uint8((uint8_t) get_map_prediction_type());
 		dg.add_int32(get_map_resolution());
+		dg.add_bool(
+				static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn)->usePathFences);
 	}
 }
 
@@ -2192,6 +2230,8 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 				mSerializedDataTmpPtr->mAvoidancePredictTimeMin);
 		set_avoidance_predict_time_max(
 				mSerializedDataTmpPtr->mAvoidancePredictTimeMax);
+		static_cast<ossup::CtfPlugIn<OSSteerVehicle>*>(mPlugIn)->m_CtfPlugInData.gDelayedResetPlugInXXX =
+				mSerializedDataTmpPtr->mGDelayedResetPlugInXXX;
 	}
 	if(mPlugInType == LOW_SPEED_TURN)
 	{
@@ -2202,6 +2242,8 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 		set_map_steering_mode(mSerializedDataTmpPtr->mMapSteeringMode);
 		set_map_prediction_type(mSerializedDataTmpPtr->mMapPredictionType);
 		make_map(mSerializedDataTmpPtr->mMapResolution);
+		static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn)->usePathFences =
+				mSerializedDataTmpPtr->mUsePathFences;
 	}
 	// deallocate SerializedDataTmp
 	delete mSerializedDataTmpPtr;
@@ -2345,6 +2387,7 @@ void OSSteerPlugIn::fillin(DatagramIterator &scan, BamReader *manager)
 		mSerializedDataTmpPtr->mBrakingRate = scan.get_stdfloat();
 		mSerializedDataTmpPtr->mAvoidancePredictTimeMin = scan.get_stdfloat();
 		mSerializedDataTmpPtr->mAvoidancePredictTimeMax = scan.get_stdfloat();
+		mSerializedDataTmpPtr->mGDelayedResetPlugInXXX = scan.get_bool();
 	}
 	if(mPlugInType == LOW_SPEED_TURN)
 	{
@@ -2357,6 +2400,7 @@ void OSSteerPlugIn::fillin(DatagramIterator &scan, BamReader *manager)
 		mSerializedDataTmpPtr->mMapPredictionType =
 				(OSMapPredictionType) scan.get_uint8();
 		mSerializedDataTmpPtr->mMapResolution = scan.get_int32();
+		mSerializedDataTmpPtr->mUsePathFences = scan.get_bool();
 	}
 }
 

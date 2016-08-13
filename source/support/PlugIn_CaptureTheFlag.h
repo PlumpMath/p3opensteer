@@ -99,16 +99,16 @@ using namespace OpenSteer;
 
 struct CtfPlugInData
 {
-	Vec3 gHomeBaseCenter; //Vec3(0, 0, 0)
-	float gHomeBaseRadius; //1.5
+	Vec3 gHomeBaseCenter;///serializable //Vec3(0, 0, 0)
+	float gHomeBaseRadius;///serializable //1.5
 ///	float gMinStartRadius; //30.0
 ///	float gMaxStartRadius; //40.0
-	float gBrakingRate; //0.75
-	float gAvoidancePredictTimeMin; //0.9
-	float gAvoidancePredictTimeMax; //2.0 (>=gAvoidancePredictTimeMin)
+	float gBrakingRate;///serializable //0.75
+	float gAvoidancePredictTimeMin;///serializable //0.9
+	float gAvoidancePredictTimeMax;///serializable //2.0 (>=gAvoidancePredictTimeMin)
 	float gAvoidancePredictTime; //0.9 (=gAvoidancePredictTimeMin)
-	int resetCount;
-	bool gDelayedResetPlugInXXX;
+///	int resetCount;
+	bool gDelayedResetPlugInXXX;///serializable
 #ifdef OS_DEBUG
 	Color evadeColor; //Color(0.6f, 0.6f, 0.3f)
 	Color seekColor; //Color(0.3f, 0.6f, 0.6f)
@@ -234,7 +234,7 @@ public:
 	Color bodyColor;
 
 	// xxx store steer sub-state for anotation
-	bool avoiding;
+	bool avoiding;///serializable
 
 	CtfPlugInData* gCtfPlugInData;
 	ObstacleGroup* allObstacles;
@@ -453,7 +453,7 @@ public:
 		std::ostringstream status;
 		status << seekerStateString << std::endl;
 ///		status << obstacleCount << " obstacles [F1/F2]" << std::endl;
-		status << this->gCtfPlugInData->resetCount << " restarts" << std::ends;
+///		status << this->gCtfPlugInData->resetCount << " restarts" << std::ends;
 ///	//	const float h = drawGetWindowHeight();
 ///	//	const Vec3 screenLocation(10, h - 50, 0);
 		const Vec3 screenLocation(-1.0, 0.9, 0);
@@ -515,9 +515,9 @@ public:
 	}
 #endif
 
-	typename CtfBase<Entity>::seekerState state;
-	bool evading; // xxx store steer sub-state for anotation
-	float lastRunningTime; // for auto-reset
+	typename CtfBase<Entity>::seekerState state;///serializable
+	bool evading;///serializable // xxx store steer sub-state for anotation
+	float lastRunningTime;///serializable // for auto-reset
 
 	std::vector<CtfEnemy<Entity>*>* gCtfEnemies;
 
@@ -909,7 +909,7 @@ public:
 		m_CtfPlugInData.gAvoidancePredictTimeMin = 0.9f;
 		m_CtfPlugInData.gAvoidancePredictTimeMax = 2;
 		m_CtfPlugInData.gAvoidancePredictTime = m_CtfPlugInData.gAvoidancePredictTimeMin;
-		m_CtfPlugInData.resetCount = 0;
+///		m_CtfPlugInData.resetCount = 0;
 		m_CtfPlugInData.gDelayedResetPlugInXXX = false;
 #ifdef OS_DEBUG
 		m_CtfPlugInData.evadeColor = Color(0.6f, 0.6f, 0.3f); // annotation

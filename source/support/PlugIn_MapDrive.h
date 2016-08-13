@@ -974,6 +974,8 @@ public:
 		demoSelect = 2;
 		worldSize = 1.0;
 		worldDiag = sqrtXXX(square(worldSize) / 2);
+		halfWidth = 1;
+		halfLength = 1;
 
 #ifdef OS_DEBUG
 		// to compute mean time between collisions
@@ -993,11 +995,10 @@ public:
 		lapsFinished = 0;
 		hintGivenCount = 0;
 		hintTakenCount = 0;
-#endif
-
 		// keep track of path following failure rate
 		pathFollowTime = 0;
 		pathFollowOffTime = 0;
+#endif
 
 		// follow the path "upstream or downstream" (+1/-1)
 		pathFollowDirection = 1;
@@ -1036,11 +1037,21 @@ public:
 		// steering force is clipped to this magnitude
 ///		setMaxForce(maxSpeed() * 0.4f);
 
-///		// vehicle is 2 meters wide and 3 meters long
-		// w = 2/3 *r, l = r
-		halfWidth = this->radius() * (2.0f / 3.0f) * 0.5;
-		halfLength = this->radius() * (3.0f / 3.0f) * 0.5;
+///		reset2();
+	}
 
+	void reset2(void)
+	{
+		// vehicle is 2 meters wide and 3 meters long
+		// w = 2/3 * r, l = r
+		halfWidth = this->radius() * 0.666666667f;
+		halfLength = this->radius();
+
+///		reset3();
+	}
+
+	void reset3(void)
+	{
 		// init dynamically controlled radius
 		adjustVehicleRadiusForSpeed();
 
@@ -1090,45 +1101,10 @@ public:
 		//      annoteMaxRelSpeed = annoteMaxRelSpeedCurve = annoteMaxRelSpeedPath = 1;
 	}
 
-	// reset state along path and inside map
-	void resetForPathOrMap(void)
-	{
-		// init dynamically controlled radius
-		adjustVehicleRadiusForSpeed();
-#ifdef OS_DEBUG
-		// not previously avoiding
-		annotateAvoid = Vec3::zero;
-		// prevent long streaks due to teleportation
-		this->clearTrailHistory();
-#endif
-		// first pass at detecting "stuck" state
-		stuck = false;
-		// QQQ need to clean up this hack
-		qqqLastNearestObstacle = Vec3::zero;
-		if (demoSelect == 2)
-		{
-#ifdef OS_DEBUG
-			lapsStarted++;
-#endif
-			const float d = (float) pathFollowDirection;
-			this->regenerateOrthonormalBasisUF(Vec3::side * d);
-		}
-		// reset bookeeping to detect stuck cycles
-		resetStuckCycleDetection();
-		// assume no previous steering
-		currentSteering = Vec3::zero;
-#ifdef OS_DEBUG
-		// assume normal running state
-		dtZero = false;
-#endif
-		// QQQ temporary global QQQoaJustScraping
-		QQQoaJustScraping = false;
-	}
-
 	void resetToPath()
 	{
 ///		reset();
-		resetForPathOrMap();
+		reset3();
 		if ((*path)[0] && (*path)[0]->isValid())
 		{
 			Vec3 forward;
@@ -1168,7 +1144,7 @@ public:
 		else
 		{
 ///			reset();
-			resetForPathOrMap();
+			reset3();
 			float x = frandom2(map->center.x - map->xSize / 2.0 * 0.9,
 					map->center.x + map->xSize / 2.0 * 0.9);
 			float z = frandom2(map->center.z - map->zSize / 2.0 * 0.9,
@@ -2838,45 +2814,44 @@ public:
 	PathwayGroup* path;
 
 	// follow the path "upstream or downstream" (+1/-1)
-	int pathFollowDirection;
+	int pathFollowDirection;///serializable
 
 	// master look ahead (prediction) time
-	float baseLookAheadTime;
+	float baseLookAheadTime;///serializable
 
 	// vehicle dimensions in meters
-	float halfWidth;
-	float halfLength;
+	float halfWidth;///serializable
+	float halfLength;///serializable
 
+	// QQQ first pass at detecting "stuck" state
+	bool stuck;///serializable
+
+	Vec3 qqqLastNearestObstacle;///serializable
+
+	// QQQ temporary global QQQoaJustScraping
+	// QQQ replace this global flag with a cleaner mechanism
+	bool QQQoaJustScraping;///serializable
+
+	// for "curvature-based incremental steering" -- contains the current
+	// steering into which new incremental steering is blended
+	Vec3 currentSteering;///serializable
+
+	// use curved prediction and incremental steering:
+	bool curvedSteering;///serializable
+	bool incrementalSteering;///serializable
+
+	// which of the three demo modes is selected
+	int demoSelect;///updated by plug-in methods
+
+	// size of the world (the map actually)
+	float worldSize;///updated by plug-in methods
+	float worldDiag;///updated by plug-in methods
+
+#ifdef OS_DEBUG
 	// keep track of path following failure rate
 	// (these are probably obsolete now, replaced by stuckOffPathCount)
 	float pathFollowTime;
 	float pathFollowOffTime;
-
-	// QQQ first pass at detecting "stuck" state
-	bool stuck;
-
-	Vec3 qqqLastNearestObstacle;
-
-	// QQQ temporary global QQQoaJustScraping
-	// QQQ replace this global flag with a cleaner mechanism
-	bool QQQoaJustScraping;
-
-	// for "curvature-based incremental steering" -- contains the current
-	// steering into which new incremental steering is blended
-	Vec3 currentSteering;
-
-	// use curved prediction and incremental steering:
-	bool curvedSteering;
-	bool incrementalSteering;
-
-	// which of the three demo modes is selected
-	int demoSelect;
-
-	// size of the world (the map actually)
-	float worldSize;
-	float worldDiag;
-
-#ifdef OS_DEBUG
 	// keep track of failure rate (when vehicle is on top of obstacle)
 	bool collisionDetected;
 	bool collisionLastTime;
@@ -3389,9 +3364,8 @@ public:
 #ifdef OS_DEBUG
 			mapDriver->windowWidth = windowWidth;
 #endif
-			// vehicle is 2 * radius meters wide and 3 * radius meters long
-			mapDriver->halfWidth = mapDriver->radius() * 1.0f;
-			mapDriver->halfLength = mapDriver->radius() * 1.5f;
+			mapDriver->reset2();
+			mapDriver->reset3();
 			//set result
 			return true;
 		}
@@ -3407,27 +3381,27 @@ public:
 		pfd = (pfd > 0) ? -1 : +1;
 	}
 
-	void setOptions(int _demoSelect = 2, bool _usePathFences = true,
-			bool _curvedSteering = true)
-	{
-		bool dirty = false;
-		if (demoSelect != _demoSelect)
-		{
-			//update
-			demoSelect = _demoSelect;
-			dirty = true;
-		}
-		if (usePathFences != _usePathFences)
-		{
-			usePathFences = _usePathFences;
-			dirty = true;
-		}
-		if (dirty)
-		{
-			makeMap(worldResolution);
-		}
-		curvedSteering = _curvedSteering;
-	}
+///	void setOptions(int _demoSelect = 2, bool _usePathFences = true,
+///			bool _curvedSteering = true)
+///	{
+///		bool dirty = false;
+///		if (demoSelect != _demoSelect)
+///		{
+///			//update
+///			demoSelect = _demoSelect;
+///			dirty = true;
+///		}
+///		if (usePathFences != _usePathFences)
+///		{
+///			usePathFences = _usePathFences;
+///			dirty = true;
+///		}
+///		if (dirty)
+///		{
+///			makeMap(worldResolution);
+///		}
+///		curvedSteering = _curvedSteering;
+///	}
 
 	void setDemoSelect(int _demoSelect = 2)
 	{
@@ -3436,6 +3410,12 @@ public:
 			//update
 			demoSelect = _demoSelect;
 			makeMap(worldResolution);
+			// update demoSelect of each vehicles
+			iterator iter;
+			for (iter = vehicles.begin(); iter != vehicles.end(); ++iter)
+			{
+				(*iter)->demoSelect = demoSelect;
+			}
 		}
 	}
 
@@ -4404,11 +4384,11 @@ public:
 	float worldSize;
 	float worldDiag;
 	Vec3 worldCenter;
-	int worldResolution;
+	int worldResolution;///serializable
 
 	// which of the three demo modes is selected
-	int demoSelect;
-	bool curvedSteering;
+	int demoSelect;///serializable
+	bool curvedSteering;///serializable
 
 #ifdef OS_DEBUG
 	float windowWidth;
@@ -4418,7 +4398,7 @@ public:
 	typename MapDriver<Entity>::groupType vehicles; // for allVehicles
 	typedef typename MapDriver<Entity>::groupType::const_iterator iterator;
 
-	bool usePathFences;
+	bool usePathFences;///serializable
 ///	bool useRandomRocks;
 };
 

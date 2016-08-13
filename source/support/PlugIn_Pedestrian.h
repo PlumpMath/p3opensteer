@@ -403,15 +403,15 @@ public:
 	Vec3 pathEndpoint0;
 	Vec3 pathEndpoint1;
 	float radiusEndpoint0, radiusEndpoint1;
-	int indexEndpoint0, indexEndpoint1;
+	int indexEndpoint0, indexEndpoint1;///serializable
 
 	// direction for path following (upstream or downstream)
-	int pathDirection;
+	int pathDirection;///serializable
 
 	ObstacleGroup* obstacles;
 
-	bool useDirectedPathFollowing;
-	bool wanderSwitch;
+	bool useDirectedPathFollowing;///serializable
+	bool wanderSwitch;///serializable
 };
 
 //Pedestrian externally updated.
@@ -474,7 +474,7 @@ class PedestrianPlugIn: public PlugIn
 public:
 
 	PedestrianPlugIn() :
-			pd(NULL), pdIdx(0), cyclePD(0)
+			pd(NULL), cyclePD(0)
 	{
 		crowd.clear();
 		neighbors.clear();
@@ -815,13 +815,11 @@ public:
 			const Vec3 dimensions(diameter, diameter, diameter);
 			typedef LQProximityDatabase<AbstractVehicle*> LQPDAV;
 			pd = new LQPDAV(center, dimensions, divisions);
-			pdIdx = 0;
 			break;
 		}
 		case 1:
 		{
 			pd = new BruteForceProximityDatabase<AbstractVehicle*>();
-			pdIdx = 1;
 			break;
 		}
 		}
@@ -836,7 +834,8 @@ public:
 
 	int getPD()
 	{
-		return pdIdx;
+		const int totalPD = 2;
+		return cyclePD % totalPD;
 	}
 
 	void setPD(int idx)
@@ -856,13 +855,13 @@ public:
 			const Vec3 dimensions(diameter, diameter, diameter);
 			typedef LQProximityDatabase<AbstractVehicle*> LQPDAV;
 			pd = new LQPDAV(center, dimensions, divisions);
-			pdIdx = 0;
+			cyclePD = 0;
 			break;
 		}
 		case 1:
 		{
 			pd = new BruteForceProximityDatabase<AbstractVehicle*>();
-			pdIdx = 1;
+			cyclePD = 1;
 			break;
 		}
 		}
@@ -887,8 +886,7 @@ public:
 	AVGroup neighbors;
 
 	// pointer to database used to accelerate proximity queries
-	ProximityDatabase* pd;
-	int pdIdx;
+	ProximityDatabase* pd;///serializable
 
 ///	// keep track of current flock size
 ///	int population;

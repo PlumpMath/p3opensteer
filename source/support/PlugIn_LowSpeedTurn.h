@@ -285,7 +285,7 @@ public:
 	typename LowSpeedTurn<Entity>::groupType all; // for allVehicles
 	typedef typename LowSpeedTurn<Entity>::groupType::const_iterator iterator;
 
-	float steeringSpeed;
+	float steeringSpeed;///serializable
 };
 
 //LowSpeedTurnPlugIn gLowSpeedTurnPlugIn;

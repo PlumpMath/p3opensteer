@@ -507,7 +507,7 @@ OSFlockSettings OSSteerVehicle::get_flock_settings() const
  * Returns the OSSteerVehicle's current playing team, or a negative value on
  * error.
  * \note The team can only be changed through OSSteerPlugIn API.
- * \note SOCCER OSSteerVehicle only.
+ * \note PLAYER OSSteerVehicle only.
  */
 OSSteerPlugIn::OSPlayingTeam OSSteerVehicle::get_playing_team() const
 {
@@ -535,10 +535,41 @@ OSSteerPlugIn::OSPlayingTeam OSSteerVehicle::get_playing_team() const
 }
 
 /**
+ * Sets the OSSteerVehicle's playing distance (>=0).
+ * \note This is the maximum distance from the ball by which the player tries to
+ * kick it, otherwise it will return to its home position. When a player is
+ * added to a team it is set, by default, about half of the diagonal of half
+ * playing field.
+ * \note PLAYER OSSteerVehicle only.
+ */
+void OSSteerVehicle::set_playing_distance(float distance)
+{
+	if (OSSteerVehicle::mVehicleType == PLAYER)
+	{
+		static_cast<ossup::Player<OSSteerVehicle>*>(mVehicle)->m_distHomeToBall =
+				(distance < 0 ? -distance : distance);
+	}
+}
+
+/**
+ * Returns the OSSteerVehicle's max playing distance from the ball, or a
+ * negative value on error.
+ * \note PLAYER OSSteerVehicle only.
+ */
+float OSSteerVehicle::get_playing_distance() const
+{
+	if (mVehicleType == PLAYER)
+	{
+		return static_cast<ossup::Player<OSSteerVehicle>*>(mVehicle)->m_distHomeToBall;
+	}
+	return (OSSteerPlugIn::OSPlayingTeam) OS_ERROR;
+}
+
+/**
  * Returns the OSSteerVehicle's current playing team, or a negative value on
  * error.
  * \note The team can only be changed through OSSteerPlugIn API.
- * \note SOCCER OSSteerVehicle only.
+ * \note CTF_SEEKER OSSteerVehicle only.
  */
 OSSteerVehicle::OSSeekerState OSSteerVehicle::get_seeker_state() const
 {
@@ -1300,6 +1331,10 @@ void OSSteerVehicle::write_datagram(BamWriter *manager, Datagram &dg)
 	if(mVehicleType == PLAYER)
 	{
 		dg.add_uint8((uint8_t) get_playing_team());
+		ossup::Player<OSSteerVehicle>* vehicle = static_cast<ossup::Player<
+				OSSteerVehicle>*>(mVehicle);
+		ossup::OpenSteerVec3ToLVecBase3f(vehicle->m_home).write_datagram(dg);
+		dg.add_stdfloat(vehicle->m_distHomeToBall);
 	}
 	if(mVehicleType == BALL)
 	{
@@ -1307,11 +1342,17 @@ void OSSteerVehicle::write_datagram(BamWriter *manager, Datagram &dg)
 	}
 	if(mVehicleType == CTF_SEEKER)
 	{
-		/*do nothing*/;
+		ossup::CtfSeeker<OSSteerVehicle>* vehicle =
+				static_cast<ossup::CtfSeeker<OSSteerVehicle>*>(mVehicle);
+		dg.add_bool(vehicle->avoiding);
+		dg.add_bool(vehicle->evading);
+		dg.add_stdfloat(vehicle->lastRunningTime);
+		dg.add_uint8((uint8_t) vehicle->state);
 	}
 	if(mVehicleType == CTF_ENEMY)
 	{
-		/*do nothing*/;
+		dg.add_bool(
+				static_cast<ossup::CtfEnemy<OSSteerVehicle>*>(mVehicle)->avoiding);
 	}
 	if(mVehicleType == LOW_SPEED_TURN)
 	{
@@ -1323,6 +1364,17 @@ void OSSteerVehicle::write_datagram(BamWriter *manager, Datagram &dg)
 		dg.add_stdfloat(get_base_look_ahead_time());
 		dg.add_bool(get_incremental_steering());
 		dg.add_uint8((uint8_t) get_map_prediction_type());
+		ossup::MapDriver<OSSteerVehicle>* vehicle =
+				static_cast<ossup::MapDriver<OSSteerVehicle>*>(mVehicle);
+		ossup::OpenSteerVec3ToLVecBase3f(vehicle->currentSteering).write_datagram(
+				dg);
+		ossup::OpenSteerVec3ToLVecBase3f(vehicle->qqqLastNearestObstacle).write_datagram(
+				dg);
+		dg.add_bool(vehicle->QQQoaJustScraping);
+		dg.add_bool(vehicle->stuck);
+		dg.add_stdfloat(vehicle->halfWidth);
+		dg.add_stdfloat(vehicle->halfLength);
+		dg.add_stdfloat(vehicle->radius());
 	}
 }
 
@@ -1372,7 +1424,7 @@ void OSSteerVehicle::finalize(BamReader *manager)
 				mVehicle);
 	}
 
-	///SERIALIZATION ONLY
+	///SPECIFICS
 	nassertv_always(mSerializedDataTmpPtr != NULL)
 
 	if(mVehicleType == ONE_TURNING)
@@ -1403,11 +1455,15 @@ void OSSteerVehicle::finalize(BamReader *manager)
 	{
 		// check if plug-in has gained its final type (i.e. finalized)
 		if (mSteerPlugIn
-				&& dynamic_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(
-						&mSteerPlugIn->get_abstract_plug_in()))
+				&& dynamic_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(&mSteerPlugIn->get_abstract_plug_in()))
 		{
 			mSteerPlugIn->add_player_to_team(this, mPlayingTeam_ser);
 		}
+		ossup::Player<OSSteerVehicle>* vehicle = static_cast<ossup::Player<
+				OSSteerVehicle>*>(mVehicle);
+		vehicle->m_home = ossup::LVecBase3fToOpenSteerVec3(
+				mSerializedDataTmpPtr->mHome);
+		vehicle->m_distHomeToBall = mSerializedDataTmpPtr->mDistHomeToBall;
 	}
 	if(mVehicleType == BALL)
 	{
@@ -1415,11 +1471,17 @@ void OSSteerVehicle::finalize(BamReader *manager)
 	}
 	if(mVehicleType == CTF_SEEKER)
 	{
-		/*do nothing*/;
+		ossup::CtfSeeker<OSSteerVehicle>* vehicle =
+				static_cast<ossup::CtfSeeker<OSSteerVehicle>*>(mVehicle);
+		vehicle->avoiding = mSerializedDataTmpPtr->mAvoiding;
+		vehicle->evading = mSerializedDataTmpPtr->mEvading;
+		vehicle->lastRunningTime = mSerializedDataTmpPtr->mLastRunningTime;
+		vehicle->state = mSerializedDataTmpPtr->mState;
 	}
 	if(mVehicleType == CTF_ENEMY)
 	{
-		/*do nothing*/;
+		static_cast<ossup::CtfEnemy<OSSteerVehicle>*>(mVehicle)->avoiding =
+				mSerializedDataTmpPtr->mAvoiding;
 	}
 	if(mVehicleType == LOW_SPEED_TURN)
 	{
@@ -1428,6 +1490,20 @@ void OSSteerVehicle::finalize(BamReader *manager)
 	if(mVehicleType == MAP_DRIVER)
 	{
 		set_pathway_direction(mSerializedDataTmpPtr->mPathwayDirection);
+		set_base_look_ahead_time(mSerializedDataTmpPtr->mBaseLookAheadTime);
+		set_incremental_steering(mSerializedDataTmpPtr->mIncrementalSteering);
+		set_map_prediction_type(mSerializedDataTmpPtr->mMapPredictionType);
+		ossup::MapDriver<OSSteerVehicle>* vehicle =
+				static_cast<ossup::MapDriver<OSSteerVehicle>*>(mVehicle);
+		vehicle->currentSteering = ossup::LVecBase3fToOpenSteerVec3(
+				mSerializedDataTmpPtr->mCurrentSteering);
+		vehicle->qqqLastNearestObstacle = ossup::LVecBase3fToOpenSteerVec3(
+				mSerializedDataTmpPtr->mQqqLastNearestObstacle);
+		vehicle->QQQoaJustScraping = mSerializedDataTmpPtr->mQQQoaJustScraping;
+		vehicle->stuck = mSerializedDataTmpPtr->mStuck;
+		vehicle->halfWidth = mSerializedDataTmpPtr->mHalfWidth;
+		vehicle->halfLength = mSerializedDataTmpPtr->mHalfLength;
+		vehicle->setRadius(mSerializedDataTmpPtr->mDynamicRadius);
 	}
 	// deallocate SerializedDataTmp
 	delete mSerializedDataTmpPtr;
@@ -1515,7 +1591,7 @@ void OSSteerVehicle::fillin(DatagramIterator &scan, BamReader *manager)
 	///The reference node path.
 	manager->read_pointer(scan);
 
-	///SERIALIZATION ONLY
+	///SPECIFICS
 	nassertv_always(mSerializedDataTmpPtr == NULL)
 
 	// allocate SerializedDataTmp
@@ -1553,6 +1629,8 @@ void OSSteerVehicle::fillin(DatagramIterator &scan, BamReader *manager)
 	if(mVehicleType == PLAYER)
 	{
 		mPlayingTeam_ser = (OSSteerPlugIn::OSPlayingTeam)scan.get_uint8();
+		mSerializedDataTmpPtr->mHome.read_datagram(scan);
+		mSerializedDataTmpPtr->mDistHomeToBall = scan.get_stdfloat();
 	}
 	if(mVehicleType == BALL)
 	{
@@ -1560,11 +1638,15 @@ void OSSteerVehicle::fillin(DatagramIterator &scan, BamReader *manager)
 	}
 	if(mVehicleType == CTF_SEEKER)
 	{
-		/*do nothing*/;
+		mSerializedDataTmpPtr->mAvoiding = scan.get_bool();
+		mSerializedDataTmpPtr->mEvading = scan.get_bool();
+		mSerializedDataTmpPtr->mLastRunningTime = scan.get_stdfloat();
+		mSerializedDataTmpPtr->mState =
+				(ossup::CtfBase<OSSteerVehicle>::seekerState) scan.get_uint8();
 	}
 	if(mVehicleType == CTF_ENEMY)
 	{
-		/*do nothing*/;
+		mSerializedDataTmpPtr->mAvoiding = scan.get_bool();
 	}
 	if(mVehicleType == LOW_SPEED_TURN)
 	{
@@ -1577,7 +1659,14 @@ void OSSteerVehicle::fillin(DatagramIterator &scan, BamReader *manager)
 		mSerializedDataTmpPtr->mBaseLookAheadTime = scan.get_stdfloat();
 		mSerializedDataTmpPtr->mIncrementalSteering = scan.get_bool();
 		mSerializedDataTmpPtr->mMapPredictionType =
-				(OSSteerPlugIn::OSMapPredictionType)scan.get_uint8();
+				(OSSteerPlugIn::OSMapPredictionType) scan.get_uint8();
+		mSerializedDataTmpPtr->mCurrentSteering.read_datagram(scan);
+		mSerializedDataTmpPtr->mQqqLastNearestObstacle.read_datagram(scan);
+		mSerializedDataTmpPtr->mQQQoaJustScraping = scan.get_bool();
+		mSerializedDataTmpPtr->mStuck = scan.get_bool();
+		mSerializedDataTmpPtr->mHalfWidth = scan.get_stdfloat();
+		mSerializedDataTmpPtr->mHalfLength = scan.get_stdfloat();
+		mSerializedDataTmpPtr->mDynamicRadius = scan.get_stdfloat();
 	}
 }
 

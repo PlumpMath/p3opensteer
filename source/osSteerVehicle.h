@@ -227,6 +227,8 @@ PUBLISHED:
 	 */
 	///@{
 	OSSteerPlugIn::OSPlayingTeam get_playing_team() const;
+	void set_playing_distance(float distance);
+	float get_playing_distance() const;
 	///@}
 
 	/**
@@ -363,15 +365,27 @@ private:
 		OSPathDirection mPathwayDirection;
 		//boid
 		OSFlockSettings mFlockSettings;
+		//player
+		LPoint3f mHome;
+		float mDistHomeToBall;
+		//ctf seeker, ctf enemy
+		bool mAvoiding;
+		//ctf seeker
+		bool mEvading;
+		float mLastRunningTime;
+		ossup::CtfBase<OSSteerVehicle>::seekerState mState;
 		//low speed turn
 		float mSteeringSpeed;
 		//map driver
 		float mBaseLookAheadTime;
 		bool mIncrementalSteering;
 		OSSteerPlugIn::OSMapPredictionType mMapPredictionType;
+		LVector3f mCurrentSteering, mQqqLastNearestObstacle;
+		bool mQQQoaJustScraping, mStuck;
+		float mHalfWidth, mHalfLength, mDynamicRadius;
 	}*mSerializedDataTmpPtr;
 	// persistent storage for serialized data
-	//soccer
+	//player
 	OSSteerPlugIn::OSPlayingTeam mPlayingTeam_ser;
 	///@}
 

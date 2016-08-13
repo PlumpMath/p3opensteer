@@ -358,15 +358,15 @@ public:
 ///#endif // NO_LQ_BIN_STATS
 
 private:
-	float separationRadius;
-	float separationAngle;
-	float separationWeight;
-	float alignmentRadius;
-	float alignmentAngle;
-	float alignmentWeight;
-	float cohesionRadius;
-	float cohesionAngle;
-	float cohesionWeight;
+	float separationRadius;///serializable
+	float separationAngle;///serializable
+	float separationWeight;///serializable
+	float alignmentRadius;///serializable
+	float alignmentAngle;///serializable
+	float alignmentWeight;///serializable
+	float cohesionRadius;///serializable
+	float cohesionAngle;///serializable
+	float cohesionWeight;///serializable
 	float maxRadius;
 
 };
@@ -407,7 +407,7 @@ public:
 
 	//set default world radius in constructor
 	BoidsPlugIn() :
-			pd(NULL), pdIdx(0), cyclePD(0), worldRadius(1.0f), worldCenter(
+			pd(NULL), cyclePD(0), worldRadius(1.0f), worldCenter(
 					Vec3::zero)
 	{
 		flock.clear();
@@ -587,7 +587,8 @@ public:
 
 	int getPD()
 	{
-		return pdIdx;
+		const int totalPD = 2;
+		return cyclePD % totalPD;
 	}
 
 	void setPD(int idx)
@@ -607,13 +608,13 @@ public:
 			const Vec3 dimensions(diameter, diameter, diameter);
 			typedef LQProximityDatabase<AbstractVehicle*> LQPDAV;
 			pd = new LQPDAV(center, dimensions, divisions);
-			pdIdx = 0;
+			cyclePD = 0;
 			break;
 		}
 		case 1:
 		{
 			pd = new BruteForceProximityDatabase<AbstractVehicle*>();
-			pdIdx = 1;
+			cyclePD = 1;
 			break;
 		}
 		}
@@ -766,8 +767,7 @@ public:
 	AVGroup neighbors;
 
 	// pointer to database used to accelerate proximity queries
-	ProximityDatabase* pd;
-	int pdIdx;
+	ProximityDatabase* pd;///serializable
 
 ///	// keep track of current flock size
 ///	int population;
@@ -775,8 +775,8 @@ public:
 	// which of the various proximity databases is currently in use
 	int cyclePD;
 
-	float worldRadius;
-	Vec3 worldCenter;
+	float worldRadius;///serializable
+	Vec3 worldCenter;///serializable
 
 #ifdef OS_DEBUG
 	void drawObstacles(void)
