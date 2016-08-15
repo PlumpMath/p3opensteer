@@ -711,6 +711,10 @@ public:
 				dynamic_cast<Ball<Entity>*>(vehicle);
 		if (ballTmp)
 		{
+#ifndef NDEBUG
+			///addVehicle() must not change vehicle's settings
+			VehicleSettings settings = ballTmp->getSettings();
+#endif
 			// set the plugin's ball: the last added one
 			m_Ball = ballTmp;
 			// set the ball's AABB
@@ -726,6 +730,10 @@ public:
 			}
 			//update each player's ball
 			setAllPlayersBall();
+
+			///addVehicle() must not change vehicle's settings
+			assert(settings == ballTmp->getSettings());
+
 			//that's all
 			return true;
 		}
@@ -734,12 +742,20 @@ public:
 			dynamic_cast<Player<Entity>*>(vehicle);
 		if (playerTmp)
 		{
+#ifndef NDEBUG
+			///addVehicle() must not change vehicle's settings
+			VehicleSettings settings = playerTmp->getSettings();
+#endif
 			// add player to all players' repo
 			m_AllPlayers.push_back(playerTmp);
 			// set the player's all player repo
 			playerTmp->m_AllPlayers = &m_AllPlayers;
 			// set the player's ball
 			playerTmp->m_Ball = m_Ball;
+
+			///addVehicle() must not change vehicle's settings
+			assert(settings == playerTmp->getSettings());
+
 			//that's all
 			return true;
 		}

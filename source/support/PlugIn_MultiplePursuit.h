@@ -343,10 +343,18 @@ public:
 				dynamic_cast<MpWanderer<Entity>*>(vehicle);
 		if (wandererTmp)
 		{
+#ifndef NDEBUG
+			///addVehicle() must not change vehicle's settings
+			VehicleSettings settings = wandererTmp->getSettings();
+#endif
 			// set the plugin's wanderer: the last added one
 			wanderer = wandererTmp;
 			//update each pursuer's wanderer
 			setAllPursuersWanderer();
+
+			///addVehicle() must not change vehicle's settings
+			assert(settings == wandererTmp->getSettings());
+
 			//that's all
 			return true;
 		}
@@ -355,6 +363,10 @@ public:
 			dynamic_cast<MpPursuer<Entity>*>(vehicle);
 		if (pursuerTmp)
 		{
+#ifndef NDEBUG
+			///addVehicle() must not change vehicle's settings
+			VehicleSettings settings = pursuerTmp->getSettings();
+#endif
 ///			//if not ExternalMpPursuer then randomize
 ///			if (! dynamic_cast<ExternalMpPursuer<Entity>*>(pursuerTmp))
 ///			{
@@ -363,6 +375,10 @@ public:
 ///			}
 			// set the pursuer's wanderer
 			pursuerTmp->wanderer = wanderer;
+
+			///addVehicle() must not change vehicle's settings
+			assert(settings == pursuerTmp->getSettings());
+
 			//that's all
 			return true;
 		}

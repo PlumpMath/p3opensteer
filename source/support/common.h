@@ -78,6 +78,18 @@ struct VehicleSettings
 					OpenSteer::Vec3::zero)
 	{
 	}
+	bool operator == (const VehicleSettings& other)
+	{
+		return (m_mass == other.m_mass) &&
+				(m_radius == other.m_radius) &&
+				(m_speed == other.m_speed) &&
+				(m_maxForce == other.m_maxForce) &&
+				(m_maxSpeed == other.m_maxSpeed) &&
+				(m_forward == other.m_forward) &&
+				(m_side == other.m_side) &&
+				(m_up == other.m_up) &&
+				(m_position == other.m_position);
+	}
 	// mass
 	float m_mass;
 	// size of bounding sphere, for obstacle avoidance, etc.
@@ -402,6 +414,8 @@ public:
 		m_pathway.clear();
 	}
 
+	///Note: addVehicle() derived function must not change any vehicle's
+	///physical characteristics as defined by ossup::VehicleSettings
 	virtual bool addVehicle(OpenSteer::AbstractVehicle* vehicle)
 	{
 		bool result = false;

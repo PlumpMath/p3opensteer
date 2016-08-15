@@ -3369,25 +3369,33 @@ public:
 			return false;
 		}
 		// try to allocate a token for this pedestrian in the proximity database
-		MapDriver<Entity>* mapDriver = dynamic_cast<MapDriver<Entity>*>(vehicle);
-		if (mapDriver && map)
+		MapDriver<Entity>* mapDriverTmp = dynamic_cast<MapDriver<Entity>*>(vehicle);
+		if (mapDriverTmp && map)
 		{
-			//set map
-			mapDriver->map = map;
-			//set world size
-			mapDriver->worldSize = worldSize;
-			mapDriver->worldDiag = worldDiag;
-			//set path
-			mapDriver->path = &m_pathway;
-			//set demo select
-			mapDriver->demoSelect = demoSelect;
-			//set curved steering
-			mapDriver->curvedSteering = curvedSteering;
-#ifdef OS_DEBUG
-			mapDriver->windowWidth = windowWidth;
+#ifndef NDEBUG
+			///addVehicle() must not change vehicle's settings
+			VehicleSettings settings = mapDriverTmp->getSettings();
 #endif
-			mapDriver->reset2();
-			mapDriver->reset3();
+			//set map
+			mapDriverTmp->map = map;
+			//set world size
+			mapDriverTmp->worldSize = worldSize;
+			mapDriverTmp->worldDiag = worldDiag;
+			//set path
+			mapDriverTmp->path = &m_pathway;
+			//set demo select
+			mapDriverTmp->demoSelect = demoSelect;
+			//set curved steering
+			mapDriverTmp->curvedSteering = curvedSteering;
+#ifdef OS_DEBUG
+			mapDriverTmp->windowWidth = windowWidth;
+#endif
+			mapDriverTmp->reset2();
+			mapDriverTmp->reset3();
+
+			///addVehicle() must not change vehicle's settings
+			assert(settings == mapDriverTmp->getSettings());
+
 			//set result
 			return true;
 		}

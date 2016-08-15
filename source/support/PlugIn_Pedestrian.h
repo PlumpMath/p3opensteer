@@ -728,10 +728,14 @@ public:
 			return false;
 		}
 		// try to allocate a token for this pedestrian in the proximity database
-		Pedestrian<Entity>* pedestrian =
+		Pedestrian<Entity>* pedestrianTmp =
 				dynamic_cast<Pedestrian<Entity>*>(vehicle);
-		if (pedestrian)
+		if (pedestrianTmp)
 		{
+#ifndef NDEBUG
+			///addVehicle() must not change vehicle's settings
+			VehicleSettings settings = pedestrianTmp->getSettings();
+#endif
 ///			//if not ExternalPedestrian then randomize
 ///			if (! dynamic_cast<ExternalPedestrian<Entity>*>(pedestrian))
 ///			{
@@ -739,23 +743,27 @@ public:
 ///				pedestrian->randomizeHeadingOnXZPlane();
 ///			}
 			// allocate a token for this pedestrian in the proximity database
-			pedestrian->newPD(*pd);
+			pedestrianTmp->newPD(*pd);
 			// notify proximity database that our position has changed
-			pedestrian->proximityToken->updateForNewPosition(
-					pedestrian->position());
+			pedestrianTmp->proximityToken->updateForNewPosition(
+					pedestrianTmp->position());
 			//set path
-			pedestrian->path = &m_pathway;
+			pedestrianTmp->path = &m_pathway;
 			//set the default end points
-			pedestrian->indexEndpoint0 = 0;
-			pedestrian->indexEndpoint1 = m_pathway[0]->pointCount() - 1;
-			getPathwayEndPointData(pedestrian->indexEndpoint0,
-					pedestrian->indexEndpoint1, pedestrian->pathEndpoint0,
-					pedestrian->pathEndpoint1, pedestrian->radiusEndpoint0,
-					pedestrian->radiusEndpoint1);
+			pedestrianTmp->indexEndpoint0 = 0;
+			pedestrianTmp->indexEndpoint1 = m_pathway[0]->pointCount() - 1;
+			getPathwayEndPointData(pedestrianTmp->indexEndpoint0,
+					pedestrianTmp->indexEndpoint1, pedestrianTmp->pathEndpoint0,
+					pedestrianTmp->pathEndpoint1, pedestrianTmp->radiusEndpoint0,
+					pedestrianTmp->radiusEndpoint1);
 			//set obstacles
-			pedestrian->obstacles = obstacles;
+			pedestrianTmp->obstacles = obstacles;
 			//set neighbors
-			pedestrian->neighbors = &neighbors;
+			pedestrianTmp->neighbors = &neighbors;
+
+			///addVehicle() must not change vehicle's settings
+			assert(settings == pedestrianTmp->getSettings());
+
 			//set result
 			return true;
 		}

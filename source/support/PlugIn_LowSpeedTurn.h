@@ -262,12 +262,20 @@ public:
 			return false;
 		}
 		// get low speed turn
-		LowSpeedTurn<Entity>* lowSpeedTurn =
+		LowSpeedTurn<Entity>* lowSpeedTurnTmp =
 				dynamic_cast<LowSpeedTurn<Entity>*>(vehicle);
-		if (lowSpeedTurn)
+		if (lowSpeedTurnTmp)
 		{
+#ifndef NDEBUG
+			///addVehicle() must not change vehicle's settings
+			VehicleSettings settings = lowSpeedTurnTmp->getSettings();
+#endif
 			//set steering speed
-			lowSpeedTurn->steeringSpeed = steeringSpeed;
+			lowSpeedTurnTmp->steeringSpeed = steeringSpeed;
+
+			///addVehicle() must not change vehicle's settings
+			assert(settings == lowSpeedTurnTmp->getSettings());
+
 			//set result
 			return true;
 		}

@@ -1047,6 +1047,10 @@ public:
 				dynamic_cast<CtfSeeker<Entity>*>(vehicle);
 		if (ctfSeekerTmp)
 		{
+#ifndef NDEBUG
+			///addVehicle() must not change vehicle's settings
+			VehicleSettings settings = ctfSeekerTmp->getSettings();
+#endif
 ///			//if not ExternalCtfSeeker then randomize
 ///			if (! dynamic_cast<ExternalCtfSeeker<Entity>*>(ctfSeekerTmp))
 ///			{
@@ -1062,6 +1066,10 @@ public:
 			ctfSeeker = ctfSeekerTmp;
 			//update each enemy's seeker
 			setAllEnemiesSeeker();
+
+			///addVehicle() must not change vehicle's settings
+			assert(settings == ctfSeekerTmp->getSettings());
+
 			//that's all
 			return true;
 		}
@@ -1070,6 +1078,10 @@ public:
 			dynamic_cast<CtfEnemy<Entity>*>(vehicle);
 		if (ctfEnemyTmp)
 		{
+#ifndef NDEBUG
+			///addVehicle() must not change vehicle's settings
+			VehicleSettings settings = ctfEnemyTmp->getSettings();
+#endif
 ///			//if not ExternalCtfEnemy then randomize
 ///			if (! dynamic_cast<ExternalCtfEnemy<Entity>*>(ctfEnemyTmp))
 ///			{
@@ -1083,6 +1095,10 @@ public:
 			ctfEnemyTmp->gSeeker = ctfSeeker;
 			// add enemy to enemy repo
 			ctfEnemies.push_back(ctfEnemyTmp);
+
+			///addVehicle() must not change vehicle's settings
+			assert(settings == ctfEnemyTmp->getSettings());
+
 			//that's all
 			return true;
 		}

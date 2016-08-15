@@ -721,19 +721,24 @@ public:
 			return false;
 		}
 		// try to allocate a token for this boid in the proximity database
-		Boid<Entity>* boid =
+		Boid<Entity>* boidTmp =
 				dynamic_cast<Boid<Entity>*>(vehicle);
-		if (boid)
+		if (boidTmp)
 		{
+#ifndef NDEBUG
+			///addVehicle() must not change vehicle's settings
+			VehicleSettings settings = boidTmp->getSettings();
+#endif
+
 			//set boid world sphere (center/radius)
-			boid->worldCenter = worldCenter;
-			boid->worldRadius = worldRadius;
+			boidTmp->worldCenter = worldCenter;
+			boidTmp->worldRadius = worldRadius;
 			//if not ExternalBoid then randomize
-			if (! dynamic_cast<ExternalBoid<Entity>*>(boid))
+			if (! dynamic_cast<ExternalBoid<Entity>*>(boidTmp))
 			{
 ///				// randomize initial orientation
 ///				boid->regenerateOrthonormalBasisUF(RandomUnitVector());
-				boid->regenerateOrthonormalBasisUF(boid->forward());
+				boidTmp->regenerateOrthonormalBasisUF(boidTmp->forward());
 ///				// randomize initial position: inside the world sphere
 ///				boid->setPosition(
 ///						worldCenter
@@ -741,13 +746,17 @@ public:
 ///										* worldRadius);
 			}
 			// allocate a token for this boid in the proximity database
-			boid->newPD(*pd);
+			boidTmp->newPD(*pd);
 			// notify proximity database that our position has changed
-			boid->proximityToken->updateForNewPosition(boid->position());
+			boidTmp->proximityToken->updateForNewPosition(boidTmp->position());
 			//set obstacles
-			boid->obstacles = obstacles;
+			boidTmp->obstacles = obstacles;
 			//set neighbors
-			boid->neighbors = &neighbors;
+			boidTmp->neighbors = &neighbors;
+
+			///addVehicle() must not change vehicle's settings
+			assert(settings == boidTmp->getSettings());
+
 			//set result
 			return true;
 		}
