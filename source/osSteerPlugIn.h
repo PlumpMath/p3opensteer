@@ -323,7 +323,7 @@ private:
 		//capture the flag
 		LPoint3f mHomeBaseCenter;
 		float mHomeBaseRadius, mBrakingRate, mAvoidancePredictTimeMin,
-		mAvoidancePredictTimeMax;
+		mAvoidancePredictTimeMax, mAvoidancePredictTime;
 		bool mGDelayedResetPlugInXXX;
 		//map drive
 		OSMapSteeringMode mMapSteeringMode;

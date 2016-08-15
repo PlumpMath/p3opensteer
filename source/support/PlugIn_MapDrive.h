@@ -1218,7 +1218,9 @@ public:
 #ifdef OS_DEBUG
 					annotateAvoid =
 #endif
-					steerToAvoidObstaclesOnMap(lookAheadTimeOA(), *map,
+///					steerToAvoidObstaclesOnMap(lookAheadTimeOA(), *map,
+///							hintForObstacleAvoidance());
+					steerToAvoidObstacles(lookAheadTimeOA(), *map,
 							hintForObstacleAvoidance());
 			const bool needToAvoid = avoid != Vec3::zero;
 
@@ -1477,6 +1479,29 @@ public:
 		}
 		// otherwise, no hint
 		return Vec3::zero;
+	}
+
+	void annotateAvoidObstacle(const float minDistanceToCollision)
+	{
+		///call parent::annotateAvoidObstacle
+		VehicleAddOnMixin<SimpleVehicle, Entity>::annotateAvoidObstacle(
+				minDistanceToCollision);
+	}
+
+	// this overrides (and hides) the one in SteerLibrary.h modified
+	// to handle obstacles on map; it accepts a min time to collision,
+	// a TerrainMap and a steering hint.
+	Vec3 steerToAvoidObstacles(const float minTimeToCollision,
+			const TerrainMap& map, const Vec3& steerHint)
+	{
+		const Vec3 avoidance = steerToAvoidObstaclesOnMap(minTimeToCollision,
+				map, steerHint);
+
+	    // XXX more annotation modularity problems (assumes spherical obstacle)
+	    if (avoidance != Vec3::zero)
+	        annotateAvoidObstacle (minTimeToCollision * this->speed());
+
+	    return avoidance;
 	}
 
 	// like steerToAvoidObstacles, but based on a BinaryTerrainMap indicating
@@ -1854,9 +1879,6 @@ public:
 			this->annotationLine(scanOrigin, hit, Color(0.7f, 0.3f, 0.3f));
 		}
 #endif
-
-		///call parent::annotateAvoidObstacle
-		VehicleAddOnMixin<SimpleVehicle, Entity>::annotateAvoidObstacle(0.0);
 	}
 
 #ifdef OS_DEBUG

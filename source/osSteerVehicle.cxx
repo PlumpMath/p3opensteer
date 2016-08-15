@@ -1299,7 +1299,7 @@ void OSSteerVehicle::write_datagram(BamWriter *manager, Datagram &dg)
 	///The reference node path.
 	manager->write_pointer(dg, mReferenceNP.node());
 
-	///SPECIFICS
+	///TYPE SPECIFIC
 	if(mVehicleType == ONE_TURNING)
 	{
 		/*do nothing*/;
@@ -1424,7 +1424,7 @@ void OSSteerVehicle::finalize(BamReader *manager)
 				mVehicle);
 	}
 
-	///SPECIFICS
+	///TYPE SPECIFIC
 	nassertv_always(mSerializedDataTmpPtr != NULL)
 
 	if(mVehicleType == ONE_TURNING)
@@ -1591,7 +1591,7 @@ void OSSteerVehicle::fillin(DatagramIterator &scan, BamReader *manager)
 	///The reference node path.
 	manager->read_pointer(scan);
 
-	///SPECIFICS
+	///TYPE SPECIFIC
 	nassertv_always(mSerializedDataTmpPtr == NULL)
 
 	// allocate SerializedDataTmp

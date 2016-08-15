@@ -1056,7 +1056,7 @@ void OSSteerPlugIn::set_world_center(const LPoint3f& center)
 	{
 		ossup::BoidsPlugIn<OSSteerVehicle>* plugIn =
 				static_cast<ossup::BoidsPlugIn<OSSteerVehicle>*>(mPlugIn);
-		plugIn->worldCenter = ossup::LVecBase3fToOpenSteerVec3(center);
+		plugIn->setWorldCenter(ossup::LVecBase3fToOpenSteerVec3(center));
 #ifdef OS_DEBUG
 	do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
 #endif //OS_DEBUG
@@ -1074,7 +1074,7 @@ LPoint3f OSSteerPlugIn::get_world_center() const
 	{
 		ossup::BoidsPlugIn<OSSteerVehicle>* plugIn =
 				static_cast<ossup::BoidsPlugIn<OSSteerVehicle>*>(mPlugIn);
-		return ossup::OpenSteerVec3ToLVecBase3f(plugIn->worldCenter);
+		return ossup::OpenSteerVec3ToLVecBase3f(plugIn->getWorldCenter());
 	}
 	return LPoint3f::zero();
 }
@@ -1090,7 +1090,7 @@ void OSSteerPlugIn::set_world_radius(float radius)
 	{
 		ossup::BoidsPlugIn<OSSteerVehicle>* plugIn =
 				static_cast<ossup::BoidsPlugIn<OSSteerVehicle>*>(mPlugIn);
-		plugIn->worldRadius = radius;
+		plugIn->setWorldRadius(radius);
 #ifdef OS_DEBUG
 	do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
 #endif //OS_DEBUG
@@ -1107,7 +1107,7 @@ float OSSteerPlugIn::get_world_radius() const
 	{
 		ossup::BoidsPlugIn<OSSteerVehicle>* plugIn =
 				static_cast<ossup::BoidsPlugIn<OSSteerVehicle>*>(mPlugIn);
-		return plugIn->worldRadius;
+		return plugIn->getWorldRadius();
 	}
 	return OS_ERROR;
 }
@@ -1489,8 +1489,8 @@ void OSSteerPlugIn::set_map_path_fences(bool enable)
 {
 	if (mPlugInType == MAP_DRIVE)
 	{
-		static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn)->usePathFences =
-				enable;
+		static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn)->setUsePathFences(
+				enable);
 #ifdef OS_DEBUG
 		do_debug_draw_static_geometry(mDebugCamera, mDrawer3dStatic);
 #endif //OS_DEBUG
@@ -1505,7 +1505,7 @@ bool OSSteerPlugIn::get_map_path_fences() const
 {
 	if (mPlugInType == MAP_DRIVE)
 	{
-		return static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn)->usePathFences;
+		return static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn)->getUsePathFences();
 	}
 	return (OSMapSteeringMode) OS_ERROR;
 }
@@ -2030,7 +2030,7 @@ void OSSteerPlugIn::write_datagram(BamWriter *manager, Datagram &dg)
 		}
 	}
 
-	///SPECIFICS
+	///TYPE SPECIFIC
 	if(mPlugInType == ONE_TURNING)
 	{
 		/*do nothing*/;
@@ -2041,9 +2041,10 @@ void OSSteerPlugIn::write_datagram(BamWriter *manager, Datagram &dg)
 	}
 	if(mPlugInType == BOID)
 	{
-		dg.add_uint8((uint8_t) get_proximity_database());
+		//dependency: proximity database ---> world center, world radius
 		get_world_center().write_datagram(dg);
 		dg.add_stdfloat(get_world_radius());
+		dg.add_uint8((uint8_t) get_proximity_database());
 	}
 	if(mPlugInType == MULTIPLE_PURSUIT)
 	{
@@ -2064,10 +2065,13 @@ void OSSteerPlugIn::write_datagram(BamWriter *manager, Datagram &dg)
 		center.write_datagram(dg);
 		dg.add_stdfloat(get_home_base_radius());
 		dg.add_stdfloat(get_braking_rate());
+		//dependency: avoidance predict time ---> avoidance predict time min
+		ossup::CtfPlugIn<OSSteerVehicle>* plugIn = static_cast<ossup::CtfPlugIn<
+				OSSteerVehicle>*>(mPlugIn);
 		dg.add_stdfloat(get_avoidance_predict_time_min());
 		dg.add_stdfloat(get_avoidance_predict_time_max());
-		dg.add_bool(
-				static_cast<ossup::CtfPlugIn<OSSteerVehicle>*>(mPlugIn)->m_CtfPlugInData.gDelayedResetPlugInXXX);
+		dg.add_stdfloat(plugIn->m_CtfPlugInData.gAvoidancePredictTime);
+		dg.add_bool(plugIn->m_CtfPlugInData.gDelayedResetPlugInXXX);
 	}
 	if(mPlugInType == LOW_SPEED_TURN)
 	{
@@ -2077,9 +2081,9 @@ void OSSteerPlugIn::write_datagram(BamWriter *manager, Datagram &dg)
 	{
 		dg.add_uint8((uint8_t) get_map_steering_mode());
 		dg.add_uint8((uint8_t) get_map_prediction_type());
+		//dependency: map ---> resolution, use path fences
 		dg.add_int32(get_map_resolution());
-		dg.add_bool(
-				static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn)->usePathFences);
+		dg.add_bool(get_map_path_fences());
 	}
 }
 
@@ -2180,7 +2184,7 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 		}
 	}
 
-	///SERIALIZATION ONLY
+	///TYPE SPECIFIC
 	nassertv_always(mSerializedDataTmpPtr != NULL)
 
 	if(mPlugInType == ONE_TURNING)
@@ -2193,9 +2197,10 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 	}
 	if(mPlugInType == BOID)
 	{
-		set_proximity_database(mSerializedDataTmpPtr->mPD);
+		//dependency: proximity database ---> world center, world radius
 		set_world_center(mSerializedDataTmpPtr->mWorldCenter);
 		set_world_radius(mSerializedDataTmpPtr->mWorldRadius);
+		set_proximity_database(mSerializedDataTmpPtr->mPD);
 	}
 	if(mPlugInType == MULTIPLE_PURSUIT)
 	{
@@ -2226,11 +2231,16 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 		set_home_base_center(mSerializedDataTmpPtr->mHomeBaseCenter);
 		set_home_base_radius(mSerializedDataTmpPtr->mHomeBaseRadius);
 		set_braking_rate(mSerializedDataTmpPtr->mBrakingRate);
+		//dependency: avoidance predict time ---> avoidance predict time min
+		ossup::CtfPlugIn<OSSteerVehicle>* plugIn = static_cast<ossup::CtfPlugIn<
+				OSSteerVehicle>*>(mPlugIn);
 		set_avoidance_predict_time_min(
 				mSerializedDataTmpPtr->mAvoidancePredictTimeMin);
 		set_avoidance_predict_time_max(
 				mSerializedDataTmpPtr->mAvoidancePredictTimeMax);
-		static_cast<ossup::CtfPlugIn<OSSteerVehicle>*>(mPlugIn)->m_CtfPlugInData.gDelayedResetPlugInXXX =
+		plugIn->m_CtfPlugInData.gAvoidancePredictTime =
+				mSerializedDataTmpPtr->mAvoidancePredictTime;
+		plugIn->m_CtfPlugInData.gDelayedResetPlugInXXX =
 				mSerializedDataTmpPtr->mGDelayedResetPlugInXXX;
 	}
 	if(mPlugInType == LOW_SPEED_TURN)
@@ -2241,9 +2251,12 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 	{
 		set_map_steering_mode(mSerializedDataTmpPtr->mMapSteeringMode);
 		set_map_prediction_type(mSerializedDataTmpPtr->mMapPredictionType);
-		make_map(mSerializedDataTmpPtr->mMapResolution);
+		//dependency: map ---> resolution, use path fences
+		//note: set MapDrivePlugIn::usePathFences directly to avoid making map twice
+///		set_map_path_fences(mSerializedDataTmpPtr->mUsePathFences);
 		static_cast<ossup::MapDrivePlugIn<OSSteerVehicle>*>(mPlugIn)->usePathFences =
 				mSerializedDataTmpPtr->mUsePathFences;
+		make_map(mSerializedDataTmpPtr->mMapResolution);
 	}
 	// deallocate SerializedDataTmp
 	delete mSerializedDataTmpPtr;
@@ -2349,7 +2362,7 @@ void OSSteerPlugIn::fillin(DatagramIterator &scan, BamReader *manager)
 		manager->read_pointer(scan);
 	}
 
-	///SERIALIZATION ONLY
+	///TYPE SPECIFIC
 	nassertv_always(mSerializedDataTmpPtr == NULL)
 
 	// allocate SerializedDataTmp
@@ -2364,9 +2377,10 @@ void OSSteerPlugIn::fillin(DatagramIterator &scan, BamReader *manager)
 	}
 	if(mPlugInType == BOID)
 	{
-		mSerializedDataTmpPtr->mPD = (OSProximityDatabase) scan.get_uint8();
+		//dependency: proximity database ---> world center, world radius
 		mSerializedDataTmpPtr->mWorldCenter.read_datagram(scan);
 		mSerializedDataTmpPtr->mWorldRadius = scan.get_stdfloat();
+		mSerializedDataTmpPtr->mPD = (OSProximityDatabase) scan.get_uint8();
 	}
 	if(mPlugInType == MULTIPLE_PURSUIT)
 	{
@@ -2385,8 +2399,10 @@ void OSSteerPlugIn::fillin(DatagramIterator &scan, BamReader *manager)
 		mSerializedDataTmpPtr->mHomeBaseCenter.read_datagram(scan);
 		mSerializedDataTmpPtr->mHomeBaseRadius = scan.get_stdfloat();
 		mSerializedDataTmpPtr->mBrakingRate = scan.get_stdfloat();
+		//dependency: avoidance predict time ---> avoidance predict time min
 		mSerializedDataTmpPtr->mAvoidancePredictTimeMin = scan.get_stdfloat();
 		mSerializedDataTmpPtr->mAvoidancePredictTimeMax = scan.get_stdfloat();
+		mSerializedDataTmpPtr->mAvoidancePredictTime = scan.get_stdfloat();
 		mSerializedDataTmpPtr->mGDelayedResetPlugInXXX = scan.get_bool();
 	}
 	if(mPlugInType == LOW_SPEED_TURN)
@@ -2399,6 +2415,7 @@ void OSSteerPlugIn::fillin(DatagramIterator &scan, BamReader *manager)
 				(OSMapSteeringMode) scan.get_uint8();
 		mSerializedDataTmpPtr->mMapPredictionType =
 				(OSMapPredictionType) scan.get_uint8();
+		//dependency: map ---> resolution, use path fences
 		mSerializedDataTmpPtr->mMapResolution = scan.get_int32();
 		mSerializedDataTmpPtr->mUsePathFences = scan.get_bool();
 	}

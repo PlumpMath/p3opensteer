@@ -577,9 +577,13 @@ public:
 		}
 		}
 
-		// switch each boid to new PD
+		// update each boid to new PD
 		for (iterator i = flock.begin(); i != flock.end(); i++)
+		{
 			(**i).newPD(*pd);
+			(**i).proximityToken->updateForNewPosition((**i).position());
+		}
+
 
 		// delete old PD (if any)
 		delete oldPD;
@@ -619,12 +623,43 @@ public:
 		}
 		}
 
-		// switch each boid to new PD
+		// update each boid to new PD
 		for (iterator i = flock.begin(); i != flock.end(); i++)
+		{
 			(**i).newPD(*pd);
+			(**i).proximityToken->updateForNewPosition((**i).position());
+		}
 
 		// delete old PD (if any)
 		delete oldPD;
+	}
+
+	float getWorldRadius()
+	{
+		return worldRadius;
+	}
+
+	void setWorldRadius(float radius)
+	{
+		worldRadius = radius;
+
+		// update each boid to new radius
+		for (iterator i = flock.begin(); i != flock.end(); i++)
+			(**i).worldRadius = worldRadius;
+	}
+
+	Vec3 getWorldCenter()
+	{
+		return worldCenter;
+	}
+
+	void setWorldCenter(const Vec3& center)
+	{
+		worldCenter = center;
+
+		// update each boid to new radius
+		for (iterator i = flock.begin(); i != flock.end(); i++)
+			(**i).worldCenter = worldCenter;
 	}
 
 ///	void handleFunctionKeys(int keyNumber)

@@ -106,7 +106,7 @@ struct CtfPlugInData
 	float gBrakingRate;///serializable //0.75
 	float gAvoidancePredictTimeMin;///serializable //0.9
 	float gAvoidancePredictTimeMax;///serializable //2.0 (>=gAvoidancePredictTimeMin)
-	float gAvoidancePredictTime; //0.9 (=gAvoidancePredictTimeMin)
+	float gAvoidancePredictTime;///serializable //0.9 (=gAvoidancePredictTimeMin)
 ///	int resetCount;
 	bool gDelayedResetPlugInXXX;///serializable
 #ifdef OS_DEBUG

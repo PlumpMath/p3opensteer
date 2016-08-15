@@ -17,6 +17,7 @@ void setParametersBeforeCreation();
 AsyncTask::DoneStatus updatePlugIn(GenericAsyncTask*, void*);
 void debugDrawToTexture(const Event*, void*);
 void onTextureReady(const Event*, void*);
+void togglePredictionType(const Event*, void*);
 
 int main(int argc, char *argv[])
 {
@@ -32,7 +33,8 @@ int main(int argc, char *argv[])
             "- press \"d\" to toggle debug drawing\n"
             "- press \"o\"/\"shift-o\" to add/remove obstacle\n"
             "- press \"t\" to draw the map of the path\n"
-            "- press \"a\" to add vehicle\n");
+            "- press \"a\" to add vehicle\n"
+			"- press \"p\" to toggle map prediction type\n");
 	NodePath textNodePath = window->get_aspect_2d().attach_new_node(text);
 	textNodePath.set_pos(0.25, 0.0, 0.8);
 	textNodePath.set_scale(0.035);
@@ -169,10 +171,6 @@ int main(int argc, char *argv[])
 						steerPlugIn, steerVehicles, vehicleAnimCtls);
 	framework.define_key("a", "addVehicle", &handleVehicles,
 			(void*) &vehicleData);
-	HandleVehicleData vehicleDataKinematic(0.7, 1, "kinematic", sceneNP,
-			steerPlugIn, steerVehicles, vehicleAnimCtls);
-	framework.define_key("b", "addVehicle", &handleVehicles,
-			(void*) &vehicleDataKinematic);
 
 	// handle obstacle addition
 	HandleObstacleData obstacleAddition(true, sceneNP, steerPlugIn,
@@ -206,6 +204,10 @@ int main(int argc, char *argv[])
 			"close_request_event");
 	framework.define_key("close_request_event", "writeToBamFile",
 			&writeToBamFileAndExit, (void*) &bamFileName);
+
+	// map drive specifics: toggle prediction type
+	framework.define_key("p", "togglePredictionType", &togglePredictionType,
+			nullptr);
 
 	// place camera trackball (local coordinate)
 	PT(Trackball)trackball = DCAST(Trackball, window->get_mouse().find("**/+Trackball").node());
@@ -309,4 +311,21 @@ void onTextureReady(const Event* e, void* data)
 	sceneNP.set_tex_scale(rttTexStage, 1.0 / 128.0, 1.0 / 128.0);
 	sceneNP.set_tex_gen(rttTexStage, TexGenAttrib::M_world_position);
 	sceneNP.set_texture(rttTexStage, texture, 10);
+}
+
+// toggle prediction type
+void togglePredictionType(const Event*, void*)
+{
+	OSSteerPlugIn::OSMapPredictionType predictionType =
+			steerPlugIn->get_map_prediction_type();
+	if (predictionType == OSSteerPlugIn::CURVED_PREDICTION)
+	{
+		steerPlugIn->set_map_prediction_type(OSSteerPlugIn::LINEAR_PREDICTION);
+		cout << "prediction type: linear" << endl;
+	}
+	else
+	{
+		steerPlugIn->set_map_prediction_type(OSSteerPlugIn::CURVED_PREDICTION);
+		cout << "prediction type: curved" << endl;
+	}
 }

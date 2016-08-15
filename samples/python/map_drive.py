@@ -6,7 +6,7 @@ Created on Jun 26, 2016
 
 import panda3d.core
 from p3opensteer import OSSteerManager, ValueList_string, ValueList_LPoint3f, \
-        ValueList_float
+        ValueList_float, OSSteerPlugIn
 from panda3d.core import TextNode, ClockObject, AnimControlCollection, \
         auto_bind, LPoint3f, LVecBase3f, TextureStage, TexGenAttrib
 #
@@ -103,7 +103,19 @@ def onTextureReady(data, texture):
     sceneNP.set_tex_scale(rttTexStage, 1.0 / 128.0, 1.0 / 128.0)
     sceneNP.set_tex_gen(rttTexStage, TexGenAttrib.M_world_position)
     sceneNP.set_texture(rttTexStage, texture, 10)
-        
+
+def togglePredictionType():
+    """toggle prediction type"""
+    
+    global steerPlugIn
+    predictionType = steerPlugIn.get_map_prediction_type()
+    if predictionType == OSSteerPlugIn.CURVED_PREDICTION:
+        steerPlugIn.set_map_prediction_type(OSSteerPlugIn.LINEAR_PREDICTION)
+        print ("prediction type: linear")
+    else:
+        steerPlugIn.set_map_prediction_type(OSSteerPlugIn.CURVED_PREDICTION)
+        print ("prediction type: curved")
+       
 if __name__ == '__main__':
 
     msg = "'map drive'"
@@ -117,7 +129,8 @@ if __name__ == '__main__':
             "- press \"d\" to toggle debug drawing\n"
             "- press \"o\"/\"shift-o\" to add/remove obstacle\n"
             "- press \"t\" to draw the map of the path\n"
-            "- press \"a\" to add vehicle\n")
+            "- press \"a\" to add vehicle\n"
+            "- press \"p\" to toggle map prediction type\n")
     textNodePath = app.aspect2d.attach_new_node(text)
     textNodePath.set_pos(0.25, 0.0, 0.8)
     textNodePath.set_scale(0.035)
@@ -235,9 +248,6 @@ if __name__ == '__main__':
     vehicleData = HandleVehicleData(0.4, 4, "kinematic", sceneNP, 
                         steerPlugIn, steerVehicles, vehicleAnimCtls)
     app.accept("a", handleVehicles, [vehicleData])
-    vehicleDataKinematic = HandleVehicleData(0.7, 1, "kinematic", sceneNP, 
-                        steerPlugIn, steerVehicles, vehicleAnimCtls)
-    app.accept("b", handleVehicles, [vehicleDataKinematic])
 
     # handle obstacle addition
     obstacleAddition = HandleObstacleData(True, sceneNP, steerPlugIn,
@@ -261,6 +271,9 @@ if __name__ == '__main__':
     # write to bam file on exit
     app.win.set_close_request_event("close_request_event")
     app.accept("close_request_event", writeToBamFileAndExit, [bamFileName])
+
+    # map drive specific: toggle prediction type
+    app.accept("p", togglePredictionType)
     
     # place camera
     trackball = app.trackball.node()
