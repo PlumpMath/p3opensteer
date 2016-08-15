@@ -2156,6 +2156,8 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 				//do add to real update list
 				static_cast<ossup::PlugIn*>(mPlugIn)->addVehicle(
 						&(*iter)->get_abstract_vehicle());
+				//re-set the vehicle's settings because a plug-in
+				//could have changed some of them during addition.
 				(*iter)->set_settings(settings);
 			}
 		}

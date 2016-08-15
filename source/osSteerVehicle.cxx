@@ -652,7 +652,8 @@ void OSSteerVehicle::set_map_prediction_type(OSSteerPlugIn::OSMapPredictionType
 			// LINEAR_PREDICTION:
 			vehicle->curvedSteering = false;
 		}
-	}}
+	}
+}
 
 /**
  * Returns this OSSteerVehicle's prediction type on the map, or a negative value
@@ -1422,6 +1423,9 @@ void OSSteerVehicle::finalize(BamReader *manager)
 	{
 		static_cast<ossup::PlugIn*>(&mSteerPlugIn->get_abstract_plug_in())->addVehicle(
 				mVehicle);
+		//5: re-set the new OpenSteer vehicle's settings because a plug-in
+		//could have changed some of them during addition.
+		set_settings(mVehicleSettings);
 	}
 
 	///TYPE SPECIFIC
