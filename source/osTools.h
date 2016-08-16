@@ -363,6 +363,8 @@ PUBLISHED:
 	INLINE void set_up(const LVector3f& value);
 	INLINE LPoint3f get_position() const;
 	INLINE void set_position(const LPoint3f& value);
+	INLINE LPoint3f get_start() const;
+	INLINE void set_start(const LPoint3f& value);
 private:
 	ossup::VehicleSettings _vehicleSettings;
 

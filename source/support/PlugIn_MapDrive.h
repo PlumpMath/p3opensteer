@@ -1053,7 +1053,8 @@ public:
 	void reset3(void)
 	{
 		// init dynamically controlled radius
-		adjustVehicleRadiusForSpeed();
+		///called by update: useless here
+///		adjustVehicleRadiusForSpeed();
 
 #ifdef OS_DEBUG
 		// not previously avoiding
@@ -1071,20 +1072,6 @@ public:
 		// master look ahead (prediction) time
 		baseLookAheadTime = 3;
 
-		if (demoSelect == 2)
-		{
-#ifdef OS_DEBUG
-			lapsStarted++;
-#endif
-///			const float s = worldSize;
-			const float d = (float) pathFollowDirection;
-///			this->setPosition(Vec3(s * d * 0.6f, 0, s * -0.4f));
-			this->regenerateOrthonormalBasisUF(Vec3::side * d);
-		}
-
-		// reset bookeeping to detect stuck cycles
-		resetStuckCycleDetection();
-
 		// assume no previous steering
 		currentSteering = Vec3::zero;
 
@@ -1099,12 +1086,31 @@ public:
 		// state saved for speedometer
 		//      annoteMaxRelSpeed = annoteMaxRelSpeedCurve = annoteMaxRelSpeedPath = 0;
 		//      annoteMaxRelSpeed = annoteMaxRelSpeedCurve = annoteMaxRelSpeedPath = 1;
+///		reset4()
+	}
+
+	void reset4(void)
+	{
+		if (demoSelect == 2)
+		{
+#ifdef OS_DEBUG
+			lapsStarted++;
+#endif
+///			const float s = worldSize;
+			const float d = (float) pathFollowDirection;
+///			this->setPosition(Vec3(s * d * 0.6f, 0, s * -0.4f));
+			this->regenerateOrthonormalBasisUF(Vec3::side * d);
+		}
+
+		// reset bookeeping to detect stuck cycles
+		resetStuckCycleDetection();
 	}
 
 	void resetToPath()
 	{
 ///		reset();
 		reset3();
+		reset4();
 		if ((*path)[0] && (*path)[0]->isValid())
 		{
 			Vec3 forward;
@@ -1145,6 +1151,7 @@ public:
 		{
 ///			reset();
 			reset3();
+			reset4();
 			float x = frandom2(map->center.x - map->xSize / 2.0 * 0.9,
 					map->center.x + map->xSize / 2.0 * 0.9);
 			float z = frandom2(map->center.z - map->zSize / 2.0 * 0.9,

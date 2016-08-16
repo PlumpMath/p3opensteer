@@ -467,6 +467,7 @@ int OSSteerPlugIn::add_steer_vehicle(NodePath steerVehicleNP)
 		settings.set_forward(forward);
 		settings.set_up(up);
 		settings.set_position(pos);
+		settings.set_start(pos);
 		//update radius
 		settings.set_radius(modelRadius);
 		//set actually OpenSteer vehicle's settings
@@ -2004,6 +2005,9 @@ void OSSteerPlugIn::write_datagram(BamWriter *manager, Datagram &dg)
 	dg.add_bool(mPathwayClosedCycle);
 	///@}
 
+	///Current time.
+	dg.add_stdfloat(mCurrentTime);
+
 	/// Pointers
 	///The reference node path.
 	manager->write_pointer(dg, mReferenceNP.node());
@@ -2332,6 +2336,9 @@ void OSSteerPlugIn::fillin(DatagramIterator &scan, BamReader *manager)
 	mPathwaySingleRadius = scan.get_bool();
 	mPathwayClosedCycle = scan.get_bool();
 	///@}
+
+	///Current time.
+	mCurrentTime = scan.get_stdfloat();
 
 	/// Pointers
 	///The reference node path.

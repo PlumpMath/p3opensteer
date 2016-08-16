@@ -75,7 +75,7 @@ struct VehicleSettings
 			m_mass(1.0), m_radius(1.0), m_speed(0.0), m_maxForce(1.0), m_maxSpeed(
 					1.0), m_forward(OpenSteer::Vec3::forward), m_side(
 					OpenSteer::Vec3::side), m_up(OpenSteer::Vec3::up), m_position(
-					OpenSteer::Vec3::zero)
+					OpenSteer::Vec3::zero), m_start(OpenSteer::Vec3::zero)
 	{
 	}
 	bool operator == (const VehicleSettings& other)
@@ -88,7 +88,8 @@ struct VehicleSettings
 				(m_forward == other.m_forward) &&
 				(m_side == other.m_side) &&
 				(m_up == other.m_up) &&
-				(m_position == other.m_position);
+				(m_position == other.m_position) &&
+				(m_start == other.m_start);
 	}
 	// mass
 	float m_mass;
@@ -108,6 +109,8 @@ struct VehicleSettings
 	OpenSteer::Vec3 m_up;
 	// origin of local space
 	OpenSteer::Vec3 m_position;
+	// the vehicle start position.
+	OpenSteer::Vec3 m_start;
 };
 
 template<typename Super, typename Entity>
@@ -226,7 +229,6 @@ public:
 		m_settings.m_side = Super::side();
 		m_settings.m_up = Super::up();
 		m_settings.m_position = Super::position();
-		m_start = Super::position();
 		return m_settings;
 	}
 
@@ -235,6 +237,16 @@ public:
 		m_settings = settings;
 		//set vehicle settings effectively
 		reset();
+	}
+
+	OpenSteer::Vec3 getStart() const
+	{
+		return m_settings.m_start;
+	}
+
+	void setStart(const OpenSteer::Vec3& start)
+	{
+		m_settings.m_start = start;
 	}
 
 	virtual void reset()
@@ -248,7 +260,6 @@ public:
 		Super::setSide(Super::localRotateForwardToSide(m_settings.m_forward));
 		Super::setUp(m_settings.m_up);
 		Super::setPosition(m_settings.m_position);
-		m_start = Super::position();
 	}
 
 #ifdef OS_DEBUG
@@ -256,11 +267,6 @@ public:
 	{
 	}
 #endif
-
-	OpenSteer::Vec3 getStart()
-	{
-		return m_start;
-	}
 
 protected:
 	///The entity updated by the vehicle.
@@ -275,8 +281,6 @@ protected:
 	///@}
 	///The vehicle settings.
 	VehicleSettings m_settings;
-	///The vehicle start position.
-	OpenSteer::Vec3 m_start;
 };
 
 //Obstacles: redefinition of draw

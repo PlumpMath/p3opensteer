@@ -185,6 +185,8 @@ PUBLISHED:
 	INLINE LVector3f get_up() const;
 	INLINE void set_position(const LPoint3f& position);
 	INLINE LPoint3f get_position() const;
+	INLINE void set_start(const LPoint3f& position);
+	INLINE LPoint3f get_start() const;
 	void set_external_update(bool enable);
 	INLINE bool get_external_update() const;
 	INLINE void set_up_axis_fixed(bool enable);

@@ -305,6 +305,8 @@ void OSSteerVehicle::do_initialize()
 	settings.set_up(up);
 	//position
 	settings.set_position(thisNP.get_pos());
+	//start
+	settings.set_start(thisNP.get_pos());
 	//set actually the OSSteerVehicle's and OpenSteer vehicle's settings
 	set_settings(settings);
 	//

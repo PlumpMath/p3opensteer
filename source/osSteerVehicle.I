@@ -219,6 +219,24 @@ INLINE LPoint3f OSSteerVehicle::get_position() const
 }
 
 /**
+ * Sets the OSSteerVehicle's start position.
+ */
+INLINE void OSSteerVehicle::set_start(const LPoint3f& position)
+{
+	static_cast<VehicleAddOn*>(mVehicle)->setStart(
+			ossup::LVecBase3fToOpenSteerVec3(position));
+}
+
+/**
+ * Returns the OSSteerVehicle's start position.
+ */
+INLINE LPoint3f OSSteerVehicle::get_start() const
+{
+	return ossup::OpenSteerVec3ToLVecBase3f(
+			static_cast<VehicleAddOn*>(mVehicle)->getStart());
+}
+
+/**
  * Returns if OSSteerVehicle is externally updated.
  */
 INLINE bool OSSteerVehicle::get_external_update() const

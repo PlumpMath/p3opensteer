@@ -290,6 +290,14 @@ INLINE void OSVehicleSettings::set_position(const LPoint3f& value)
 {
 	_vehicleSettings.m_position = ossup::LVecBase3fToOpenSteerVec3(value);
 }
+INLINE LPoint3f OSVehicleSettings::get_start() const
+{
+	return ossup::OpenSteerVec3ToLVecBase3f(_vehicleSettings.m_start);
+}
+INLINE void OSVehicleSettings::set_start(const LPoint3f& value)
+{
+	_vehicleSettings.m_start = ossup::LVecBase3fToOpenSteerVec3(value);
+}
 
 ///Flock settings.
 INLINE float OSFlockSettings::get_separation_radius() const
