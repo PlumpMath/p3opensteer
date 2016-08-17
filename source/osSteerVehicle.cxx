@@ -1423,8 +1423,12 @@ void OSSteerVehicle::finalize(BamReader *manager)
 			&& (mSteerPlugIn->check_steer_vehicle_compatibility(
 					NodePath::any_path(this))))
 	{
+#ifndef NDEBUG
+		bool added =
+#endif
 		static_cast<ossup::PlugIn*>(&mSteerPlugIn->get_abstract_plug_in())->addVehicle(
-				mVehicle);
+						mVehicle);
+		nassertv_always(added);
 	}
 
 	///TYPE SPECIFIC

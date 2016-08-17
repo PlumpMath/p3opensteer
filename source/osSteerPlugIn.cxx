@@ -2157,8 +2157,12 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 					NodePath::any_path((*iter))))
 			{
 				//do add to real update list
+#ifndef NDEBUG
+				bool vehicleAdded =
+#endif
 				static_cast<ossup::PlugIn*>(mPlugIn)->addVehicle(
 						&(*iter)->get_abstract_vehicle());
+				nassertv_always(vehicleAdded);
 			}
 		}
 	}
