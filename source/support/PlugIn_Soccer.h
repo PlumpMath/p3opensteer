@@ -196,16 +196,23 @@ public:
 		this->applyBrakingForce(1.5f, elapsedTime);
 		this->applySteeringForce(this->velocity(), elapsedTime);
 		// are we now outside the field?
-		if (!m_bbox->InsideX(this->position()))
+///		if (!m_bbox->InsideX(this->position()))
+///		{
+///			Vec3 d = this->velocity();
+///			this->regenerateOrthonormalBasis(Vec3(-d.x, d.y, d.z));
+///			this->applySteeringForce(this->velocity(), elapsedTime);
+///		}
+///		if (!m_bbox->InsideZ(this->position()))
+///		{
+///			Vec3 d = this->velocity();
+///			this->regenerateOrthonormalBasis(Vec3(d.x, d.y, -d.z));
+///			this->applySteeringForce(this->velocity(), elapsedTime);
+///		}
+		if (!m_bbox->InsideX(this->position())
+				|| !m_bbox->InsideZ(this->position()))
 		{
-			Vec3 d = this->velocity();
-			this->regenerateOrthonormalBasis(Vec3(-d.x, d.y, d.z));
-			this->applySteeringForce(this->velocity(), elapsedTime);
-		}
-		if (!m_bbox->InsideZ(this->position()))
-		{
-			Vec3 d = this->velocity();
-			this->regenerateOrthonormalBasis(Vec3(d.x, d.y, -d.z));
+			Vec3 d = this->position() - this->m_home;
+			this->regenerateOrthonormalBasis(Vec3(-d.x, d.y, -d.z));
 			this->applySteeringForce(this->velocity(), elapsedTime);
 		}
 
