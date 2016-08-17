@@ -24,6 +24,7 @@ sceneNP = None
 vehicleAnimCtls = []
 steerPlugIn = None
 steerVehicles = []
+rttTexStage = None
 #
 def setParametersBeforeCreation():
     """set parameters as strings before plug-ins/vehicles creation"""
@@ -128,7 +129,7 @@ if __name__ == '__main__':
             msg + "\n\n"      
             "- press \"d\" to toggle debug drawing\n"
             "- press \"o\"/\"shift-o\" to add/remove obstacle\n"
-            "- press \"t\" to draw the map of the path\n"
+            "- press \"t\" to (re)draw the map of the path\n"
             "- press \"a\" to add vehicle\n"
             "- press \"p\" to toggle map prediction type\n")
     textNodePath = app.aspect2d.attach_new_node(text)
@@ -155,6 +156,9 @@ if __name__ == '__main__':
         # and reparent to the reference node
         sceneNP.reparent_to(steerMgr.get_reference_node_path())
         
+        # set the texture stage used for debug draw texture
+        rttTexStage = TextureStage("rttTexStage")
+
         # set sceneNP's collide mask
         sceneNP.set_collide_mask(mask)
 
@@ -201,6 +205,10 @@ if __name__ == '__main__':
         sceneNP = OSSteerManager.get_global_ptr().get_reference_node_path().find("**/SceneNP")
         # reparent the reference node to render
         OSSteerManager.get_global_ptr().get_reference_node_path().reparent_to(app.render)
+
+        # restore the texture stage used for debug draw texture
+        rttTexStage = sceneNP.find_all_texture_stages().find_texture_stage(
+                "rttTexStage")
     
         # restore steer vehicles
         NUMVEHICLES = OSSteerManager.get_global_ptr().get_num_steer_vehicles()
@@ -236,7 +244,6 @@ if __name__ == '__main__':
     steerPlugIn.enable_debug_drawing(app.camera)
     # print debug draw texture
     app.accept("t", debugDrawToTexture)
-    rttTexStage = TextureStage("rttTexStage")
     app.accept("debug_drawing_texture_ready", onTextureReady, [rttTexStage])
 
     # # set events' callbacks
