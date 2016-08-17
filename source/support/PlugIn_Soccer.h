@@ -722,12 +722,12 @@ public:
 			// update the ball home: the field center
 			m_Ball->m_home = (m_bbox->getMin() + m_bbox->getMax()) / 2.0;
 ///			m_Ball->reset();
-			// are ball now outside the field?
-			if ((!m_bbox->InsideX(m_Ball->position()))
-					|| (!m_bbox->InsideZ(m_Ball->position())))
-			{
-				m_Ball->placeInCenter();
-			}
+///			// are ball now outside the field?
+///			if ((!m_bbox->InsideX(m_Ball->position()))
+///					|| (!m_bbox->InsideZ(m_Ball->position())))
+///			{
+///				m_Ball->placeInCenter();
+///			}
 			//update each player's ball
 			setAllPlayersBall();
 
