@@ -250,7 +250,7 @@ static bool createSoccerVehicle(const Event* e, void* data,
 		typeStr = "ball";
         maxForce = 9.0;
         maxSpeed = 9.0;
-        speed = 1.0;
+        speed = 0.0;
 	}
 	OSSteerManager::get_global_ptr()->set_parameter_value(
 			OSSteerManager::STEERVEHICLE, "vehicle_type", typeStr);

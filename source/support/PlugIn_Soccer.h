@@ -213,7 +213,8 @@ public:
 		{
 			Vec3 d = this->position() - this->m_home;
 			this->regenerateOrthonormalBasis(Vec3(-d.x, d.y, -d.z));
-			this->applySteeringForce(this->velocity(), elapsedTime);
+			this->applySteeringForce(this->forward() * d.length(),
+					elapsedTime);
 		}
 
 		///call the entity update
