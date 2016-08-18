@@ -209,6 +209,8 @@ if __name__ == '__main__':
         # restore the texture stage used for debug draw texture
         rttTexStage = sceneNP.find_all_texture_stages().find_texture_stage(
                 "rttTexStage")
+        if not rttTexStage:
+            rttTexStage = TextureStage("rttTexStage")
     
         # restore steer vehicles
         NUMVEHICLES = OSSteerManager.get_global_ptr().get_num_steer_vehicles()
@@ -242,7 +244,7 @@ if __name__ == '__main__':
     steerMgr.get_reference_node_path_debug_2d().reparent_to(app.aspect2d)
     # enable debug drawing
     steerPlugIn.enable_debug_drawing(app.camera)
-    # print debug draw texture
+    # print debug draw to texture
     app.accept("t", debugDrawToTexture)
     app.accept("debug_drawing_texture_ready", onTextureReady, [rttTexStage])
 

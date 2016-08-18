@@ -120,6 +120,10 @@ int main(int argc, char *argv[])
 		// restore the texture stage used for debug draw texture
 		rttTexStage = sceneNP.find_all_texture_stages().find_texture_stage(
 				"rttTexStage");
+		if (not rttTexStage)
+		{
+			rttTexStage = new TextureStage("rttTexStage");
+		}
 
 		// restore steer vehicles
 		int NUMVEHICLES =
@@ -161,7 +165,7 @@ int main(int argc, char *argv[])
 			window->get_aspect_2d());
 	// enable debug drawing
 	steerPlugIn->enable_debug_drawing(window->get_camera_group());
-	// print debug draw texture
+	// print debug draw to texture
 	framework.define_key("t", "debugDrawToTexture", &debugDrawToTexture,
 			(void*) NULL);
 	framework.define_key("debug_drawing_texture_ready", "onTextureReady",
