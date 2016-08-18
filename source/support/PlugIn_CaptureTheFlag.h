@@ -99,16 +99,16 @@ using namespace OpenSteer;
 
 struct CtfPlugInData
 {
-	Vec3 gHomeBaseCenter; //Vec3(0, 0, 0)
-	float gHomeBaseRadius; //1.5
+	Vec3 gHomeBaseCenter;///serializable //Vec3(0, 0, 0)
+	float gHomeBaseRadius;///serializable //1.5
 ///	float gMinStartRadius; //30.0
 ///	float gMaxStartRadius; //40.0
-	float gBrakingRate; //0.75
-	float gAvoidancePredictTimeMin; //0.9
-	float gAvoidancePredictTimeMax; //2.0 (>=gAvoidancePredictTimeMin)
-	float gAvoidancePredictTime; //0.9 (=gAvoidancePredictTimeMin)
-	int resetCount;
-	bool gDelayedResetPlugInXXX;
+	float gBrakingRate;///serializable //0.75
+	float gAvoidancePredictTimeMin;///serializable //0.9
+	float gAvoidancePredictTimeMax;///serializable //2.0 (>=gAvoidancePredictTimeMin)
+	float gAvoidancePredictTime;///serializable //0.9 (=gAvoidancePredictTimeMin)
+///	int resetCount;
+	bool gDelayedResetPlugInXXX;///serializable
 #ifdef OS_DEBUG
 	Color evadeColor; //Color(0.6f, 0.6f, 0.3f)
 	Color seekColor; //Color(0.3f, 0.6f, 0.6f)
@@ -136,8 +136,12 @@ public:
 		allObstacles = NULL;
 	}
 
+	virtual ~CtfBase()
+	{
+	}
+
 	// reset state
-	void reset(void)
+	virtual void reset(void)
 	{
 		SimpleVehicle::reset();  // reset the vehicle
 		VehicleAddOnMixin<SimpleVehicle, Entity>::reset();
@@ -159,7 +163,7 @@ public:
 	virtual void resetToStart(void)
 	{
 		avoiding = false;         // not activossup avoiding
-		randomizeStartingPositionAndHeading();  // new starting position
+///		randomizeStartingPositionAndHeading();  // new starting position
 		this->setPosition(this->getStart());
 #ifdef OS_DEBUG
 		this->clearTrailHistory();     // prevent long streaks due to teleportation
@@ -202,25 +206,27 @@ public:
 
 ///	void drawHomeBase(void);
 
-	void randomizeStartingPositionAndHeading(void)
+	void randomizeStartingPositionAndHeading(float gMinStartRadius = 30,
+			float gMaxStartRadius = 40)
 	{
-///		// randomize position on a ring between inner and outer radii
-///		// centered around the home base
+		// randomize position on a ring between inner and outer radii
+		// centered around the home base
 ///		const float rRadius = frandom2(gCtfPlugInData->gMinStartRadius, m_CtfPlugInData->gMaxStartRadius);
-///		const Vec3 randomOnRing = RandomUnitVectorOnXZPlane() * rRadius;
-///		this->setPosition(gCtfPlugInData->gHomeBaseCenter + randomOnRing);
-///		// are we are too close to an obstacle?
-///		if (minDistanceToObstacle(this->position()) < this->radius() * 5)
-///		{
-///			// if so, retry the randomization (this recursive call may not return
-///			// if there is too little free space)
-///			randomizeStartingPositionAndHeading();
-///		}
-///		else
-///		{
-		// otherwise, if the position is OK, randomize 2D heading
-		this->randomizeHeadingOnXZPlane();
-///		}
+		const float rRadius = frandom2(gMinStartRadius, gMaxStartRadius);
+		const Vec3 randomOnRing = RandomUnitVectorOnXZPlane() * rRadius;
+		this->setPosition(gCtfPlugInData->gHomeBaseCenter + randomOnRing);
+		// are we are too close to an obstacle?
+		if (minDistanceToObstacle(this->position()) < this->radius() * 5)
+		{
+			// if so, retry the randomization (this recursive call may not return
+			// if there is too little free space)
+			randomizeStartingPositionAndHeading();
+		}
+		else
+		{
+			// otherwise, if the position is OK, randomize 2D heading
+			this->randomizeHeadingOnXZPlane();
+		}
 	}
 
 	enum seekerState
@@ -232,7 +238,7 @@ public:
 	Color bodyColor;
 
 	// xxx store steer sub-state for anotation
-	bool avoiding;
+	bool avoiding;///serializable
 
 	CtfPlugInData* gCtfPlugInData;
 	ObstacleGroup* allObstacles;
@@ -253,8 +259,12 @@ public:
 		gCtfEnemies = NULL;
 	}
 
+	virtual ~CtfSeeker()
+	{
+	}
+
 	// reset state
-	void reset(void)
+	virtual void reset(void)
 	{
 		CtfBase<Entity>::reset();
 		this->bodyColor.set(0.4f, 0.4f, 0.6f); // blueish
@@ -451,7 +461,7 @@ public:
 		std::ostringstream status;
 		status << seekerStateString << std::endl;
 ///		status << obstacleCount << " obstacles [F1/F2]" << std::endl;
-		status << this->gCtfPlugInData->resetCount << " restarts" << std::ends;
+///		status << this->gCtfPlugInData->resetCount << " restarts" << std::ends;
 ///	//	const float h = drawGetWindowHeight();
 ///	//	const Vec3 screenLocation(10, h - 50, 0);
 		const Vec3 screenLocation(-1.0, 0.9, 0);
@@ -513,9 +523,9 @@ public:
 	}
 #endif
 
-	typename CtfBase<Entity>::seekerState state;
-	bool evading; // xxx store steer sub-state for anotation
-	float lastRunningTime; // for auto-reset
+	typename CtfBase<Entity>::seekerState state;///serializable
+	bool evading;///serializable // xxx store steer sub-state for anotation
+	float lastRunningTime;///serializable // for auto-reset
 
 	std::vector<CtfEnemy<Entity>*>* gCtfEnemies;
 
@@ -557,8 +567,12 @@ public:
 		gSeeker = NULL;
 	}
 
+	virtual ~CtfEnemy()
+	{
+	}
+
 	// reset state
-	void reset(void)
+	virtual void reset(void)
 	{
 		CtfBase<Entity>::reset();
 		this->bodyColor.set(0.6f, 0.4f, 0.4f); // redish
@@ -876,6 +890,17 @@ class CtfPlugIn: public PlugIn
 {
 public:
 
+	CtfPlugIn() :
+			ctfSeeker(NULL), m_CtfPlugInData()
+	{
+		all.clear();
+		ctfEnemies.clear();
+	}
+
+	virtual ~CtfPlugIn()
+	{
+	} // be more "nice" to avoid a compiler warning
+
 	const char* name(void)
 	{
 		return "Capture the Flag";
@@ -885,10 +910,6 @@ public:
 	{
 		return 0.01f;
 	}
-
-	virtual ~CtfPlugIn()
-	{
-	} // be more "nice" to avoid a compiler warning
 
 	void open(void)
 	{
@@ -900,7 +921,7 @@ public:
 		m_CtfPlugInData.gAvoidancePredictTimeMin = 0.9f;
 		m_CtfPlugInData.gAvoidancePredictTimeMax = 2;
 		m_CtfPlugInData.gAvoidancePredictTime = m_CtfPlugInData.gAvoidancePredictTimeMin;
-		m_CtfPlugInData.resetCount = 0;
+///		m_CtfPlugInData.resetCount = 0;
 		m_CtfPlugInData.gDelayedResetPlugInXXX = false;
 #ifdef OS_DEBUG
 		m_CtfPlugInData.evadeColor = Color(0.6f, 0.6f, 0.3f); // annotation
@@ -1033,17 +1054,21 @@ public:
 		{
 			return false;
 		}
-		//check if this is a CtfSeeker
+		// try to add a CtfSeeker
 		CtfSeeker<Entity>* ctfSeekerTmp =
 				dynamic_cast<CtfSeeker<Entity>*>(vehicle);
 		if (ctfSeekerTmp)
 		{
-			//if not ExternalCtfSeeker then randomize
-			if (! dynamic_cast<ExternalCtfSeeker<Entity>*>(ctfSeekerTmp))
-			{
-				// randomize 2D heading
-				ctfSeekerTmp->randomizeStartingPositionAndHeading();
-			}
+#ifndef NDEBUG
+			///addVehicle() must not change vehicle's settings
+			VehicleSettings settings = ctfSeekerTmp->getSettings();
+#endif
+///			//if not ExternalCtfSeeker then randomize
+///			if (! dynamic_cast<ExternalCtfSeeker<Entity>*>(ctfSeekerTmp))
+///			{
+///				// randomize 2D heading
+///				ctfSeekerTmp->randomizeStartingPositionAndHeading();
+///			}
 			// set seeker plugin data & obstacles
 			ctfSeekerTmp->gCtfPlugInData = &m_CtfPlugInData;
 			ctfSeekerTmp->allObstacles = obstacles;
@@ -1053,20 +1078,28 @@ public:
 			ctfSeeker = ctfSeekerTmp;
 			//update each enemy's seeker
 			setAllEnemiesSeeker();
+
+			///addVehicle() must not change vehicle's settings
+			assert(settings == ctfSeekerTmp->getSettings());
+
 			//that's all
 			return true;
 		}
-		//or if this is a CtfEnemy
+		// try to add a CtfEnemy
 		CtfEnemy<Entity>* ctfEnemyTmp =
 			dynamic_cast<CtfEnemy<Entity>*>(vehicle);
 		if (ctfEnemyTmp)
 		{
-			//if not ExternalCtfEnemy then randomize
-			if (! dynamic_cast<ExternalCtfEnemy<Entity>*>(ctfEnemyTmp))
-			{
-				// randomize only 2D heading
-				ctfEnemyTmp->randomizeStartingPositionAndHeading();
-			}
+#ifndef NDEBUG
+			///addVehicle() must not change vehicle's settings
+			VehicleSettings settings = ctfEnemyTmp->getSettings();
+#endif
+///			//if not ExternalCtfEnemy then randomize
+///			if (! dynamic_cast<ExternalCtfEnemy<Entity>*>(ctfEnemyTmp))
+///			{
+///				// randomize only 2D heading
+///				ctfEnemyTmp->randomizeStartingPositionAndHeading();
+///			}
 			// set enemy plugin data & obstacles
 			ctfEnemyTmp->gCtfPlugInData = &m_CtfPlugInData;
 			ctfEnemyTmp->allObstacles = obstacles;
@@ -1074,6 +1107,10 @@ public:
 			ctfEnemyTmp->gSeeker = ctfSeeker;
 			// add enemy to enemy repo
 			ctfEnemies.push_back(ctfEnemyTmp);
+
+			///addVehicle() must not change vehicle's settings
+			assert(settings == ctfEnemyTmp->getSettings());
+
 			//that's all
 			return true;
 		}
@@ -1160,22 +1197,22 @@ public:
 		drawXZDisk(m_CtfPlugInData.gHomeBaseRadius / 15, m_CtfPlugInData.gHomeBaseCenter + up, gBlack, 20);
 	}
 
-	void drawObstacles(void)
-	{
-		const Color color(0.8f, 0.6f, 0.4f);
+///	void drawObstacles(void)
+///	{
+///		const Color color(0.8f, 0.6f, 0.4f);
 ///		const SOG& allSO = CtfBase::allObstacles;
 ///		for (SOI so = allSO.begin(); so != allSO.end(); so++)
 ///		{
 ///			drawXZCircle((**so).radius, (**so).center, color, 40);
 ///		}
-		// draw obstacles
-		ObstacleIterator iterObstacle;
-		for (iterObstacle = localObstacles->begin();
-				iterObstacle != localObstacles->end(); ++iterObstacle)
-		{
-			(*iterObstacle)->draw(false, color, Vec3(0, 0, 0));
-		}
-	}
+///		// draw obstacles
+///		ObstacleIterator iterObstacle;
+///		for (iterObstacle = localObstacles->begin();
+///				iterObstacle != localObstacles->end(); ++iterObstacle)
+///		{
+///			(*iterObstacle)->draw(false, color, Vec3(0, 0, 0));
+///		}
+///	}
 #endif
 
 	// a group (STL vector) of all vehicles in the PlugIn

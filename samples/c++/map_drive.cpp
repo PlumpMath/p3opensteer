@@ -1,5 +1,5 @@
 /**
- * \file pedestrian.cpp
+ * \file map_drive.cpp
  *
  * \date 2016-05-26
  * \author consultit
@@ -12,14 +12,17 @@ NodePath sceneNP;
 vector<vector<PT(AnimControl)> > vehicleAnimCtls;
 PT(OSSteerPlugIn)steerPlugIn;
 vector<PT(OSSteerVehicle)>steerVehicles;
+PT(TextureStage)rttTexStage;
 //
 void setParametersBeforeCreation();
-void toggleWanderBehavior(const Event*, void*);
 AsyncTask::DoneStatus updatePlugIn(GenericAsyncTask*, void*);
+void debugDrawToTexture(const Event*, void*);
+void onTextureReady(const Event*, void*);
+void togglePredictionType(const Event*, void*);
 
 int main(int argc, char *argv[])
 {
-	string msg("'pedestrian'");
+	string msg("'map drive'");
 	startFramework(argc, argv, msg);
 
 	/// here is room for your own code
@@ -29,13 +32,12 @@ int main(int argc, char *argv[])
 	text->set_text(
             msg + "\n\n"
             "- press \"d\" to toggle debug drawing\n"
-			"- press \"a\"/\"k\" to add 'opensteer'/'kinematic' vehicle\n"
-            "- press \"s\"/\"shift-s\" to increase/decrease last inserted vehicle's max speed\n"
-            "- press \"f\"/\"shift-f\" to increase/decrease last inserted vehicle's max force\n"
-            "- press \"t\" to toggle last inserted vehicle's wander behavior\n"
-			"- press \"o\"/\"shift-o\" to add/remove obstacle\n");
+            "- press \"o\"/\"shift-o\" to add/remove obstacle\n"
+            "- press \"t\" to (re)draw the map of the path\n"
+            "- press \"a\" to add vehicle\n"
+			"- press \"p\" to toggle map prediction type\n");
 	NodePath textNodePath = window->get_aspect_2d().attach_new_node(text);
-	textNodePath.set_pos(-1.25, 0.0, -0.5);
+	textNodePath.set_pos(0.25, 0.0, 0.8);
 	textNodePath.set_scale(0.035);
 
 	// create a steer manager; set root and mask to manage 'kinematic' vehicles
@@ -55,9 +57,12 @@ int main(int argc, char *argv[])
 
 		// get a sceneNP, naming it with "SceneNP" to ease restoring from bam
 		// file
-		sceneNP = loadTerrain("SceneNP");
+        sceneNP = loadTerrainLowPoly("SceneNP", 64, 24);
 		// and reparent to the reference node
 		sceneNP.reparent_to(steerMgr->get_reference_node_path());
+
+		// set the texture stage used for debug draw texture
+		rttTexStage = new TextureStage("rttTexStage");
 
 		// set sceneNP's collide mask
 		sceneNP.set_collide_mask(mask);
@@ -72,16 +77,30 @@ int main(int argc, char *argv[])
 
 		// set the pathway
 		ValueList<LPoint3f> pointList;
-		pointList.add_value(LPoint3f(79.474, 51.7236, 2.0207));
-		pointList.add_value(LPoint3f(108.071, 51.1972, 2.7246));
-		pointList.add_value(LPoint3f(129.699, 30.1742, 0.720501));
-		pointList.add_value(LPoint3f(141.597, 73.496, 2.14218));
-		pointList.add_value(LPoint3f(105.917, 107.032, 3.06428));
-		pointList.add_value(LPoint3f(61.2637, 109.622, 3.03588));
-		// use single radius pathway
 		ValueList<float> radiusList;
-		radiusList.add_value(4);
-		steerPlugIn->set_pathway(pointList, radiusList, true, true);
+        pointList.add_value(LPoint3f(-41.80, 34.46, -0.17));
+        radiusList.add_value(7.0);
+        pointList.add_value(LPoint3f(-2.21, 49.15, -0.36));
+        radiusList.add_value(8.0);
+        pointList.add_value(LPoint3f(10.78, 16.65, 0.14));
+        radiusList.add_value(9.0);
+        pointList.add_value(LPoint3f(40.44, 17.58, -0.22));
+        radiusList.add_value(9.0);
+        pointList.add_value(LPoint3f(49.04, -22.15, -0.60));
+        radiusList.add_value(8.0);
+        pointList.add_value(LPoint3f(13.99, -52.70, 0.39));
+        radiusList.add_value(8.0);
+        pointList.add_value(LPoint3f(-3.46, -31.90, 0.71));
+        radiusList.add_value(7.0);
+        pointList.add_value(LPoint3f(-30.0, -39.97, -0.35));
+        radiusList.add_value(6.0);
+        pointList.add_value(LPoint3f(-47.12, -17.31, -0.43));
+        radiusList.add_value(6.0);
+        pointList.add_value(LPoint3f(-51.31, 9.08, -0.25));
+        radiusList.add_value(7.0);
+		steerPlugIn->set_pathway(pointList, radiusList, false, true);
+		// make the map
+		steerPlugIn->make_map(200);
 	}
 	else
 	{
@@ -97,6 +116,14 @@ int main(int argc, char *argv[])
 		// reparent the reference node to render
 		OSSteerManager::get_global_ptr()->get_reference_node_path().reparent_to(
 				window->get_render());
+
+		// restore the texture stage used for debug draw texture
+		rttTexStage = sceneNP.find_all_texture_stages().find_texture_stage(
+				"rttTexStage");
+		if (not rttTexStage)
+		{
+			rttTexStage = new TextureStage("rttTexStage");
+		}
 
 		// restore steer vehicles
 		int NUMVEHICLES =
@@ -138,6 +165,11 @@ int main(int argc, char *argv[])
 			window->get_aspect_2d());
 	// enable debug drawing
 	steerPlugIn->enable_debug_drawing(window->get_camera_group());
+	// print debug draw to texture
+	framework.define_key("t", "debugDrawToTexture", &debugDrawToTexture,
+			(void*) NULL);
+	framework.define_key("debug_drawing_texture_ready", "onTextureReady",
+			&onTextureReady, (void*) rttTexStage.p());
 
 	/// set events' callbacks
 	// toggle debug draw
@@ -146,14 +178,10 @@ int main(int argc, char *argv[])
 			(void*) steerPlugIn.p());
 
 	// handle addition steer vehicles, models and animations
-	HandleVehicleData vehicleData(0.7, 0, "opensteer", sceneNP,
+	HandleVehicleData vehicleData(0.4, 4, "kinematic", sceneNP,
 						steerPlugIn, steerVehicles, vehicleAnimCtls);
 	framework.define_key("a", "addVehicle", &handleVehicles,
 			(void*) &vehicleData);
-	HandleVehicleData vehicleDataKinematic(0.7, 1, "kinematic", sceneNP,
-			steerPlugIn, steerVehicles, vehicleAnimCtls);
-	framework.define_key("k", "addVehicle", &handleVehicles,
-			(void*) &vehicleDataKinematic);
 
 	// handle obstacle addition
 	HandleObstacleData obstacleAddition(true, sceneNP, steerPlugIn,
@@ -179,7 +207,7 @@ int main(int argc, char *argv[])
 	// handle OSSteerVehicle(s)' events
 	framework.define_key("avoid_obstacle", "handleVehicleEvent",
 			&handleVehicleEvent, nullptr);
-	framework.define_key("avoid_close_neighbor", "handleVehicleEvent",
+	framework.define_key("path_following", "handleVehicleEvent",
 			&handleVehicleEvent, nullptr);
 
 	// write to bam file on exit
@@ -188,13 +216,13 @@ int main(int argc, char *argv[])
 	framework.define_key("close_request_event", "writeToBamFile",
 			&writeToBamFileAndExit, (void*) &bamFileName);
 
-	// 'pedestrian' specific: toggle wander behavior
-	framework.define_key("t", "toggleWanderBehavior", &toggleWanderBehavior,
+	// map drive specifics: toggle prediction type
+	framework.define_key("p", "togglePredictionType", &togglePredictionType,
 			nullptr);
 
 	// place camera trackball (local coordinate)
 	PT(Trackball)trackball = DCAST(Trackball, window->get_mouse().find("**/+Trackball").node());
-	trackball->set_pos(-128.0, 120.0, -40.0);
+	trackball->set_pos(0.0, 160.0, -5.0);
 	trackball->set_hpr(0.0, 20.0, 0.0);
 
 	// do the main loop, equals to call app.run() in python
@@ -210,42 +238,26 @@ void setParametersBeforeCreation()
 	ValueList<string> valueList;
 	// set plug-in type
 	steerMgr->set_parameter_value(OSSteerManager::STEERPLUGIN, "plugin_type",
-			"pedestrian");
+			"map_drive");
 
 	// set vehicle's type, mass, speed
 	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "vehicle_type",
-			"pedestrian");
-	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "mass", "2.0");
-	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "speed",
-			"0.01");
+			"map_driver");
+	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "max_speed",
+			"20.0");
+	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "max_force",
+			"8.0");
+	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "up_axis_fixed",
+			"true");
 
 	// set vehicle throwing events
 	valueList.clear();
-	valueList.add_value("avoid_obstacle@avoid_obstacle@1.0:avoid_close_neighbor@avoid_close_neighbor@");
+	valueList.add_value(
+			"avoid_obstacle@avoid_obstacle@1.0:path_following@path_following@1.0");
 	steerMgr->set_parameter_values(OSSteerManager::STEERVEHICLE,
 			"thrown_events", valueList);
 	//
 	printCreationParameters();
-}
-
-// toggle wander behavior of last inserted vehicle
-void toggleWanderBehavior(const Event*, void*)
-{
-    if (steerVehicles.size() == 0)
-    {
-        return;
-    }
-
-	if (steerVehicles.back()->get_wander_behavior())
-	{
-		steerVehicles.back()->set_wander_behavior(false);
-	}
-	else
-	{
-		steerVehicles.back()->set_wander_behavior(true);
-	}
-	cout << *steerVehicles.back() << "'s wander behavior is "
-			<< steerVehicles.back()->get_wander_behavior() << endl;
 }
 
 // custom update task for plug-ins
@@ -287,4 +299,44 @@ AsyncTask::DoneStatus updatePlugIn(GenericAsyncTask* task, void* data)
 	}
 	//
 	return AsyncTask::DS_cont;
+}
+
+// debug draw to texture
+void debugDrawToTexture(const Event* e, void* data)
+{
+	steerPlugIn->debug_drawing_to_texture(sceneNP,
+			window->get_graphics_output());
+}
+
+// debug drawing texture is ready
+void onTextureReady(const Event* e, void* data)
+{
+	PT(Texture)texture = DCAST(Texture,
+			e->get_parameter(0).get_ptr());
+	PT(TextureStage)rttTexStage = reinterpret_cast<TextureStage*>(data);
+	//set up texture where to render
+	sceneNP.clear_texture(rttTexStage);
+	rttTexStage->set_mode(TextureStage::M_modulate);
+	// take into account sceneNP dimensions
+	sceneNP.set_tex_offset(rttTexStage, 0.5, 0.5);
+	sceneNP.set_tex_scale(rttTexStage, 1.0 / 128.0, 1.0 / 128.0);
+	sceneNP.set_tex_gen(rttTexStage, TexGenAttrib::M_world_position);
+	sceneNP.set_texture(rttTexStage, texture, 10);
+}
+
+// toggle prediction type
+void togglePredictionType(const Event*, void*)
+{
+	OSSteerPlugIn::OSMapPredictionType predictionType =
+			steerPlugIn->get_map_prediction_type();
+	if (predictionType == OSSteerPlugIn::CURVED_PREDICTION)
+	{
+		steerPlugIn->set_map_prediction_type(OSSteerPlugIn::LINEAR_PREDICTION);
+		cout << "prediction type: linear" << endl;
+	}
+	else
+	{
+		steerPlugIn->set_map_prediction_type(OSSteerPlugIn::CURVED_PREDICTION);
+		cout << "prediction type: curved" << endl;
+	}
 }

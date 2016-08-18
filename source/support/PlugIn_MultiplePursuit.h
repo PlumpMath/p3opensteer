@@ -71,14 +71,27 @@ public:
 		reset();
 	}
 
+	virtual ~MpBase()
+	{
+	}
+
 	// reset state
-	void reset(void)
+	virtual void reset(void)
 	{
 		SimpleVehicle::reset(); // reset the vehicle
 		VehicleAddOnMixin<SimpleVehicle, Entity>::reset();
 ///		this->setSpeed(0);            // speed along Forward direction.
 ///		this->setMaxForce(5.0);       // steering force is clipped to this magnitude
 ///		this->setMaxSpeed(3.0);       // velocity is clipped to this magnitude
+#ifdef OS_DEBUG
+		this->clearTrailHistory();    // prevent long streaks due to teleportation
+		this->gaudyPursuitAnnotation = true; // select use of 9-color annotation
+#endif
+	}
+
+	virtual void resetToStart()
+	{
+		this->setPosition(this->getStart());
 #ifdef OS_DEBUG
 		this->clearTrailHistory();    // prevent long streaks due to teleportation
 		this->gaudyPursuitAnnotation = true; // select use of 9-color annotation
@@ -109,8 +122,12 @@ public:
 		reset();
 	}
 
+	virtual ~MpWanderer()
+	{
+	}
+
 	// reset state
-	void reset(void)
+	virtual void reset(void)
 	{
 		MpBase<Entity>::reset();
 #ifdef OS_DEBUG
@@ -166,8 +183,12 @@ public:
 		reset();
 	}
 
+	virtual ~MpPursuer()
+	{
+	}
+
 	// reset state
-	void reset(void)
+	virtual void reset(void)
 	{
 		MpBase<Entity>::reset();
 #ifdef OS_DEBUG
@@ -188,7 +209,7 @@ public:
 		const float r = this->radius() + wanderer->radius();
 		if (d < r)
 		{
-			reset();
+			this->resetToStart();
 		}
 
 		const float maxTime = 20; // xxx hard-to-justify value
@@ -207,13 +228,13 @@ public:
 	// randomize heading only
 	void randomizeStartingPositionAndHeading(void)
 	{
-///		// randomize position on a ring between inner and outer radii
-///		// centered around the home base
-///		const float inner = 20;
-///		const float outer = 30;
-///		const float radius = frandom2(inner, outer);
-///		const Vec3 randomOnRing = RandomUnitVectorOnXZPlane() * radius;
-///		this->setPosition(wanderer->position() + randomOnRing);
+		// randomize position on a ring between inner and outer radii
+		// centered around the home base
+		const float inner = 20;
+		const float outer = 30;
+		const float radius = frandom2(inner, outer);
+		const Vec3 randomOnRing = RandomUnitVectorOnXZPlane() * radius;
+		this->setPosition(wanderer->position() + randomOnRing);
 
 		// randomize 2D heading
 		this->randomizeHeadingOnXZPlane();
@@ -247,6 +268,16 @@ class MpPlugIn: public PlugIn
 {
 public:
 
+	MpPlugIn() :
+			wanderer(NULL)
+	{
+		allMP.clear();
+	}
+
+	virtual ~MpPlugIn()
+	{
+	} // be more "nice" to avoid a compiler warning
+
 	const char* name(void)
 	{
 		return "Multiple Pursuit";
@@ -256,10 +287,6 @@ public:
 	{
 		return 0.04f;
 	}
-
-	virtual ~MpPlugIn()
-	{
-	} // be more "nice" to avoid a compiler warning
 
 	void open(void)
 	{
@@ -323,31 +350,47 @@ public:
 		{
 			return false;
 		}
-		//check if this is a MpWanderer
+		// try to add a MpWanderer
 		MpWanderer<Entity>* wandererTmp =
 				dynamic_cast<MpWanderer<Entity>*>(vehicle);
 		if (wandererTmp)
 		{
+#ifndef NDEBUG
+			///addVehicle() must not change vehicle's settings
+			VehicleSettings settings = wandererTmp->getSettings();
+#endif
 			// set the plugin's wanderer: the last added one
 			wanderer = wandererTmp;
 			//update each pursuer's wanderer
 			setAllPursuersWanderer();
+
+			///addVehicle() must not change vehicle's settings
+			assert(settings == wandererTmp->getSettings());
+
 			//that's all
 			return true;
 		}
-		//or if this is a MpPursuer
+		// try to add a MpPursuer
 		MpPursuer<Entity>* pursuerTmp =
 			dynamic_cast<MpPursuer<Entity>*>(vehicle);
 		if (pursuerTmp)
 		{
-			//if not ExternalMpPursuer then randomize
-			if (! dynamic_cast<ExternalMpPursuer<Entity>*>(pursuerTmp))
-			{
-				// randomize only 2D heading
-				pursuerTmp->randomizeStartingPositionAndHeading();
-			}
+#ifndef NDEBUG
+			///addVehicle() must not change vehicle's settings
+			VehicleSettings settings = pursuerTmp->getSettings();
+#endif
+///			//if not ExternalMpPursuer then randomize
+///			if (! dynamic_cast<ExternalMpPursuer<Entity>*>(pursuerTmp))
+///			{
+///				// randomize only 2D heading
+///				pursuerTmp->randomizeStartingPositionAndHeading();
+///			}
 			// set the pursuer's wanderer
 			pursuerTmp->wanderer = wanderer;
+
+			///addVehicle() must not change vehicle's settings
+			assert(settings == pursuerTmp->getSettings());
+
 			//that's all
 			return true;
 		}

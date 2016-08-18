@@ -141,6 +141,7 @@ void OSVehicleSettings::write_datagram(Datagram &dg) const
 	get_side().write_datagram(dg);
 	get_up().write_datagram(dg);
 	get_position().write_datagram(dg);
+	get_start().write_datagram(dg);
 }
 
 /**
@@ -162,6 +163,8 @@ void OSVehicleSettings::read_datagram(DatagramIterator &scan)
 	set_up(value);
 	value.read_datagram(scan);
 	set_position(value);
+	value.read_datagram(scan);
+	set_start(value);
 }
 
 ///Flock settings.

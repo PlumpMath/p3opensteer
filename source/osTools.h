@@ -369,6 +369,8 @@ PUBLISHED:
 	INLINE void set_up(const LVector3f& value);
 	INLINE LPoint3f get_position() const;
 	INLINE void set_position(const LPoint3f& value);
+	INLINE LPoint3f get_start() const;
+	INLINE void set_start(const LPoint3f& value);
 private:
 	ossup::VehicleSettings _vehicleSettings;
 
@@ -527,11 +529,5 @@ private:
 
 ///inline
 #include "osTools.I"
-
-#if !defined(CPPPARSER) && !defined(_WIN32)
-extern template class ValueList<string>;
-extern template class ValueList<LPoint3f>;
-extern template struct Pair<bool,float>;
-#endif //CPPPARSER
 
 #endif /* OSTOOLS_H_ */

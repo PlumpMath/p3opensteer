@@ -20,7 +20,7 @@ INLINE OSSteerPlugIn::OSSteerPlugInType OSSteerPlugIn::get_plug_in_type() const
 }
 
 /**
- * Returns the OSSteerVehicle given its index, or NULL on error.
+ * Returns the added OSSteerVehicle given its index, or NULL on error.
  */
 INLINE PT(OSSteerVehicle) OSSteerPlugIn::get_steer_vehicle(int index) const
 {

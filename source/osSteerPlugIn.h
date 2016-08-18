@@ -12,6 +12,7 @@
 #include "osSteerManager.h"
 #include "opensteer_includes.h"
 #include "nodePath.h"
+#include "graphicsOutput.h"
 
 #ifndef CPPPARSER
 #include "library/OpenSteer/PlugIn.h"
@@ -79,6 +80,25 @@ PUBLISHED:
 		TEAM_A,
 		TEAM_B,
 		NO_TEAM
+	};
+
+	/**
+	 * OSSteerPlugIn map steering modes.
+	 */
+	enum OSMapSteeringMode
+	{
+		FREE_STEERING,
+		WANDER_STEERING,
+		PATH_FOLLOW_STEERING
+	};
+
+	/**
+	 * OSSteerPlugIn map prediction types.
+	 */
+	enum OSMapPredictionType
+	{
+		CURVED_PREDICTION,
+		LINEAR_PREDICTION
 	};
 
 	virtual ~OSSteerPlugIn();
@@ -186,6 +206,22 @@ PUBLISHED:
 	///@}
 
 	/**
+	 * \name MAP STEERING SETTINGS (MAP_DRIVE)
+	 */
+	///@{
+	void make_map(int resolution = 200);
+	LPoint3f get_map_center() const;
+	float get_map_dimension() const;
+	int get_map_resolution() const;
+	void set_map_path_fences(bool enable = true);
+	bool get_map_path_fences() const;
+	void set_map_steering_mode(OSMapSteeringMode mode = PATH_FOLLOW_STEERING);
+	OSMapSteeringMode get_map_steering_mode() const;
+	void set_map_prediction_type(OSMapPredictionType type = CURVED_PREDICTION);
+	OSMapPredictionType get_map_prediction_type() const;
+	///@}
+
+	/**
 	 * \name STEERING SPEED SETTINGS (LOW_SPEED_TURN)
 	 */
 	///@{
@@ -207,6 +243,9 @@ PUBLISHED:
 	void enable_debug_drawing(NodePath debugCamera);
 	void disable_debug_drawing();
 	int toggle_debug_drawing(bool enable);
+	void debug_drawing_to_texture(const NodePath& scene,
+			PT(GraphicsOutput) window, int resolution = 512,
+			const string& fileName = "debug_texture.png");
 	///@}
 
 public:
@@ -262,6 +301,7 @@ private:
 			float width, float height,	float depth, float radius,
 			const LVector3f& side, const LVector3f& up,
 			const LVector3f& forward, const LPoint3f& position);
+	void do_on_static_geometry_change(bool dirtyPathway, bool dirtyObstacles);
 	///@}
 
 	/**
@@ -283,7 +323,13 @@ private:
 		//capture the flag
 		LPoint3f mHomeBaseCenter;
 		float mHomeBaseRadius, mBrakingRate, mAvoidancePredictTimeMin,
-		mAvoidancePredictTimeMax;
+		mAvoidancePredictTimeMax, mAvoidancePredictTime;
+		bool mGDelayedResetPlugInXXX;
+		//map drive
+		OSMapSteeringMode mMapSteeringMode;
+		OSMapPredictionType mMapPredictionType;
+		int mMapResolution;
+		bool mUsePathFences;
 		//low speed turn
 		float mSteeringSpeed;
 	}*mSerializedDataTmpPtr;
@@ -300,7 +346,20 @@ private:
 	///Enable Debug Draw update.
 	bool mEnableDebugDrawUpdate;
 	///Draw static geometry
-	void do_debug_draw_static_geometry();
+	void do_debug_draw_static_geometry(const NodePath& camera,
+			ossup::DrawMeshDrawer * drawer);
+	///@{
+	///A task data for write debug drawing to texture.
+	AsyncTask::DoneStatus do_debug_draw_to_texture_task(GenericAsyncTask* task);
+	PT(TaskInterface<OSSteerPlugIn>::TaskData) mTextureTaskData;
+	PT(AsyncTask) mTextureTask;
+	PT(GraphicsOutput)mTextureBuffer;
+	NodePath mTextureRender2d;
+	NodePath mTextureCamera2d;
+	ossup::DrawMeshDrawer* mTextureDrawer2d;
+	PT(Texture) mTexture;
+	string mTextureFileName;
+	///@}
 #endif
 
 	// Explicitly disabled copy constructor and copy assignment operator.

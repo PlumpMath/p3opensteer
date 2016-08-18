@@ -103,7 +103,7 @@ public:
 	}
 
 	// reset all instance state
-	void reset(void)
+	virtual void reset(void)
 	{
 		// reset the vehicle
 		SimpleVehicle::reset();
@@ -158,20 +158,23 @@ public:
 		if (useDirectedPathFollowing)
 		{
 			const Color darkRed(0.7f, 0, 0);
-			float const pathRadius = path->radius();
+///			float const pathRadius =
+///					dynamic_cast<PolylineSegmentedPathwaySingleRadius*>((*path)[0])->radius();
 
-			if (Vec3::distance(this->position(), pathEndpoint0) < pathRadius)
+			if (Vec3::distance(this->position(), pathEndpoint0)
+					< radiusEndpoint0)
 			{
 				pathDirection = +1;
 #ifdef OS_DEBUG
-				this->annotationXZCircle(pathRadius, pathEndpoint0, darkRed, 20);
+				this->annotationXZCircle(radiusEndpoint0, pathEndpoint0, darkRed, 20);
 #endif
 			}
-			if (Vec3::distance(this->position(), pathEndpoint1) < pathRadius)
+			if (Vec3::distance(this->position(), pathEndpoint1)
+					< radiusEndpoint1)
 			{
 				pathDirection = -1;
 #ifdef OS_DEBUG
-				this->annotationXZCircle(pathRadius, pathEndpoint1, darkRed, 20);
+				this->annotationXZCircle(radiusEndpoint1, pathEndpoint1, darkRed, 20);
 #endif
 			}
 		}
@@ -248,11 +251,11 @@ public:
 
 				// do (interactivossup) selected type of path following
 				const float pfLeadTime = 3;
-				const Vec3 pathFollow = (
-						useDirectedPathFollowing ?
+				const Vec3 pathFollow =
+						(useDirectedPathFollowing ?
 								this->steerToFollowPath(pathDirection,
-										pfLeadTime, *path) :
-								this->steerToStayOnPath(pfLeadTime, *path));
+										pfLeadTime, *(*path)[0]) :
+								this->steerToStayOnPath(pfLeadTime, *(*path)[0]));
 
 				// add in to steeringForce
 				steeringForce += pathFollow * 0.5;
@@ -395,17 +398,20 @@ public:
 	// XXX getTotalPathLength and radius methods (currently defined only
 	// XXX on PolylinePathway) to set random initial positions.  Could
 	// XXX there be a "random position inside path" method on Pathway?
-	PolylineSegmentedPathwaySingleRadius* path;
+///	PolylineSegmentedPathwaySingleRadius* path;
+	PathwayGroup* path;
 	Vec3 pathEndpoint0;
 	Vec3 pathEndpoint1;
+	float radiusEndpoint0, radiusEndpoint1;
+	int indexEndpoint0, indexEndpoint1;///serializable
 
 	// direction for path following (upstream or downstream)
-	int pathDirection;
+	int pathDirection;///serializable
 
 	ObstacleGroup* obstacles;
 
-	bool useDirectedPathFollowing;
-	bool wanderSwitch;
+	bool useDirectedPathFollowing;///serializable
+	bool wanderSwitch;///serializable
 };
 
 //Pedestrian externally updated.
@@ -467,6 +473,18 @@ class PedestrianPlugIn: public PlugIn
 {
 public:
 
+	PedestrianPlugIn() :
+			pd(NULL), cyclePD(0)
+	{
+		crowd.clear();
+		neighbors.clear();
+	}
+
+	// be more "nice" to avoid a compiler warning
+	virtual ~PedestrianPlugIn()
+	{
+	}
+
 	const char* name(void)
 	{
 		return "Pedestrians";
@@ -475,11 +493,6 @@ public:
 	float selectionOrderSortKey(void)
 	{
 		return 0.02f;
-	}
-
-	// be more "nice" to avoid a compiler warning
-	virtual ~PedestrianPlugIn()
-	{
 	}
 
 	void open(void)
@@ -604,33 +617,33 @@ public:
 		}
 	}
 
-	void drawPath(void)
-	{
-		typedef PolylineSegmentedPathwaySingleRadius::size_type size_type;
+///	void drawPath(void)
+///	{
+///		typedef PolylineSegmentedPathwaySingleRadius::size_type size_type;
+///
+///		// draw a line along each segment of path
+/////		const PolylineSegmentedPathwaySingleRadius& path = *getTestPath();
+///		const PolylineSegmentedPathwaySingleRadius& path =
+///				dynamic_cast<PolylineSegmentedPathwaySingleRadius&>(*m_pathway);
+///		gDrawer3d->setTwoSided(true);
+///		for (size_type i = 1; i < path.pointCount(); ++i)
+///		{
+///			drawLine(path.point(i), path.point(i - 1), gRed);
+///		}
+///		gDrawer3d->setTwoSided(false);
+///	}
 
-		// draw a line along each segment of path
-///		const PolylineSegmentedPathwaySingleRadius& path = *getTestPath();
-		const PolylineSegmentedPathwaySingleRadius& path =
-				dynamic_cast<PolylineSegmentedPathwaySingleRadius&>(*m_pathway);
-		gDrawer3d->setTwoSided(true);
-		for (size_type i = 1; i < path.pointCount(); ++i)
-		{
-			drawLine(path.point(i), path.point(i - 1), gRed);
-		}
-		gDrawer3d->setTwoSided(false);
-	}
-
-	void drawObstacles(void)
-	{
-		gDrawer3d->setTwoSided(true);
-		// draw obstacles
-		ObstacleIterator iterObstacle;
-		for (iterObstacle = localObstacles->begin();
-				iterObstacle != localObstacles->end(); ++iterObstacle)
-		{
-			(*iterObstacle)->draw(false, Color(0, 0, 0),
-					Vec3(0, 0, 0));
-		}
+///	void drawObstacles(void)
+///	{
+///		gDrawer3d->setTwoSided(true);
+///		// draw obstacles
+///		ObstacleIterator iterObstacle;
+///		for (iterObstacle = localObstacles->begin();
+///				iterObstacle != localObstacles->end(); ++iterObstacle)
+///		{
+///			(*iterObstacle)->draw(false, Color(0, 0, 0),
+///					Vec3(0, 0, 0));
+///		}
 ///		drawXZCircle(gObstacle1.radius, gObstacle1.center, gWhite, 40);
 ///		drawXZCircle(gObstacle2.radius, gObstacle2.center, gWhite, 40);
 ///		// ------------------------------------ xxxcwr11-1-04 fixing steerToAvoid
@@ -649,9 +662,9 @@ public:
 ///			drawLine(v3, v4, gWhite);
 ///			drawLine(v4, v1, gWhite);
 ///		}
-		// ------------------------------------ xxxcwr11-1-04 fixing steerToAvoid
-		gDrawer3d->setTwoSided(false);
-	}
+///		// ------------------------------------ xxxcwr11-1-04 fixing steerToAvoid
+///		gDrawer3d->setTwoSided(false);
+///	}
 #endif
 
 	void close(void)
@@ -710,35 +723,47 @@ public:
 
 	virtual bool addVehicle(AbstractVehicle* vehicle)
 	{
-		if (! PlugInAddOnMixin<OpenSteer::PlugIn>::addVehicle(vehicle))
+		if (!PlugInAddOnMixin<OpenSteer::PlugIn>::addVehicle(vehicle))
 		{
 			return false;
 		}
-		// try to allocate a token for this pedestrian in the proximity database
-		Pedestrian<Entity>* pedestrian =
+		// try to add a Pedestrian
+		Pedestrian<Entity>* pedestrianTmp =
 				dynamic_cast<Pedestrian<Entity>*>(vehicle);
-		if (pedestrian)
+		if (pedestrianTmp)
 		{
-			//if not ExternalPedestrian then randomize
-			if (! dynamic_cast<ExternalPedestrian<Entity>*>(pedestrian))
-			{
-				// randomize 2D heading
-				pedestrian->randomizeHeadingOnXZPlane();
-			}
+#ifndef NDEBUG
+			///addVehicle() must not change vehicle's settings
+			VehicleSettings settings = pedestrianTmp->getSettings();
+#endif
+///			//if not ExternalPedestrian then randomize
+///			if (! dynamic_cast<ExternalPedestrian<Entity>*>(pedestrian))
+///			{
+///				// randomize 2D heading
+///				pedestrian->randomizeHeadingOnXZPlane();
+///			}
 			// allocate a token for this pedestrian in the proximity database
-			pedestrian->newPD(*pd);
+			pedestrianTmp->newPD(*pd);
 			// notify proximity database that our position has changed
-			pedestrian->proximityToken->updateForNewPosition(
-					pedestrian->position());
+			pedestrianTmp->proximityToken->updateForNewPosition(
+					pedestrianTmp->position());
 			//set path
-			pedestrian->path =
-					dynamic_cast<PolylineSegmentedPathwaySingleRadius*>(m_pathway);
-			pedestrian->pathEndpoint0 = pathEndpoint0;
-			pedestrian->pathEndpoint1 = pathEndpoint1;
+			pedestrianTmp->path = &m_pathway;
+			//set the default end points
+			pedestrianTmp->indexEndpoint0 = 0;
+			pedestrianTmp->indexEndpoint1 = m_pathway[0]->pointCount() - 1;
+			getPathwayEndPointData(pedestrianTmp->indexEndpoint0,
+					pedestrianTmp->indexEndpoint1, pedestrianTmp->pathEndpoint0,
+					pedestrianTmp->pathEndpoint1, pedestrianTmp->radiusEndpoint0,
+					pedestrianTmp->radiusEndpoint1);
 			//set obstacles
-			pedestrian->obstacles = obstacles;
+			pedestrianTmp->obstacles = obstacles;
 			//set neighbors
-			pedestrian->neighbors = &neighbors;
+			pedestrianTmp->neighbors = &neighbors;
+
+			///addVehicle() must not change vehicle's settings
+			assert(settings == pedestrianTmp->getSettings());
+
 			//set result
 			return true;
 		}
@@ -798,13 +823,11 @@ public:
 			const Vec3 dimensions(diameter, diameter, diameter);
 			typedef LQProximityDatabase<AbstractVehicle*> LQPDAV;
 			pd = new LQPDAV(center, dimensions, divisions);
-			pdIdx = 0;
 			break;
 		}
 		case 1:
 		{
 			pd = new BruteForceProximityDatabase<AbstractVehicle*>();
-			pdIdx = 1;
 			break;
 		}
 		}
@@ -819,7 +842,8 @@ public:
 
 	int getPD()
 	{
-		return pdIdx;
+		const int totalPD = 2;
+		return cyclePD % totalPD;
 	}
 
 	void setPD(int idx)
@@ -839,13 +863,13 @@ public:
 			const Vec3 dimensions(diameter, diameter, diameter);
 			typedef LQProximityDatabase<AbstractVehicle*> LQPDAV;
 			pd = new LQPDAV(center, dimensions, divisions);
-			pdIdx = 0;
+			cyclePD = 0;
 			break;
 		}
 		case 1:
 		{
 			pd = new BruteForceProximityDatabase<AbstractVehicle*>();
-			pdIdx = 1;
+			cyclePD = 1;
 			break;
 		}
 		}
@@ -870,8 +894,7 @@ public:
 	AVGroup neighbors;
 
 	// pointer to database used to accelerate proximity queries
-	ProximityDatabase* pd;
-	int pdIdx;
+	ProximityDatabase* pd;///serializable
 
 ///	// keep track of current flock size
 ///	int population;

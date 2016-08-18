@@ -17,7 +17,7 @@ LDADD = -lp3framework -lpanda -lpandaexpress -lp3dtool -lp3dtoolconfig \
 noinst_HEADERS = common.h
 
 noinst_PROGRAMS = basic low_speed_turn pedestrian boid \
-	multiple_pursuit capture_the_flag \
+	multiple_pursuit capture_the_flag map_drive \
 	soccer #soccer_gprof soccer_gcov
 
 BUILT_SOURCES = data.h
@@ -101,6 +101,12 @@ capture_the_flag_SOURCES = \
 	capture_the_flag.cpp
 
 nodist_capture_the_flag_SOURCES = $(common_sources)
+
+#map_drive
+map_drive_SOURCES = \
+	map_drive.cpp
+
+nodist_map_drive_SOURCES = $(common_sources)
 
 ###PROFILE BUILDS###
 PROFILE_CPPFLAGS = $(AM_CPPFLAGS) -UOS_DEBUG

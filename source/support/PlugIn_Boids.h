@@ -101,14 +101,14 @@ public:
 	}
 
 	// destructor
-	~Boid()
+	virtual ~Boid()
 	{
 		// delete this boid's token in the proximity database
 		delete proximityToken;
 	}
 
 	// reset state
-	void reset(void)
+	virtual void reset(void)
 	{
 		// reset the vehicle
 		SimpleVehicle::reset();
@@ -358,15 +358,15 @@ public:
 ///#endif // NO_LQ_BIN_STATS
 
 private:
-	float separationRadius;
-	float separationAngle;
-	float separationWeight;
-	float alignmentRadius;
-	float alignmentAngle;
-	float alignmentWeight;
-	float cohesionRadius;
-	float cohesionAngle;
-	float cohesionWeight;
+	float separationRadius;///serializable
+	float separationAngle;///serializable
+	float separationWeight;///serializable
+	float alignmentRadius;///serializable
+	float alignmentAngle;///serializable
+	float alignmentWeight;///serializable
+	float cohesionRadius;///serializable
+	float cohesionAngle;///serializable
+	float cohesionWeight;///serializable
 	float maxRadius;
 
 };
@@ -406,8 +406,12 @@ class BoidsPlugIn: public PlugIn
 public:
 
 	//set default world radius in constructor
-	BoidsPlugIn(): worldRadius(10.0f), worldCenter(Vec3::zero)
+	BoidsPlugIn() :
+			pd(NULL), cyclePD(0), worldRadius(1.0f), worldCenter(
+					Vec3::zero)
 	{
+		flock.clear();
+		neighbors.clear();
 	}
 
 	const char* name(void)
@@ -573,9 +577,13 @@ public:
 		}
 		}
 
-		// switch each boid to new PD
+		// update each boid to new PD
 		for (iterator i = flock.begin(); i != flock.end(); i++)
+		{
 			(**i).newPD(*pd);
+			(**i).proximityToken->updateForNewPosition((**i).position());
+		}
+
 
 		// delete old PD (if any)
 		delete oldPD;
@@ -583,7 +591,8 @@ public:
 
 	int getPD()
 	{
-		return pdIdx;
+		const int totalPD = 2;
+		return cyclePD % totalPD;
 	}
 
 	void setPD(int idx)
@@ -603,23 +612,54 @@ public:
 			const Vec3 dimensions(diameter, diameter, diameter);
 			typedef LQProximityDatabase<AbstractVehicle*> LQPDAV;
 			pd = new LQPDAV(center, dimensions, divisions);
-			pdIdx = 0;
+			cyclePD = 0;
 			break;
 		}
 		case 1:
 		{
 			pd = new BruteForceProximityDatabase<AbstractVehicle*>();
-			pdIdx = 1;
+			cyclePD = 1;
 			break;
 		}
 		}
 
-		// switch each boid to new PD
+		// update each boid to new PD
 		for (iterator i = flock.begin(); i != flock.end(); i++)
+		{
 			(**i).newPD(*pd);
+			(**i).proximityToken->updateForNewPosition((**i).position());
+		}
 
 		// delete old PD (if any)
 		delete oldPD;
+	}
+
+	float getWorldRadius()
+	{
+		return worldRadius;
+	}
+
+	void setWorldRadius(float radius)
+	{
+		worldRadius = radius;
+
+		// update each boid to new radius
+		for (iterator i = flock.begin(); i != flock.end(); i++)
+			(**i).worldRadius = worldRadius;
+	}
+
+	Vec3 getWorldCenter()
+	{
+		return worldCenter;
+	}
+
+	void setWorldCenter(const Vec3& center)
+	{
+		worldCenter = center;
+
+		// update each boid to new radius
+		for (iterator i = flock.begin(); i != flock.end(); i++)
+			(**i).worldCenter = worldCenter;
 	}
 
 ///	void handleFunctionKeys(int keyNumber)
@@ -680,33 +720,42 @@ public:
 		{
 			return false;
 		}
-		// try to allocate a token for this boid in the proximity database
-		Boid<Entity>* boid =
+		// try to add a Boid
+		Boid<Entity>* boidTmp =
 				dynamic_cast<Boid<Entity>*>(vehicle);
-		if (boid)
+		if (boidTmp)
 		{
+#ifndef NDEBUG
+			///addVehicle() must not change vehicle's settings
+			VehicleSettings settings = boidTmp->getSettings();
+#endif
+
 			//set boid world sphere (center/radius)
-			boid->worldCenter = worldCenter;
-			boid->worldRadius = worldRadius;
-			//if not ExternalBoid then randomize
-			if (! dynamic_cast<ExternalBoid<Entity>*>(boid))
-			{
-				// randomize initial orientation
-				boid->regenerateOrthonormalBasisUF(RandomUnitVector());
-				// randomize initial position: inside the world sphere
-				boid->setPosition(
-						worldCenter
-								+ RandomVectorInUnitRadiusSphere()
-										* worldRadius);
-			}
+			boidTmp->worldCenter = worldCenter;
+			boidTmp->worldRadius = worldRadius;
+///			//if not ExternalBoid then randomize
+///			if (! dynamic_cast<ExternalBoid<Entity>*>(boidTmp))
+///			{
+///				// randomize initial orientation
+///				boid->regenerateOrthonormalBasisUF(RandomUnitVector());
+///				// randomize initial position: inside the world sphere
+///				boid->setPosition(
+///						worldCenter
+///								+ RandomVectorInUnitRadiusSphere()
+///										* worldRadius);
+///			}
 			// allocate a token for this boid in the proximity database
-			boid->newPD(*pd);
+			boidTmp->newPD(*pd);
 			// notify proximity database that our position has changed
-			boid->proximityToken->updateForNewPosition(boid->position());
+			boidTmp->proximityToken->updateForNewPosition(boidTmp->position());
 			//set obstacles
-			boid->obstacles = obstacles;
+			boidTmp->obstacles = obstacles;
 			//set neighbors
-			boid->neighbors = &neighbors;
+			boidTmp->neighbors = &neighbors;
+
+			///addVehicle() must not change vehicle's settings
+			assert(settings == boidTmp->getSettings());
+
 			//set result
 			return true;
 		}
@@ -761,8 +810,7 @@ public:
 	AVGroup neighbors;
 
 	// pointer to database used to accelerate proximity queries
-	ProximityDatabase* pd;
-	int pdIdx;
+	ProximityDatabase* pd;///serializable
 
 ///	// keep track of current flock size
 ///	int population;
@@ -770,19 +818,20 @@ public:
 	// which of the various proximity databases is currently in use
 	int cyclePD;
 
-	float worldRadius;
-	Vec3 worldCenter;
+	float worldRadius;///serializable
+	Vec3 worldCenter;///serializable
 
 #ifdef OS_DEBUG
 	void drawObstacles(void)
 	{
-		// draw obstacles
-		ObstacleIterator iterObstacle;
-		for (iterObstacle = localObstacles->begin();
-				iterObstacle != localObstacles->end(); ++iterObstacle)
-		{
-			(*iterObstacle)->draw(false, Color(0, 0, 0), Vec3(0, 0, 0));
-		}
+///		// draw obstacles
+///		ObstacleIterator iterObstacle;
+///		for (iterObstacle = localObstacles->begin();
+///				iterObstacle != localObstacles->end(); ++iterObstacle)
+///		{
+///			(*iterObstacle)->draw(false, Color(0, 0, 0), Vec3(0, 0, 0));
+///		}
+		ossup::PlugIn::drawObstacles();
 
 		gDrawer3d->setTwoSided(true);
 		//draw world sphere

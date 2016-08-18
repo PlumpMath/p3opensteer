@@ -54,7 +54,7 @@ if __name__ == '__main__':
 
     print("DEBUG DRAWING: make the debug reference node paths sibling of the reference node")
     steerMgr.get_reference_node_path_debug().reparent_to(app.render)
-    steerMgr.get_reference_node_path_debug_2d().reparent_to(app.aspect2d);
+    steerMgr.get_reference_node_path_debug_2d().reparent_to(app.aspect2d)
     print("enable debug drawing")
     plugIn.enable_debug_drawing(app.camera)
 
@@ -63,8 +63,8 @@ if __name__ == '__main__':
     
     # place camera
     trackball = app.trackball.node()
-    trackball.set_pos(0.0, 30.0, 0.0);
-    trackball.set_hpr(0.0, 20.0, 0.0);
+    trackball.set_pos(0.0, 30.0, 0.0)
+    trackball.set_hpr(0.0, 20.0, 0.0)
    
     # app.run(), equals to do the main loop in C++
     app.run()

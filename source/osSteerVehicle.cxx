@@ -53,21 +53,22 @@ void OSSteerVehicle::set_vehicle_type(OSSteerVehicleType type)
 }
 
 /**
- * Enables/disables OSSteerVehicle's external update.
- * Returns the value actually set.
+ * Requires that OSSteerVehicle should be externally updated.
  * \note OSSteerVehicle's external update can only be enabled/disabled if it
  * is not attached to any OSSteerPlugIn(s).
  */
-bool OSSteerVehicle::enable_external_update(bool enable)
+void OSSteerVehicle::set_external_update(bool enable)
 {
-	CONTINUE_IF_ELSE_R(!mSteerPlugIn, mExternalUpdate)
+	CONTINUE_IF_ELSE_V(!mSteerPlugIn)
 
-	//set the external update
-	mExternalUpdate = enable;
-	//we need to re-create an OpenSteer vehicle with the same type
-	set_vehicle_type(mVehicleType);
-	//return the value set
-	return mExternalUpdate;
+	//update only if needed
+	if (mExternalUpdate != enable)
+	{
+		//set the external update
+		mExternalUpdate = enable;
+		//we need to re-create an OpenSteer vehicle with the same type
+		set_vehicle_type(mVehicleType);
+	}
 }
 
 /**
@@ -258,6 +259,21 @@ void OSSteerVehicle::do_initialize()
 			mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
 					string("up_axis_fixed")) ==
 			string("true") ? true : false);
+	//up axis fixed mode
+	param = mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
+					string("up_axis_fixed_mode"));
+	if (param == string("strong"))
+	{
+		mUpAxisFixedMode = UP_AXIS_FIXED_STRONG;
+	}
+	else if (param == string("medium"))
+	{
+		mUpAxisFixedMode = UP_AXIS_FIXED_MEDIUM;
+	}
+	else
+	{
+		mUpAxisFixedMode = UP_AXIS_FIXED_LIGHT;
+	}
 	//initialize settings with underlying OpenSteer vehicle's ones
 	settings = static_cast<VehicleAddOn*>(mVehicle)->getSettings();
 	//mass
@@ -289,6 +305,8 @@ void OSSteerVehicle::do_initialize()
 	settings.set_up(up);
 	//position
 	settings.set_position(thisNP.get_pos());
+	//start
+	settings.set_start(thisNP.get_pos());
 	//set actually the OSSteerVehicle's and OpenSteer vehicle's settings
 	set_settings(settings);
 	//
@@ -443,7 +461,6 @@ void OSSteerVehicle::do_finalize()
 
 /**
  * Sets flock settings.
- * \note OSSteerVehicle should be not externally updated.
  * \note BOID OSSteerVehicle only.
  */
 void OSSteerVehicle::set_flock_settings(const OSFlockSettings& settings)
@@ -492,7 +509,7 @@ OSFlockSettings OSSteerVehicle::get_flock_settings() const
  * Returns the OSSteerVehicle's current playing team, or a negative value on
  * error.
  * \note The team can only be changed through OSSteerPlugIn API.
- * \note SOCCER OSSteerVehicle only.
+ * \note PLAYER OSSteerVehicle only.
  */
 OSSteerPlugIn::OSPlayingTeam OSSteerVehicle::get_playing_team() const
 {
@@ -520,10 +537,41 @@ OSSteerPlugIn::OSPlayingTeam OSSteerVehicle::get_playing_team() const
 }
 
 /**
+ * Sets the OSSteerVehicle's playing distance (>=0).
+ * \note This is the maximum distance from the ball by which the player tries to
+ * kick it, otherwise it will return to its home position. When a player is
+ * added to a team it is set, by default, about half of the diagonal of half
+ * playing field.
+ * \note PLAYER OSSteerVehicle only.
+ */
+void OSSteerVehicle::set_playing_distance(float distance)
+{
+	if (OSSteerVehicle::mVehicleType == PLAYER)
+	{
+		static_cast<ossup::Player<OSSteerVehicle>*>(mVehicle)->m_distHomeToBall =
+				(distance < 0 ? -distance : distance);
+	}
+}
+
+/**
+ * Returns the OSSteerVehicle's max playing distance from the ball, or a
+ * negative value on error.
+ * \note PLAYER OSSteerVehicle only.
+ */
+float OSSteerVehicle::get_playing_distance() const
+{
+	if (mVehicleType == PLAYER)
+	{
+		return static_cast<ossup::Player<OSSteerVehicle>*>(mVehicle)->m_distHomeToBall;
+	}
+	return (OSSteerPlugIn::OSPlayingTeam) OS_ERROR;
+}
+
+/**
  * Returns the OSSteerVehicle's current playing team, or a negative value on
  * error.
  * \note The team can only be changed through OSSteerPlugIn API.
- * \note SOCCER OSSteerVehicle only.
+ * \note CTF_SEEKER OSSteerVehicle only.
  */
 OSSteerVehicle::OSSeekerState OSSteerVehicle::get_seeker_state() const
 {
@@ -536,22 +584,117 @@ OSSteerVehicle::OSSeekerState OSSteerVehicle::get_seeker_state() const
 }
 
 /**
- * Sets steering speed.
- * \note OSSteerVehicle should be not externally updated.
- * \note LOW_SPEED_TURN OSSteerVehicle only.
+ * Sets OSSteerVehicle's base look ahead time.
+ * \note MAP_DRIVER OSSteerVehicle only.
  */
-void OSSteerVehicle::set_steering_speed(float steeringSpeed)
+void OSSteerVehicle::set_base_look_ahead_time(float time)
 {
-	if (mVehicleType == LOW_SPEED_TURN)
+	if (mVehicleType == MAP_DRIVER)
 	{
-		static_cast<ossup::LowSpeedTurn<OSSteerVehicle>*>(mVehicle)->steeringSpeed =
-				steeringSpeed;
+		static_cast<ossup::MapDriver<OSSteerVehicle>*>(mVehicle)->baseLookAheadTime =
+				time;
 	}
 }
 
 /**
- * Returns steering speed.
- * Returns a negative value on error.
+ * Returns OSSteerVehicle's base look ahead time, or a negative value on error.
+ * \note MAP_DRIVER OSSteerVehicle only.
+ */
+float OSSteerVehicle::get_base_look_ahead_time() const
+{
+	if (mVehicleType == MAP_DRIVER)
+	{
+		return static_cast<ossup::MapDriver<OSSteerVehicle>*>(mVehicle)->baseLookAheadTime;
+	}
+	return OS_ERROR;
+}
+
+/**
+ * Enables/disables OSSteerVehicle to use incremental steering.
+ * \note MAP_DRIVER OSSteerVehicle only.
+ */
+void OSSteerVehicle::set_incremental_steering(bool enable)
+{
+	if (mVehicleType == MAP_DRIVER)
+	{
+		static_cast<ossup::MapDriver<OSSteerVehicle>*>(mVehicle)->incrementalSteering =
+				enable;
+	}
+}
+
+/**
+ * Returns if OSSteerVehicle uses incremental steering, or a negative value on
+ * error.
+ * \note MAP_DRIVER OSSteerVehicle only.
+ */
+bool OSSteerVehicle::get_incremental_steering() const
+{
+	return (mVehicleType == MAP_DRIVER) ?
+			static_cast<ossup::MapDriver<OSSteerVehicle>*>(mVehicle)->incrementalSteering :
+			OS_ERROR;
+}
+
+/**
+ * Sets this OSSteerVehicle's prediction type on the map (curved or linear).
+ * \note MAP_DRIVER OSSteerVehicle only.
+ */
+void OSSteerVehicle::set_map_prediction_type(OSSteerPlugIn::OSMapPredictionType
+		type)
+{
+	if (mVehicleType == MAP_DRIVER)
+	{
+		ossup::MapDriver<OSSteerVehicle>* vehicle =
+				static_cast<ossup::MapDriver<OSSteerVehicle>*>(mVehicle);
+		if (type == OSSteerPlugIn::CURVED_PREDICTION)
+		{
+			vehicle->curvedSteering = true;
+		}
+		else
+		{
+			// LINEAR_PREDICTION:
+			vehicle->curvedSteering = false;
+		}
+	}
+}
+
+/**
+ * Returns this OSSteerVehicle's prediction type on the map, or a negative value
+ * on error.
+ * \note MAP_DRIVER OSSteerVehicle only.
+ */
+OSSteerPlugIn::OSMapPredictionType OSSteerVehicle::get_map_prediction_type() const
+{
+	if (mVehicleType == MAP_DRIVER)
+	{
+		ossup::MapDriver<OSSteerVehicle>* vehicle =
+				static_cast<ossup::MapDriver<OSSteerVehicle>*>(mVehicle);
+		if (vehicle->curvedSteering)
+		{
+			return OSSteerPlugIn::CURVED_PREDICTION;
+		}
+		else
+		{
+			return OSSteerPlugIn::LINEAR_PREDICTION;
+		}
+	}
+	return (OSSteerPlugIn::OSMapPredictionType) OS_ERROR;
+}
+
+/**
+ * Sets OSSteerVehicle's steering speed.
+ * \note LOW_SPEED_TURN OSSteerVehicle only.
+ */
+void OSSteerVehicle::set_steering_speed(float speed)
+{
+	if (mVehicleType == LOW_SPEED_TURN)
+	{
+		static_cast<ossup::LowSpeedTurn<OSSteerVehicle>*>(mVehicle)->steeringSpeed =
+				speed;
+	}
+}
+
+/**
+ * Returns OSSteerVehicle's steering speed, or a negative value on error.
  * \note LOW_SPEED_TURN OSSteerVehicle only.
  */
 float OSSteerVehicle::get_steering_speed() const
@@ -612,40 +755,44 @@ bool OSSteerVehicle::get_wander_behavior() const
 }
 
 /**
- * Sets first/second pathway end points (default: first/last specified points in
- * the pathway of the OSSteerPlugIn).
+ * Sets two of the pathway's points (given their indexes) as end points for this
+ * OSSteerVehicle (default: first/last specified points in the pathway of
+ * the OSSteerPlugIn).
  * \note PEDESTRIAN OSSteerVehicle only.
  */
-void OSSteerVehicle::set_pathway_end_points(const ValueList<LPoint3f>& points)
+void OSSteerVehicle::set_pathway_end_points(const ValueList<int>& indexes)
 {
 	if (mVehicleType == PEDESTRIAN)
 	{
-		CONTINUE_IF_ELSE_V(points.size() >= 2)
+		CONTINUE_IF_ELSE_V(indexes.size() >= 2)
 
-		static_cast<ossup::Pedestrian<OSSteerVehicle>*>(mVehicle)->pathEndpoint0 =
-				ossup::LVecBase3fToOpenSteerVec3(points[0]);
-		static_cast<ossup::Pedestrian<OSSteerVehicle>*>(mVehicle)->pathEndpoint1 =
-				ossup::LVecBase3fToOpenSteerVec3(points[1]);
+		ossup::Pedestrian<OSSteerVehicle>* vehicle =
+				dynamic_cast<ossup::Pedestrian<OSSteerVehicle>*>(mVehicle);
+		vehicle->indexEndpoint0 = indexes[0];
+		vehicle->indexEndpoint1 = indexes[1];
+		static_cast<ossup::PlugIn*>(&mSteerPlugIn->get_abstract_plug_in())->getPathwayEndPointData(
+				vehicle->indexEndpoint0, vehicle->indexEndpoint1,
+				vehicle->pathEndpoint0, vehicle->pathEndpoint1,
+				vehicle->radiusEndpoint0, vehicle->radiusEndpoint1);
 	}
 }
 
 /**
- * Returns first/second pathway end points, or empty list on error.
+ * Returns the indexes of the two points on the pathway that are the end points
+ * for this OSSteerVehicle, or an empty list on error.
  * \note PEDESTRIAN OSSteerVehicle only.
  */
-ValueList<LPoint3f> OSSteerVehicle::get_pathway_end_points() const
+ValueList<int> OSSteerVehicle::get_pathway_end_points() const
 {
-	ValueList<LPoint3f> points;
+	ValueList<int> indexes;
 	if (mVehicleType == PEDESTRIAN)
 	{
 		ossup::Pedestrian<OSSteerVehicle>* vehicle =
 				static_cast<ossup::Pedestrian<OSSteerVehicle>*>(mVehicle);
-		points.add_value(
-				ossup::OpenSteerVec3ToLVecBase3f(vehicle->pathEndpoint0));
-		points.add_value(
-				ossup::OpenSteerVec3ToLVecBase3f(vehicle->pathEndpoint1));
+		indexes.add_value(vehicle->indexEndpoint0);
+		indexes.add_value(vehicle->indexEndpoint1);
 	}
-	return points;
+	return indexes;
 }
 
 /**
@@ -653,7 +800,7 @@ ValueList<LPoint3f> OSSteerVehicle::get_pathway_end_points() const
  * - UPSTREAM
  * - DOWNSTREAM
  * By default direction is chosen randomly at creation time.
- * \note PEDESTRIAN OSSteerVehicle only.
+ * \note PEDESTRIAN, MAP_DRIVER OSSteerVehicle(s) only.
  */
 void OSSteerVehicle::set_pathway_direction(OSPathDirection direction)
 {
@@ -673,12 +820,28 @@ void OSSteerVehicle::set_pathway_direction(OSPathDirection direction)
 			break;
 		}
 	}
+	if (mVehicleType == MAP_DRIVER)
+	{
+		ossup::MapDriver<OSSteerVehicle>* vehicle =
+				static_cast<ossup::MapDriver<OSSteerVehicle>*>(mVehicle);
+		switch (direction)
+		{
+		case UPSTREAM:
+			vehicle->pathFollowDirection = 1;
+			break;
+		case DOWNSTREAM:
+			vehicle->pathFollowDirection = -1;
+			break;
+		default:
+			break;
+		}
+	}
 }
 
 /**
  * Returns OSSteerVehicle's direction for pathway following, or a negative
  * value on error.
- * \note PEDESTRIAN OSSteerVehicle only.
+ * \note PEDESTRIAN, MAP_DRIVER OSSteerVehicle(s) only.
  */
 OSSteerVehicle::OSPathDirection OSSteerVehicle::get_pathway_direction() const
 {
@@ -688,6 +851,22 @@ OSSteerVehicle::OSPathDirection OSSteerVehicle::get_pathway_direction() const
 		ossup::Pedestrian<OSSteerVehicle>* vehicle =
 				static_cast<ossup::Pedestrian<OSSteerVehicle>*>(mVehicle);
 		switch (vehicle->pathDirection)
+		{
+		case 1:
+			result = UPSTREAM;
+			break;
+		case -1:
+			result = DOWNSTREAM;
+			break;
+		default:
+			break;
+		}
+	}
+	if (mVehicleType == MAP_DRIVER)
+	{
+		ossup::MapDriver<OSSteerVehicle>* vehicle =
+				static_cast<ossup::MapDriver<OSSteerVehicle>*>(mVehicle);
+		switch (vehicle->pathFollowDirection)
 		{
 		case 1:
 			result = UPSTREAM;
@@ -746,18 +925,65 @@ void OSSteerVehicle::do_update_steer_vehicle(const float currentTime,
 	if (mVehicle->speed() > 0.0)
 	{
 		//update node path dir
-		mUpAxisFixed ?
-		//up axis fixed: z
-				thisNP.heads_up(
-						updatedPos
-								- ossup::OpenSteerVec3ToLVecBase3f(
-										mVehicle->forward()), LVector3f::up()) :
+		if (mUpAxisFixed)
+		{
+			//up axis fixed: z
+			thisNP.heads_up(
+					updatedPos
+							- ossup::OpenSteerVec3ToLVecBase3f(
+									mVehicle->forward()), LVector3f::up());
+			if (mUpAxisFixedMode == UP_AXIS_FIXED_LIGHT)
+			{
+				//1: up axis fixed light
+				//regenerate mVehicle's orthonormal basis
+				mVehicle->regenerateOrthonormalBasis(mVehicle->forward(),
+						ossup::LVecBase3fToOpenSteerVec3(LVector3f::up()));
+			}
+			else if (mUpAxisFixedMode == UP_AXIS_FIXED_MEDIUM)
+			{
+				//2: up axis fixed medium
+				//set forward as x,y (ie OpeenSteer x,z) plane
+				//projection (length is not preserved)
+				mVehicle->setForward(
+						OpenSteer::Vec3(mVehicle->forward().x, 0.0,
+								mVehicle->forward().z));
+				//regenerate mVehicle's orthonormal basis
+				mVehicle->regenerateOrthonormalBasis(mVehicle->forward(),
+						ossup::LVecBase3fToOpenSteerVec3(LVector3f::up()));
+			}
+			else
+			{
+				//mUpAxisFixedMode == UP_AXIS_FIXED_STRONG
+				//3: up axis fixed strong
+				//rotate forward so that it is parallel to the x,y
+				//(ie OpeenSteer x,z) plane (length is preserved)
+				float xzProj2 = mVehicle->forward().x * mVehicle->forward().x
+						+ mVehicle->forward().z * mVehicle->forward().z;
+				float cosThetaInv2 = (xzProj2
+						+ mVehicle->forward().y * mVehicle->forward().y)
+						/ xzProj2;
+				mVehicle->setForward(
+						OpenSteer::Vec3(
+								mVehicle->forward().x
+										* OpenSteer::sqrtXXX(cosThetaInv2), //x
+								0.0, //y
+								mVehicle->forward().z
+										* OpenSteer::sqrtXXX(cosThetaInv2)) //z
+						);
+				//regenerate mVehicle's orthonormal basis
+				mVehicle->regenerateOrthonormalBasis(mVehicle->forward(),
+						ossup::LVecBase3fToOpenSteerVec3(LVector3f::up()));
+			}
+		}
+		else
+		{
 				//up axis free: from mVehicle
 				thisNP.heads_up(
 						updatedPos
 								- ossup::OpenSteerVec3ToLVecBase3f(
 										mVehicle->forward()),
 						ossup::OpenSteerVec3ToLVecBase3f(mVehicle->up()));
+		}
 
 		//handle Move/Steady events
 		//throw Move event (if enabled)
@@ -1048,6 +1274,9 @@ void OSSteerVehicle::write_datagram(BamWriter *manager, Datagram &dg)
 	///Flag for up axis fixed (z).
 	dg.add_bool(mUpAxisFixed);
 
+	///Up axis fixed mode.
+	dg.add_uint8((uint8_t) mUpAxisFixedMode);
+
 	///External update.
 	dg.add_bool(mExternalUpdate);
 
@@ -1073,7 +1302,7 @@ void OSSteerVehicle::write_datagram(BamWriter *manager, Datagram &dg)
 	///The reference node path.
 	manager->write_pointer(dg, mReferenceNP.node());
 
-	///SPECIFICS
+	///TYPE SPECIFIC
 	if(mVehicleType == ONE_TURNING)
 	{
 		/*do nothing*/;
@@ -1082,11 +1311,11 @@ void OSSteerVehicle::write_datagram(BamWriter *manager, Datagram &dg)
 	{
 		dg.add_bool(get_reverse_at_end_point());
 		dg.add_bool(get_wander_behavior());
-		ValueList<LPoint3f> points = get_pathway_end_points();
-		dg.add_uint32(points.size());
-		for (int i = 0; i != points.size(); ++i)
+		ValueList<int> indexes = get_pathway_end_points();
+		dg.add_uint32(indexes.size());
+		for (int i = 0; i != indexes.size(); ++i)
 		{
-			points[i].write_datagram(dg);
+			dg.add_int32(indexes[i]);
 		}
 		dg.add_uint8((uint8_t) get_pathway_direction());
 	}
@@ -1105,18 +1334,30 @@ void OSSteerVehicle::write_datagram(BamWriter *manager, Datagram &dg)
 	if(mVehicleType == PLAYER)
 	{
 		dg.add_uint8((uint8_t) get_playing_team());
+		ossup::Player<OSSteerVehicle>* vehicle = static_cast<ossup::Player<
+				OSSteerVehicle>*>(mVehicle);
+		ossup::OpenSteerVec3ToLVecBase3f(vehicle->m_home).write_datagram(dg);
+		dg.add_stdfloat(vehicle->m_distHomeToBall);
 	}
 	if(mVehicleType == BALL)
 	{
-		/*do nothing*/;
+		ossup::OpenSteerVec3ToLVecBase3f(
+				static_cast<ossup::Ball<OSSteerVehicle>*>(mVehicle)->m_home).write_datagram(
+				dg);
 	}
 	if(mVehicleType == CTF_SEEKER)
 	{
-		/*do nothing*/;
+		ossup::CtfSeeker<OSSteerVehicle>* vehicle =
+				static_cast<ossup::CtfSeeker<OSSteerVehicle>*>(mVehicle);
+		dg.add_bool(vehicle->avoiding);
+		dg.add_bool(vehicle->evading);
+		dg.add_stdfloat(vehicle->lastRunningTime);
+		dg.add_uint8((uint8_t) vehicle->state);
 	}
 	if(mVehicleType == CTF_ENEMY)
 	{
-		/*do nothing*/;
+		dg.add_bool(
+				static_cast<ossup::CtfEnemy<OSSteerVehicle>*>(mVehicle)->avoiding);
 	}
 	if(mVehicleType == LOW_SPEED_TURN)
 	{
@@ -1124,7 +1365,20 @@ void OSSteerVehicle::write_datagram(BamWriter *manager, Datagram &dg)
 	}
 	if(mVehicleType == MAP_DRIVER)
 	{
-		;
+		dg.add_uint8((uint8_t) get_pathway_direction());
+		dg.add_stdfloat(get_base_look_ahead_time());
+		dg.add_bool(get_incremental_steering());
+		dg.add_uint8((uint8_t) get_map_prediction_type());
+		ossup::MapDriver<OSSteerVehicle>* vehicle =
+				static_cast<ossup::MapDriver<OSSteerVehicle>*>(mVehicle);
+		ossup::OpenSteerVec3ToLVecBase3f(vehicle->currentSteering).write_datagram(
+				dg);
+		ossup::OpenSteerVec3ToLVecBase3f(vehicle->qqqLastNearestObstacle).write_datagram(
+				dg);
+		dg.add_bool(vehicle->QQQoaJustScraping);
+		dg.add_bool(vehicle->stuck);
+		dg.add_stdfloat(vehicle->halfWidth);
+		dg.add_stdfloat(vehicle->halfLength);
 	}
 }
 
@@ -1162,19 +1416,23 @@ void OSSteerVehicle::finalize(BamReader *manager)
 	//2: (re)set type
 	//create the new OpenSteer vehicle
 	do_create_vehicle(mVehicleType);
-	//3: add the new OpenSteer vehicle to real update list (if needed), by
+	//3: set the new OpenSteer vehicle's settings
+	set_settings(mVehicleSettings);
+	//4: add the new OpenSteer vehicle to real update list (if needed), by
 	//checking if plug-in has gained its final type (i.e. finalized)
 	if (mSteerPlugIn
 			&& (mSteerPlugIn->check_steer_vehicle_compatibility(
 					NodePath::any_path(this))))
 	{
+#ifndef NDEBUG
+		bool added =
+#endif
 		static_cast<ossup::PlugIn*>(&mSteerPlugIn->get_abstract_plug_in())->addVehicle(
-				mVehicle);
+						mVehicle);
+		nassertv_always(added);
 	}
-	//4: set the new OpenSteer vehicle's settings
-	set_settings(mVehicleSettings);
 
-	///SERIALIZATION ONLY
+	///TYPE SPECIFIC
 	nassertv_always(mSerializedDataTmpPtr != NULL)
 
 	if(mVehicleType == ONE_TURNING)
@@ -1185,8 +1443,7 @@ void OSSteerVehicle::finalize(BamReader *manager)
 	{
 		set_reverse_at_end_point(mSerializedDataTmpPtr->mReverseAtEndPoint);
 		set_wander_behavior(mSerializedDataTmpPtr->mWanderBehavior);
-		set_pathway_end_points(mSerializedDataTmpPtr->mPathwayEndPoints);
-		mSerializedDataTmpPtr->mPathwayEndPoints.clear();
+		set_pathway_end_points(mSerializedDataTmpPtr->mPathwayEndPointIdx);
 		set_pathway_direction(mSerializedDataTmpPtr->mPathwayDirection);
 	}
 	if(mVehicleType == BOID)
@@ -1206,23 +1463,34 @@ void OSSteerVehicle::finalize(BamReader *manager)
 	{
 		// check if plug-in has gained its final type (i.e. finalized)
 		if (mSteerPlugIn
-				&& dynamic_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(
-						&mSteerPlugIn->get_abstract_plug_in()))
+				&& dynamic_cast<ossup::MicTestPlugIn<OSSteerVehicle>*>(&mSteerPlugIn->get_abstract_plug_in()))
 		{
 			mSteerPlugIn->add_player_to_team(this, mPlayingTeam_ser);
 		}
+		ossup::Player<OSSteerVehicle>* vehicle = static_cast<ossup::Player<
+				OSSteerVehicle>*>(mVehicle);
+		vehicle->m_home = ossup::LVecBase3fToOpenSteerVec3(
+				mSerializedDataTmpPtr->mHome);
+		vehicle->m_distHomeToBall = mSerializedDataTmpPtr->mDistHomeToBall;
 	}
 	if(mVehicleType == BALL)
 	{
-		/*do nothing*/;
+		static_cast<ossup::Ball<OSSteerVehicle>*>(mVehicle)->m_home =
+				ossup::LVecBase3fToOpenSteerVec3(mSerializedDataTmpPtr->mHome);
 	}
 	if(mVehicleType == CTF_SEEKER)
 	{
-		/*do nothing*/;
+		ossup::CtfSeeker<OSSteerVehicle>* vehicle =
+				static_cast<ossup::CtfSeeker<OSSteerVehicle>*>(mVehicle);
+		vehicle->avoiding = mSerializedDataTmpPtr->mAvoiding;
+		vehicle->evading = mSerializedDataTmpPtr->mEvading;
+		vehicle->lastRunningTime = mSerializedDataTmpPtr->mLastRunningTime;
+		vehicle->state = mSerializedDataTmpPtr->mState;
 	}
 	if(mVehicleType == CTF_ENEMY)
 	{
-		/*do nothing*/;
+		static_cast<ossup::CtfEnemy<OSSteerVehicle>*>(mVehicle)->avoiding =
+				mSerializedDataTmpPtr->mAvoiding;
 	}
 	if(mVehicleType == LOW_SPEED_TURN)
 	{
@@ -1230,7 +1498,21 @@ void OSSteerVehicle::finalize(BamReader *manager)
 	}
 	if(mVehicleType == MAP_DRIVER)
 	{
-		;
+		set_pathway_direction(mSerializedDataTmpPtr->mPathwayDirection);
+		set_base_look_ahead_time(mSerializedDataTmpPtr->mBaseLookAheadTime);
+		set_incremental_steering(mSerializedDataTmpPtr->mIncrementalSteering);
+		set_map_prediction_type(mSerializedDataTmpPtr->mMapPredictionType);
+		ossup::MapDriver<OSSteerVehicle>* vehicle =
+				static_cast<ossup::MapDriver<OSSteerVehicle>*>(mVehicle);
+		vehicle->currentSteering = ossup::LVecBase3fToOpenSteerVec3(
+				mSerializedDataTmpPtr->mCurrentSteering);
+		vehicle->qqqLastNearestObstacle = ossup::LVecBase3fToOpenSteerVec3(
+				mSerializedDataTmpPtr->mQqqLastNearestObstacle);
+		vehicle->QQQoaJustScraping = mSerializedDataTmpPtr->mQQQoaJustScraping;
+		vehicle->stuck = mSerializedDataTmpPtr->mStuck;
+		// restore original halfWidth and halfLength
+		vehicle->halfWidth = mSerializedDataTmpPtr->mHalfWidth;
+		vehicle->halfLength = mSerializedDataTmpPtr->mHalfLength;
 	}
 	// deallocate SerializedDataTmp
 	delete mSerializedDataTmpPtr;
@@ -1290,6 +1572,9 @@ void OSSteerVehicle::fillin(DatagramIterator &scan, BamReader *manager)
 	///Flag for up axis fixed (z).
 	mUpAxisFixed = scan.get_bool();
 
+	///Up axis fixed mode.
+	mUpAxisFixedMode = (OSSteerVehicleUpAxisFixedMode)scan.get_uint8();
+
 	///External update.
 	mExternalUpdate = scan.get_bool();
 
@@ -1315,7 +1600,7 @@ void OSSteerVehicle::fillin(DatagramIterator &scan, BamReader *manager)
 	///The reference node path.
 	manager->read_pointer(scan);
 
-	///SERIALIZATION ONLY
+	///TYPE SPECIFIC
 	nassertv_always(mSerializedDataTmpPtr == NULL)
 
 	// allocate SerializedDataTmp
@@ -1328,15 +1613,15 @@ void OSSteerVehicle::fillin(DatagramIterator &scan, BamReader *manager)
 	{
 		mSerializedDataTmpPtr->mReverseAtEndPoint = scan.get_bool();
 		mSerializedDataTmpPtr->mWanderBehavior = scan.get_bool();
-		mSerializedDataTmpPtr->mPathwayEndPoints.clear();
+		mSerializedDataTmpPtr->mPathwayEndPointIdx.clear();
 		unsigned int sizeP = scan.get_uint32();
 		for (unsigned int i = 0; i < sizeP; ++i)
 		{
-			LPoint3f point;
-			point.read_datagram(scan);
-			mSerializedDataTmpPtr->mPathwayEndPoints.add_value(point);
+			mSerializedDataTmpPtr->mPathwayEndPointIdx.add_value(
+					scan.get_int32());
 		}
-		mSerializedDataTmpPtr->mPathwayDirection = (OSPathDirection) scan.get_uint8();
+		mSerializedDataTmpPtr->mPathwayDirection =
+				(OSPathDirection) scan.get_uint8();
 	}
 	if(mVehicleType == BOID)
 	{
@@ -1353,18 +1638,24 @@ void OSSteerVehicle::fillin(DatagramIterator &scan, BamReader *manager)
 	if(mVehicleType == PLAYER)
 	{
 		mPlayingTeam_ser = (OSSteerPlugIn::OSPlayingTeam)scan.get_uint8();
+		mSerializedDataTmpPtr->mHome.read_datagram(scan);
+		mSerializedDataTmpPtr->mDistHomeToBall = scan.get_stdfloat();
 	}
 	if(mVehicleType == BALL)
 	{
-		/*do nothing*/;
+		mSerializedDataTmpPtr->mHome.read_datagram(scan);
 	}
 	if(mVehicleType == CTF_SEEKER)
 	{
-		/*do nothing*/;
+		mSerializedDataTmpPtr->mAvoiding = scan.get_bool();
+		mSerializedDataTmpPtr->mEvading = scan.get_bool();
+		mSerializedDataTmpPtr->mLastRunningTime = scan.get_stdfloat();
+		mSerializedDataTmpPtr->mState =
+				(ossup::CtfBase<OSSteerVehicle>::seekerState) scan.get_uint8();
 	}
 	if(mVehicleType == CTF_ENEMY)
 	{
-		/*do nothing*/;
+		mSerializedDataTmpPtr->mAvoiding = scan.get_bool();
 	}
 	if(mVehicleType == LOW_SPEED_TURN)
 	{
@@ -1372,7 +1663,18 @@ void OSSteerVehicle::fillin(DatagramIterator &scan, BamReader *manager)
 	}
 	if(mVehicleType == MAP_DRIVER)
 	{
-		;
+		mSerializedDataTmpPtr->mPathwayDirection =
+				(OSPathDirection) scan.get_uint8();
+		mSerializedDataTmpPtr->mBaseLookAheadTime = scan.get_stdfloat();
+		mSerializedDataTmpPtr->mIncrementalSteering = scan.get_bool();
+		mSerializedDataTmpPtr->mMapPredictionType =
+				(OSSteerPlugIn::OSMapPredictionType) scan.get_uint8();
+		mSerializedDataTmpPtr->mCurrentSteering.read_datagram(scan);
+		mSerializedDataTmpPtr->mQqqLastNearestObstacle.read_datagram(scan);
+		mSerializedDataTmpPtr->mQQQoaJustScraping = scan.get_bool();
+		mSerializedDataTmpPtr->mStuck = scan.get_bool();
+		mSerializedDataTmpPtr->mHalfWidth = scan.get_stdfloat();
+		mSerializedDataTmpPtr->mHalfLength = scan.get_stdfloat();
 	}
 }
 
