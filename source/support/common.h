@@ -249,6 +249,8 @@ public:
 		m_settings.m_start = start;
 	}
 
+	/// It is called by setSettings() to perform custom tasks
+	/// which usually depend on base settings
 	virtual void reset()
 	{
 		Super::setMass(m_settings.m_mass);

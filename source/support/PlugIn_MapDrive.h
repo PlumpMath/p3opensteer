@@ -1014,14 +1014,13 @@ public:
 	}
 
 	// destructor
-	~MapDriver()
+	virtual ~MapDriver()
 	{
 ///		delete (map);
 ///		delete (path);
 	}
 
-	// reset state
-	void reset(void)
+	virtual void reset(void)
 	{
 		// reset the underlying vehicle class
 		SimpleVehicle::reset();
@@ -1037,20 +1036,15 @@ public:
 		// steering force is clipped to this magnitude
 ///		setMaxForce(maxSpeed() * 0.4f);
 
-///		reset2();
-	}
-
-	void reset2(void)
-	{
 		// vehicle is 2 meters wide and 3 meters long
 		// w = 2/3 * r, l = r
 		halfWidth = this->radius() * 0.666666667f;
 		halfLength = this->radius();
 
-///		reset3();
+///		reset2();
 	}
 
-	void reset3(void)
+	void reset2(void)
 	{
 		// init dynamically controlled radius
 		///called by update: useless here
@@ -1086,10 +1080,10 @@ public:
 		// state saved for speedometer
 		//      annoteMaxRelSpeed = annoteMaxRelSpeedCurve = annoteMaxRelSpeedPath = 0;
 		//      annoteMaxRelSpeed = annoteMaxRelSpeedCurve = annoteMaxRelSpeedPath = 1;
-///		reset4()
+///		reset3()
 	}
 
-	void reset4(void)
+	void reset3(void)
 	{
 		if (demoSelect == 2)
 		{
@@ -1109,8 +1103,8 @@ public:
 	void resetToPath()
 	{
 ///		reset();
+		reset2();
 		reset3();
-		reset4();
 		if ((*path)[0] && (*path)[0]->isValid())
 		{
 			Vec3 forward;
@@ -1150,8 +1144,8 @@ public:
 		else
 		{
 ///			reset();
+			reset2();
 			reset3();
-			reset4();
 			float x = frandom2(map->center.x - map->xSize / 2.0 * 0.9,
 					map->center.x + map->xSize / 2.0 * 0.9);
 			float z = frandom2(map->center.z - map->zSize / 2.0 * 0.9,
@@ -1163,6 +1157,11 @@ public:
 	// per frame simulation update
 	void update(const float currentTime, const float elapsedTime)
 	{
+		// don't update if there isn't a map
+		if (!map)
+		{
+			return;
+		}
 
 		handleExitFromMap();
 
@@ -3375,9 +3374,9 @@ public:
 		{
 			return false;
 		}
-		// try to allocate a token for this pedestrian in the proximity database
+		// try to add a MapDriver
 		MapDriver<Entity>* mapDriverTmp = dynamic_cast<MapDriver<Entity>*>(vehicle);
-		if (mapDriverTmp && map)
+		if (mapDriverTmp)
 		{
 #ifndef NDEBUG
 			///addVehicle() must not change vehicle's settings
@@ -3398,7 +3397,6 @@ public:
 			mapDriverTmp->windowWidth = windowWidth;
 #endif
 			mapDriverTmp->reset2();
-			mapDriverTmp->reset3();
 
 			///addVehicle() must not change vehicle's settings
 			assert(settings == mapDriverTmp->getSettings());
@@ -4379,17 +4377,6 @@ public:
 		if (map)
 		{
 			regenerateMap();
-
-			// update references of all vehicles to the new map
-			iterator iter;
-			for (iter = vehicles.begin(); iter != vehicles.end(); ++iter)
-			{
-				//set map
-				(*iter)->map = map;
-				//set world size
-				(*iter)->worldSize = worldSize;
-				(*iter)->worldDiag = worldSize;
-			}
 		}
 		else
 		{
@@ -4397,21 +4384,17 @@ public:
 			worldDiag = sqrtXXX(square(worldSize) / 2);
 			worldCenter = Vec3();
 			worldResolution = 1;
+		}
 
-			//no map: remove all vehicles from update
-			iterator iter = vehicles.begin();
-			while (iter != vehicles.end())
-			{
-				//set map (==NULL)
-				(*iter)->map = map;
-				//set world size
-				(*iter)->worldSize = worldSize;
-				(*iter)->worldDiag = worldDiag;
-				//set path
-				(*iter)->path = NULL;
-				removeVehicle((*iter));
-				iter = vehicles.begin();
-			}
+		// update references of all vehicles to the new map (may be NULL)
+		iterator iter;
+		for (iter = vehicles.begin(); iter != vehicles.end(); ++iter)
+		{
+			//set map
+			(*iter)->map = map;
+			//set world size
+			(*iter)->worldSize = worldSize;
+			(*iter)->worldDiag = worldSize;
 		}
 	}
 

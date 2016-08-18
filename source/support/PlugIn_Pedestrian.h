@@ -103,7 +103,7 @@ public:
 	}
 
 	// reset all instance state
-	void reset(void)
+	virtual void reset(void)
 	{
 		// reset the vehicle
 		SimpleVehicle::reset();
@@ -727,7 +727,7 @@ public:
 		{
 			return false;
 		}
-		// try to allocate a token for this pedestrian in the proximity database
+		// try to add a Pedestrian
 		Pedestrian<Entity>* pedestrianTmp =
 				dynamic_cast<Pedestrian<Entity>*>(vehicle);
 		if (pedestrianTmp)

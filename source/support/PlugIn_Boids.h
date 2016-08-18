@@ -101,14 +101,14 @@ public:
 	}
 
 	// destructor
-	~Boid()
+	virtual ~Boid()
 	{
 		// delete this boid's token in the proximity database
 		delete proximityToken;
 	}
 
 	// reset state
-	void reset(void)
+	virtual void reset(void)
 	{
 		// reset the vehicle
 		SimpleVehicle::reset();
@@ -720,7 +720,7 @@ public:
 		{
 			return false;
 		}
-		// try to allocate a token for this boid in the proximity database
+		// try to add a Boid
 		Boid<Entity>* boidTmp =
 				dynamic_cast<Boid<Entity>*>(vehicle);
 		if (boidTmp)

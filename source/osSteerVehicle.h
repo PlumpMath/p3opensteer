@@ -367,8 +367,9 @@ private:
 		OSPathDirection mPathwayDirection;
 		//boid
 		OSFlockSettings mFlockSettings;
-		//player
+		//player, ball
 		LPoint3f mHome;
+		//player
 		float mDistHomeToBall;
 		//ctf seeker, ctf enemy
 		bool mAvoiding;

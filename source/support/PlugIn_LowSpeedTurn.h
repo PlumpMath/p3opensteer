@@ -76,8 +76,12 @@ public:
 		steeringSpeed = 1.0;
 	}
 
+	virtual ~LowSpeedTurn()
+	{
+	}
+
 	// reset state
-	void reset(void)
+	virtual void reset(void)
 	{
 		// reset vehicle state
 		SimpleVehicle::reset();
@@ -261,7 +265,7 @@ public:
 		{
 			return false;
 		}
-		// get low speed turn
+		// try to add a LowSpeedTurn
 		LowSpeedTurn<Entity>* lowSpeedTurnTmp =
 				dynamic_cast<LowSpeedTurn<Entity>*>(vehicle);
 		if (lowSpeedTurnTmp)

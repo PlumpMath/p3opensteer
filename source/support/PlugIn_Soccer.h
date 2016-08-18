@@ -146,8 +146,6 @@ class Ball: public VehicleAddOnMixin<SimpleVehicle, Entity>
 {
 public:
 
-	virtual ~Ball(){}
-
 	// type for a ball: an STL vector of Ball pointers
 	typedef typename std::vector<Ball<Entity>*> groupType;
 
@@ -155,13 +153,15 @@ public:
 ///			m_bbox(bbox)
 	Ball():m_bbox(NULL)
 	{
-		//set default home
-		m_home = this->getStart();
 		reset();
 	}
 
+	virtual ~Ball()
+	{
+	}
+
 	// reset state
-	void reset(void)
+	virtual void reset(void)
 	{
 		SimpleVehicle::reset(); // reset the vehicle
 		VehicleAddOnMixin<SimpleVehicle, Entity>::reset();
@@ -176,6 +176,8 @@ public:
 		this->clearTrailHistory();    // prevent long streaks due to teleportation
 		this->setTrailParameters(100, 6000);
 #endif
+		//set default home
+		m_home = this->getStart();
 	}
 
 	// place in the center
@@ -284,13 +286,15 @@ public:
 		m_Ball = NULL;
 		b_ImTeamA = true;
 		m_TeamAssigned = false;
-		//set default home
-		m_home = this->getStart();
 		reset();
 	}
 
+	virtual ~Player()
+	{
+	}
+
 	// reset state
-	void reset(void)
+	virtual void reset(void)
 	{
 		SimpleVehicle::reset(); // reset the vehicle
 		VehicleAddOnMixin<SimpleVehicle, Entity>::reset();
@@ -318,6 +322,8 @@ public:
 		this->clearTrailHistory();    // prevent long streaks due to teleportation
 		this->setTrailParameters(10, 60);
 #endif
+		//set default home
+		m_home = this->getStart();
 	}
 
 	// per frame simulation update
@@ -714,7 +720,7 @@ public:
 		{
 			return false;
 		}
-		//check if this is a Ball
+		// try to add a Ball
 		Ball<Entity>* ballTmp =
 				dynamic_cast<Ball<Entity>*>(vehicle);
 		if (ballTmp)
@@ -745,7 +751,7 @@ public:
 			//that's all
 			return true;
 		}
-		//or if this is a Player
+		// try to add a Player
 		Player<Entity>* playerTmp =
 			dynamic_cast<Player<Entity>*>(vehicle);
 		if (playerTmp)

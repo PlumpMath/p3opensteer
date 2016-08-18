@@ -70,8 +70,12 @@ public:
 		reset();
 	}
 
+	virtual ~OneTurning()
+	{
+	}
+
 	// reset state
-	void reset(void)
+	virtual void reset(void)
 	{
 		SimpleVehicle::reset(); // reset the vehicle
 		VehicleAddOnMixin<SimpleVehicle, Entity>::reset();

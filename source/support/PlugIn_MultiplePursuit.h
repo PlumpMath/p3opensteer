@@ -71,8 +71,12 @@ public:
 		reset();
 	}
 
+	virtual ~MpBase()
+	{
+	}
+
 	// reset state
-	void reset(void)
+	virtual void reset(void)
 	{
 		SimpleVehicle::reset(); // reset the vehicle
 		VehicleAddOnMixin<SimpleVehicle, Entity>::reset();
@@ -118,8 +122,12 @@ public:
 		reset();
 	}
 
+	virtual ~MpWanderer()
+	{
+	}
+
 	// reset state
-	void reset(void)
+	virtual void reset(void)
 	{
 		MpBase<Entity>::reset();
 #ifdef OS_DEBUG
@@ -175,8 +183,12 @@ public:
 		reset();
 	}
 
+	virtual ~MpPursuer()
+	{
+	}
+
 	// reset state
-	void reset(void)
+	virtual void reset(void)
 	{
 		MpBase<Entity>::reset();
 #ifdef OS_DEBUG
@@ -338,7 +350,7 @@ public:
 		{
 			return false;
 		}
-		//check if this is a MpWanderer
+		// try to add a MpWanderer
 		MpWanderer<Entity>* wandererTmp =
 				dynamic_cast<MpWanderer<Entity>*>(vehicle);
 		if (wandererTmp)
@@ -358,7 +370,7 @@ public:
 			//that's all
 			return true;
 		}
-		//or if this is a MpPursuer
+		// try to add a MpPursuer
 		MpPursuer<Entity>* pursuerTmp =
 			dynamic_cast<MpPursuer<Entity>*>(vehicle);
 		if (pursuerTmp)

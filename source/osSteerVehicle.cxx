@@ -1341,7 +1341,9 @@ void OSSteerVehicle::write_datagram(BamWriter *manager, Datagram &dg)
 	}
 	if(mVehicleType == BALL)
 	{
-		/*do nothing*/;
+		ossup::OpenSteerVec3ToLVecBase3f(
+				static_cast<ossup::Ball<OSSteerVehicle>*>(mVehicle)->m_home).write_datagram(
+				dg);
 	}
 	if(mVehicleType == CTF_SEEKER)
 	{
@@ -1474,7 +1476,8 @@ void OSSteerVehicle::finalize(BamReader *manager)
 	}
 	if(mVehicleType == BALL)
 	{
-		/*do nothing*/;
+		static_cast<ossup::Ball<OSSteerVehicle>*>(mVehicle)->m_home =
+				ossup::LVecBase3fToOpenSteerVec3(mSerializedDataTmpPtr->mHome);
 	}
 	if(mVehicleType == CTF_SEEKER)
 	{
@@ -1641,7 +1644,7 @@ void OSSteerVehicle::fillin(DatagramIterator &scan, BamReader *manager)
 	}
 	if(mVehicleType == BALL)
 	{
-		/*do nothing*/;
+		mSerializedDataTmpPtr->mHome.read_datagram(scan);
 	}
 	if(mVehicleType == CTF_SEEKER)
 	{

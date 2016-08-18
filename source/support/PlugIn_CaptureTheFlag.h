@@ -136,8 +136,12 @@ public:
 		allObstacles = NULL;
 	}
 
+	virtual ~CtfBase()
+	{
+	}
+
 	// reset state
-	void reset(void)
+	virtual void reset(void)
 	{
 		SimpleVehicle::reset();  // reset the vehicle
 		VehicleAddOnMixin<SimpleVehicle, Entity>::reset();
@@ -255,8 +259,12 @@ public:
 		gCtfEnemies = NULL;
 	}
 
+	virtual ~CtfSeeker()
+	{
+	}
+
 	// reset state
-	void reset(void)
+	virtual void reset(void)
 	{
 		CtfBase<Entity>::reset();
 		this->bodyColor.set(0.4f, 0.4f, 0.6f); // blueish
@@ -559,8 +567,12 @@ public:
 		gSeeker = NULL;
 	}
 
+	virtual ~CtfEnemy()
+	{
+	}
+
 	// reset state
-	void reset(void)
+	virtual void reset(void)
 	{
 		CtfBase<Entity>::reset();
 		this->bodyColor.set(0.6f, 0.4f, 0.4f); // redish
@@ -1042,7 +1054,7 @@ public:
 		{
 			return false;
 		}
-		//check if this is a CtfSeeker
+		// try to add a CtfSeeker
 		CtfSeeker<Entity>* ctfSeekerTmp =
 				dynamic_cast<CtfSeeker<Entity>*>(vehicle);
 		if (ctfSeekerTmp)
@@ -1073,7 +1085,7 @@ public:
 			//that's all
 			return true;
 		}
-		//or if this is a CtfEnemy
+		// try to add a CtfEnemy
 		CtfEnemy<Entity>* ctfEnemyTmp =
 			dynamic_cast<CtfEnemy<Entity>*>(vehicle);
 		if (ctfEnemyTmp)
