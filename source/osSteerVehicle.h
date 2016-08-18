@@ -385,7 +385,7 @@ private:
 		OSSteerPlugIn::OSMapPredictionType mMapPredictionType;
 		LVector3f mCurrentSteering, mQqqLastNearestObstacle;
 		bool mQQQoaJustScraping, mStuck;
-		float mHalfWidth, mHalfLength, mDynamicRadius;
+		float mHalfWidth, mHalfLength;
 	}*mSerializedDataTmpPtr;
 	// persistent storage for serialized data
 	//player

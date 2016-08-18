@@ -1379,7 +1379,6 @@ void OSSteerVehicle::write_datagram(BamWriter *manager, Datagram &dg)
 		dg.add_bool(vehicle->stuck);
 		dg.add_stdfloat(vehicle->halfWidth);
 		dg.add_stdfloat(vehicle->halfLength);
-		dg.add_stdfloat(vehicle->radius());
 	}
 }
 
@@ -1511,9 +1510,9 @@ void OSSteerVehicle::finalize(BamReader *manager)
 				mSerializedDataTmpPtr->mQqqLastNearestObstacle);
 		vehicle->QQQoaJustScraping = mSerializedDataTmpPtr->mQQQoaJustScraping;
 		vehicle->stuck = mSerializedDataTmpPtr->mStuck;
+		// restore original halfWidth and halfLength
 		vehicle->halfWidth = mSerializedDataTmpPtr->mHalfWidth;
 		vehicle->halfLength = mSerializedDataTmpPtr->mHalfLength;
-		vehicle->setRadius(mSerializedDataTmpPtr->mDynamicRadius);
 	}
 	// deallocate SerializedDataTmp
 	delete mSerializedDataTmpPtr;
@@ -1676,7 +1675,6 @@ void OSSteerVehicle::fillin(DatagramIterator &scan, BamReader *manager)
 		mSerializedDataTmpPtr->mStuck = scan.get_bool();
 		mSerializedDataTmpPtr->mHalfWidth = scan.get_stdfloat();
 		mSerializedDataTmpPtr->mHalfLength = scan.get_stdfloat();
-		mSerializedDataTmpPtr->mDynamicRadius = scan.get_stdfloat();
 	}
 }
 
