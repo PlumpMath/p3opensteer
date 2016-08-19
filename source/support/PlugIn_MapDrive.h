@@ -2919,6 +2919,12 @@ public:
 
 	void update(const float currentTime, const float elapsedTime)
 	{
+		// don't update if there isn't a map
+		if (!map)
+		{
+			return;
+		}
+
 		//call the entity update
 		this->entityUpdate(currentTime, elapsedTime);
 
@@ -2944,7 +2950,9 @@ public:
 		{
 			// determine steering for obstacle avoidance (save for annotation)
 			const Vec3 avoid = this->annotateAvoid =
-			this->steerToAvoidObstaclesOnMap(this->lookAheadTimeOA(),
+///			this->steerToAvoidObstaclesOnMap(this->lookAheadTimeOA(),
+///					*this->map, this->hintForObstacleAvoidance());
+			this->steerToAvoidObstacles(this->lookAheadTimeOA(),
 					*this->map, this->hintForObstacleAvoidance());
 			const bool needToAvoid = avoid != Vec3::zero;
 
