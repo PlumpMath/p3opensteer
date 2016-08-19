@@ -383,10 +383,10 @@ vector<PT(OSSteerVehicle)>&steerVehicles, vector<vector<PT(AnimControl)> >& vehi
 {
 	// get some models, with animations, to attach to vehicles
 	// get the model
-	NodePath vehicleNPs = window->load_model(framework.get_models(), vehicleFile[vehicleFileIdx]);
+	NodePath vehicleNP = window->load_model(framework.get_models(), vehicleFile[vehicleFileIdx]);
 	// set random scale
 	float scale = meanScale * (1 + 0.2 * (2 * (float) rd() / (float) rd.max() - 1));
-	vehicleNPs.set_scale(scale);
+	vehicleNP.set_scale(scale);
 	// associate an anim with a given anim control
 	AnimControlCollection tmpAnims;
 	NodePath vehicleAnimNP[2];
@@ -395,8 +395,8 @@ vector<PT(OSSteerVehicle)>&steerVehicles, vector<vector<PT(AnimControl)> >& vehi
 			(!vehicleAnimFiles[vehicleFileIdx][1].empty()))
 	{
 		// first anim -> modelAnimCtls[i][0]
-		vehicleAnimNP[0] = window->load_model(vehicleNPs, vehicleAnimFiles[vehicleFileIdx][0]);
-		auto_bind(vehicleNPs.node(), tmpAnims,
+		vehicleAnimNP[0] = window->load_model(vehicleNP, vehicleAnimFiles[vehicleFileIdx][0]);
+		auto_bind(vehicleNP.node(), tmpAnims,
                 PartGroup::HMF_ok_part_extra |
                 PartGroup::HMF_ok_anim_extra |
                 PartGroup::HMF_ok_wrong_root_name);
@@ -404,8 +404,8 @@ vector<PT(OSSteerVehicle)>&steerVehicles, vector<vector<PT(AnimControl)> >& vehi
 		tmpAnims.clear_anims();
 		vehicleAnimNP[0].detach_node();
 		// second anim -> modelAnimCtls[i][1]
-		vehicleAnimNP[1] = window->load_model(vehicleNPs, vehicleAnimFiles[vehicleFileIdx][1]);
-		auto_bind(vehicleNPs.node(), tmpAnims,
+		vehicleAnimNP[1] = window->load_model(vehicleNP, vehicleAnimFiles[vehicleFileIdx][1]);
+		auto_bind(vehicleNP.node(), tmpAnims,
                 PartGroup::HMF_ok_part_extra |
                 PartGroup::HMF_ok_anim_extra |
                 PartGroup::HMF_ok_wrong_root_name);
@@ -413,8 +413,8 @@ vector<PT(OSSteerVehicle)>&steerVehicles, vector<vector<PT(AnimControl)> >& vehi
 		tmpAnims.clear_anims();
 		vehicleAnimNP[1].detach_node();
 		// reparent all node paths
-		vehicleAnimNP[0].reparent_to(vehicleNPs);
-		vehicleAnimNP[1].reparent_to(vehicleNPs);
+		vehicleAnimNP[0].reparent_to(vehicleNP);
+		vehicleAnimNP[1].reparent_to(vehicleNP);
 	}
 	// set parameter for vehicle's move type (OPENSTEER or OPENSTEER_KINEMATIC)
 	WPT(OSSteerManager) steerMgr = OSSteerManager::get_global_ptr();
@@ -431,7 +431,7 @@ vector<PT(OSSteerVehicle)>&steerVehicles, vector<vector<PT(AnimControl)> >& vehi
 	}
 	steerVehicleNP.set_pos(randPos);
 	// attach some geometry (a model) to steer vehicle
-	vehicleNPs.reparent_to(steerVehicleNP);
+	vehicleNP.reparent_to(steerVehicleNP);
 	// add the steer vehicle to the plug-in
 	steerPlugIn->add_steer_vehicle(steerVehicleNP);
 }

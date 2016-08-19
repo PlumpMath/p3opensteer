@@ -2920,7 +2920,7 @@ public:
 	void update(const float currentTime, const float elapsedTime)
 	{
 		// don't update if there isn't a map
-		if (!map)
+		if (!this->map)
 		{
 			return;
 		}

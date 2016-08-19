@@ -322,10 +322,10 @@ def getVehicleModelAnims(meanScale, vehicleFileIdx, moveType, sceneNP, steerPlug
     global app, vehicleAnimFiles
     # get some models, with animations, to attach to vehicles
     # get the model
-    vehicleNPs = app.loader.load_model(vehicleFile[vehicleFileIdx])
+    vehicleNP = app.loader.load_model(vehicleFile[vehicleFileIdx])
     # set random scale
     scale = meanScale * (1 + 0.2 * (2 * random.uniform(0.0, 1.0) - 1))
-    vehicleNPs.set_scale(scale)
+    vehicleNP.set_scale(scale)
     # associate an anim with a given anim control
     tmpAnims = AnimControlCollection()
     vehicleAnimNP = [None, None]
@@ -334,8 +334,8 @@ def getVehicleModelAnims(meanScale, vehicleFileIdx, moveType, sceneNP, steerPlug
             (len(vehicleAnimFiles[vehicleFileIdx][1]) != 0):
         # first anim -> modelAnimCtls[i][0]
         vehicleAnimNP[0] = app.loader.load_model(vehicleAnimFiles[vehicleFileIdx][0])
-        vehicleAnimNP[0].reparent_to(vehicleNPs)
-        auto_bind(vehicleNPs.node(), tmpAnims, 
+        vehicleAnimNP[0].reparent_to(vehicleNP)
+        auto_bind(vehicleNP.node(), tmpAnims, 
                   PartGroup.HMF_ok_part_extra |
                   PartGroup.HMF_ok_anim_extra |
                   PartGroup.HMF_ok_wrong_root_name)
@@ -344,8 +344,8 @@ def getVehicleModelAnims(meanScale, vehicleFileIdx, moveType, sceneNP, steerPlug
         vehicleAnimNP[0].detach_node()
         # second anim -> modelAnimCtls[i][1]
         vehicleAnimNP[1] = app.loader.load_model(vehicleAnimFiles[vehicleFileIdx][1])
-        vehicleAnimNP[1].reparent_to(vehicleNPs)
-        auto_bind(vehicleNPs.node(), tmpAnims, 
+        vehicleAnimNP[1].reparent_to(vehicleNP)
+        auto_bind(vehicleNP.node(), tmpAnims, 
                   PartGroup.HMF_ok_part_extra |
                   PartGroup.HMF_ok_anim_extra |
                   PartGroup.HMF_ok_wrong_root_name)
@@ -353,8 +353,8 @@ def getVehicleModelAnims(meanScale, vehicleFileIdx, moveType, sceneNP, steerPlug
         tmpAnims.clear_anims()
         vehicleAnimNP[1].detach_node()
         # reparent all node paths
-        vehicleAnimNP[0].reparent_to(vehicleNPs)
-        vehicleAnimNP[1].reparent_to(vehicleNPs)
+        vehicleAnimNP[0].reparent_to(vehicleNP)
+        vehicleAnimNP[1].reparent_to(vehicleNP)
     # set parameter for vehicle's move type (OPENSTEER or OPENSTEER_KINEMATIC)
     steerMgr = OSSteerManager.get_global_ptr()
     steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "mov_type",
@@ -368,7 +368,7 @@ def getVehicleModelAnims(meanScale, vehicleFileIdx, moveType, sceneNP, steerPlug
         randPos = getRandomPos(sceneNP)
     steerVehicleNP.set_pos(randPos)
     # attach some geometry (a model) to steer vehicle
-    vehicleNPs.reparent_to(steerVehicleNP)
+    vehicleNP.reparent_to(steerVehicleNP)
     # add the steer vehicle to the plug-in
     steerPlugIn.add_steer_vehicle(steerVehicleNP)
 
