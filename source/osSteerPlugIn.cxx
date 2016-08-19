@@ -466,6 +466,7 @@ int OSSteerPlugIn::add_steer_vehicle(NodePath steerVehicleNP)
 		OSVehicleSettings settings = steerVehicle->get_settings();
 		settings.set_forward(forward);
 		settings.set_up(up);
+		settings.set_side(forward.cross(up).normalize());
 		settings.set_position(pos);
 		settings.set_start(pos);
 		//update radius
@@ -1366,9 +1367,6 @@ void OSSteerPlugIn::set_avoidance_predict_time_min(float time)
 				OSSteerVehicle>*>(mPlugIn);
 		plugIn->m_CtfPlugInData.gAvoidancePredictTimeMin = (
 				time >= 0 ? time : -time);
-		//(re)set avoidance predict time
-		plugIn->m_CtfPlugInData.gAvoidancePredictTime =
-				plugIn->m_CtfPlugInData.gAvoidancePredictTimeMin;
 	}
 }
 
@@ -2074,7 +2072,6 @@ void OSSteerPlugIn::write_datagram(BamWriter *manager, Datagram &dg)
 				OSSteerVehicle>*>(mPlugIn);
 		dg.add_stdfloat(get_avoidance_predict_time_min());
 		dg.add_stdfloat(get_avoidance_predict_time_max());
-		dg.add_stdfloat(plugIn->m_CtfPlugInData.gAvoidancePredictTime);
 		dg.add_bool(plugIn->m_CtfPlugInData.gDelayedResetPlugInXXX);
 	}
 	if(mPlugInType == LOW_SPEED_TURN)
@@ -2244,8 +2241,6 @@ void OSSteerPlugIn::finalize(BamReader *manager)
 				mSerializedDataTmpPtr->mAvoidancePredictTimeMin);
 		set_avoidance_predict_time_max(
 				mSerializedDataTmpPtr->mAvoidancePredictTimeMax);
-		plugIn->m_CtfPlugInData.gAvoidancePredictTime =
-				mSerializedDataTmpPtr->mAvoidancePredictTime;
 		plugIn->m_CtfPlugInData.gDelayedResetPlugInXXX =
 				mSerializedDataTmpPtr->mGDelayedResetPlugInXXX;
 	}
@@ -2411,7 +2406,6 @@ void OSSteerPlugIn::fillin(DatagramIterator &scan, BamReader *manager)
 		//dependency: avoidance predict time ---> avoidance predict time min
 		mSerializedDataTmpPtr->mAvoidancePredictTimeMin = scan.get_stdfloat();
 		mSerializedDataTmpPtr->mAvoidancePredictTimeMax = scan.get_stdfloat();
-		mSerializedDataTmpPtr->mAvoidancePredictTime = scan.get_stdfloat();
 		mSerializedDataTmpPtr->mGDelayedResetPlugInXXX = scan.get_bool();
 	}
 	if(mPlugInType == LOW_SPEED_TURN)

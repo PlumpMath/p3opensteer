@@ -1064,7 +1064,7 @@ public:
 		qqqLastNearestObstacle = Vec3::zero;
 
 		// master look ahead (prediction) time
-		baseLookAheadTime = 3;
+///		baseLookAheadTime = 3;
 
 		// assume no previous steering
 		currentSteering = Vec3::zero;
@@ -2574,7 +2574,7 @@ public:
 
 	float lookAheadTimeOA(void) const
 	{
-		const float minTime = (baseLookAheadTime
+		const float minTime = (this->getObstacleMinTimeColl()
 				* (curvedSteering ?
 						interpolate(this->relativeSpeed(), 0.4f, 0.7f) : 0.66f));
 		return combinedLookAheadTime(minTime, 3);
@@ -2582,7 +2582,7 @@ public:
 
 	float lookAheadTimePF(void) const
 	{
-		return combinedLookAheadTime(baseLookAheadTime, 3);
+		return combinedLookAheadTime(this->getPathPredTime(), 3);
 	}
 
 	// QQQ maybe move to SimpleVehicle ?
@@ -2844,8 +2844,8 @@ public:
 	// follow the path "upstream or downstream" (+1/-1)
 	int pathFollowDirection;///serializable
 
-	// master look ahead (prediction) time
-	float baseLookAheadTime;///serializable
+///	// master look ahead (prediction) time
+///	float baseLookAheadTime;///serializable
 
 	// vehicle dimensions in meters
 	float halfWidth;///serializable
@@ -2920,7 +2920,7 @@ public:
 	void update(const float currentTime, const float elapsedTime)
 	{
 		// don't update if there isn't a map
-		if (!map)
+		if (!this->map)
 		{
 			return;
 		}

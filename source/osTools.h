@@ -365,6 +365,33 @@ PUBLISHED:
 	INLINE void set_position(const LPoint3f& value);
 	INLINE LPoint3f get_start() const;
 	INLINE void set_start(const LPoint3f& value);
+	INLINE float get_path_pred_time() const;
+	INLINE void set_path_pred_time(float value);
+	INLINE float get_obstacle_min_time_coll() const;
+	INLINE void set_obstacle_min_time_coll(float value);
+	INLINE float get_neighbor_min_time_coll() const;
+	INLINE void set_neighbor_min_time_coll(float value);
+	INLINE float get_neighbor_min_sep_dist() const;
+	INLINE void set_neighbor_min_sep_dist(float value);
+	INLINE float get_separation_max_dist() const;
+	INLINE void set_separation_max_dist(float value);
+	INLINE float get_separation_cos_max_angle() const;
+	INLINE void set_separation_cos_max_angle(float value);
+	INLINE float get_alignment_max_dist() const;
+	INLINE void set_alignment_max_dist(float value);
+	INLINE float get_alignment_cos_max_angle() const;
+	INLINE void set_alignment_cos_max_angle(float value);
+	INLINE float get_cohesion_max_dist() const;
+	INLINE void set_cohesion_max_dist(float value);
+	INLINE float get_cohesion_cos_max_angle() const;
+	INLINE void set_cohesion_cos_max_angle(float value);
+	INLINE float get_pursuit_max_pred_time() const;
+	INLINE void set_pursuit_max_pred_time(float value);
+	INLINE float get_evasion_max_pred_time() const;
+	INLINE void set_evasion_max_pred_time(float value);
+	INLINE float get_target_speed() const;
+	INLINE void set_target_speed(float value);
+	void output(ostream &out) const;
 private:
 	ossup::VehicleSettings _vehicleSettings;
 
@@ -372,6 +399,7 @@ public:
 	void write_datagram(Datagram &dg) const;
 	void read_datagram(DatagramIterator &scan);
 };
+INLINE ostream &operator << (ostream &out, const OSVehicleSettings & settings);
 
 ///Flock settings.
 struct EXPORT_CLASS OSFlockSettings
@@ -379,55 +407,31 @@ struct EXPORT_CLASS OSFlockSettings
 PUBLISHED:
 	OSFlockSettings();
 #ifndef CPPPARSER
-	OSFlockSettings(float sR, float sA, float sW,
-			float aR, float aA,	float aW,
-			float cR, float cA,	float cW);
+	OSFlockSettings(float sW, float aW,	float cW);
 #endif
 
-	INLINE float get_separation_radius() const;
-	INLINE void set_separation_radius(float value);
-	INLINE float get_separation_angle() const;
-	INLINE void set_separation_angle(float value);
 	INLINE float get_separation_weight() const;
 	INLINE void set_separation_weight(float value);
-	INLINE float get_alignment_radius() const;
-	INLINE void set_alignment_radius(float value);
-	INLINE float get_alignment_angle() const;
-	INLINE void set_alignment_angle(float value);
 	INLINE float get_alignment_weight() const;
 	INLINE void set_alignment_weight(float value);
-	INLINE float get_cohesion_radius() const;
-	INLINE void set_cohesion_radius(float value);
-	INLINE float get_cohesion_angle() const;
-	INLINE void set_cohesion_angle(float value);
 	INLINE float get_cohesion_weight() const;
 	INLINE void set_cohesion_weight(float value);
+	void output(ostream &out) const;
 #ifndef CPPPARSER
-	float& separation_radius(){return _separationRadius;}
-	float& separation_angle(){return _separationAngle;}
 	float& separation_weight(){return _separationWeight;}
-	float& alignment_radius(){return _alignmentRadius;}
-	float& alignment_angle(){return _alignmentAngle;}
 	float& alignment_weight(){return _alignmentWeight;}
-	float& cohesion_radius(){return _cohesionRadius;}
-	float& cohesion_angle(){return _cohesionAngle;}
 	float& cohesion_weight(){return _cohesionWeight;}
 #endif
 private:
-	float _separationRadius;
-	float _separationAngle;
 	float _separationWeight;
-	float _alignmentRadius;
-	float _alignmentAngle;
 	float _alignmentWeight;
-	float _cohesionRadius;
-	float _cohesionAngle;
 	float _cohesionWeight;
 
 public:
 	void write_datagram(Datagram &dg) const;
 	void read_datagram(DatagramIterator &scan);
 };
+INLINE ostream &operator << (ostream &out, const OSFlockSettings & settings);
 
 ///OSObstacleSettings.
 struct EXPORT_CLASS OSObstacleSettings
@@ -459,6 +463,7 @@ PUBLISHED:
 	INLINE void set_radius(float value);
 	INLINE int get_ref() const;
 	INLINE void set_ref(int value);
+	void output(ostream &out) const;
 public:
 	inline OpenSteer::AbstractObstacle* get_obstacle() const;
 	inline void set_obstacle(OpenSteer::AbstractObstacle* value);
@@ -481,6 +486,7 @@ public:
 	void write_datagram(Datagram &dg) const;
 	void read_datagram(DatagramIterator &scan);
 };
+INLINE ostream &operator << (ostream &out, const OSObstacleSettings & settings);
 
 ///ValueList template
 template<typename Type>

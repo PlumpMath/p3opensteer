@@ -142,6 +142,19 @@ void OSVehicleSettings::write_datagram(Datagram &dg) const
 	get_up().write_datagram(dg);
 	get_position().write_datagram(dg);
 	get_start().write_datagram(dg);
+	dg.add_stdfloat(get_path_pred_time());
+	dg.add_stdfloat(get_obstacle_min_time_coll());
+	dg.add_stdfloat(get_neighbor_min_time_coll());
+	dg.add_stdfloat(get_neighbor_min_sep_dist());
+	dg.add_stdfloat(get_separation_max_dist());
+	dg.add_stdfloat(get_separation_cos_max_angle());
+	dg.add_stdfloat(get_alignment_max_dist());
+	dg.add_stdfloat(get_alignment_cos_max_angle());
+	dg.add_stdfloat(get_cohesion_max_dist());
+	dg.add_stdfloat(get_cohesion_cos_max_angle());
+	dg.add_stdfloat(get_pursuit_max_pred_time());
+	dg.add_stdfloat(get_evasion_max_pred_time());
+	dg.add_stdfloat(get_target_speed());
 }
 
 /**
@@ -165,25 +178,65 @@ void OSVehicleSettings::read_datagram(DatagramIterator &scan)
 	set_position(value);
 	value.read_datagram(scan);
 	set_start(value);
+	set_path_pred_time(scan.get_stdfloat());
+	set_obstacle_min_time_coll(scan.get_stdfloat());
+	set_neighbor_min_time_coll(scan.get_stdfloat());
+	set_neighbor_min_sep_dist(scan.get_stdfloat());
+	set_separation_max_dist(scan.get_stdfloat());
+	set_separation_cos_max_angle(scan.get_stdfloat());
+	set_alignment_max_dist(scan.get_stdfloat());
+	set_alignment_cos_max_angle(scan.get_stdfloat());
+	set_cohesion_max_dist(scan.get_stdfloat());
+	set_cohesion_cos_max_angle(scan.get_stdfloat());
+	set_pursuit_max_pred_time(scan.get_stdfloat());
+	set_evasion_max_pred_time(scan.get_stdfloat());
+	set_target_speed(scan.get_stdfloat());
+}
+
+/**
+ * Writes a sensible description of the OSVehicleSettings to the indicated
+ * output stream.
+ */
+void OSVehicleSettings::output(ostream &out) const
+{
+	out << "mass: " << get_mass() << endl;
+	out << "radius: " << get_radius() << endl;
+	out << "speed: " << get_speed() << endl;
+	out << "maxForce: " << get_maxForce() << endl;
+	out << "maxSpeed: " << get_maxSpeed() << endl;
+	out << "forward: " << get_forward() << endl;
+	out << "side: " << get_side() << endl;
+	out << "up: " << get_up() << endl;
+	out << "position: " << get_position() << endl;
+	out << "start: " << get_start() << endl;
+	out << "path_pred_time: " << get_path_pred_time() << endl;
+	out << "obstacle_min_time_coll: " << get_obstacle_min_time_coll() << endl;
+	out << "neighbor_min_time_coll: " << get_neighbor_min_time_coll() << endl;
+	out << "neighbor_min_sep_dist: " << get_neighbor_min_sep_dist() << endl;
+	out << "separation_max_dist: " << get_separation_max_dist() << endl;
+	out << "separation_cos_max_angle: " << get_separation_cos_max_angle()
+			<< endl;
+	out << "alignment_max_dist: " << get_alignment_max_dist() << endl;
+	out << "alignment_cos_max_angle: " << get_alignment_cos_max_angle() << endl;
+	out << "cohesion_max_dist: " << get_cohesion_max_dist() << endl;
+	out << "cohesion_cos_max_angle: " << get_cohesion_cos_max_angle() << endl;
+	out << "pursuit_max_pred_time: " << get_pursuit_max_pred_time() << endl;
+	out << "evasion_max_pred_time: " << get_evasion_max_pred_time() << endl;
+	out << "speed: " << get_speed() << endl;
 }
 
 ///Flock settings.
 /**
  *
  */
-OSFlockSettings::OSFlockSettings():
-		_separationRadius(0.0), _separationAngle(0.0), _separationWeight(0.0),
-		_alignmentRadius(0.0), _alignmentAngle(0.0), _alignmentWeight(0.0),
-		_cohesionRadius(0.0), _cohesionAngle(0.0), _cohesionWeight(0.0)
+OSFlockSettings::OSFlockSettings() :
+		_separationWeight(0.0), _alignmentWeight(0.0), _cohesionWeight(0.0)
 {
 }/**
  *
  */
-OSFlockSettings::OSFlockSettings(float sR, float sA, float sW, float aR,
-		float aA, float aW, float cR, float cA, float cW) :
-		_separationRadius(sR), _separationAngle(sA), _separationWeight(sW),
-		_alignmentRadius(aR), _alignmentAngle(aA), _alignmentWeight(aW),
-		_cohesionRadius(cR), _cohesionAngle(cA), _cohesionWeight(cW)
+OSFlockSettings::OSFlockSettings(float sW, float aW, float cW) :
+		_separationWeight(sW), _alignmentWeight(aW), _cohesionWeight(cW)
 {
 }
 /**
@@ -191,14 +244,8 @@ OSFlockSettings::OSFlockSettings(float sR, float sA, float sW, float aR,
  */
 void OSFlockSettings::write_datagram(Datagram &dg) const
 {
-	dg.add_stdfloat(get_separation_radius());
-	dg.add_stdfloat(get_separation_angle());
 	dg.add_stdfloat(get_separation_weight());
-	dg.add_stdfloat(get_alignment_radius());
-	dg.add_stdfloat(get_alignment_angle());
 	dg.add_stdfloat(get_alignment_weight());
-	dg.add_stdfloat(get_cohesion_radius());
-	dg.add_stdfloat(get_cohesion_angle());
 	dg.add_stdfloat(get_cohesion_weight());
 }
 
@@ -207,15 +254,20 @@ void OSFlockSettings::write_datagram(Datagram &dg) const
  */
 void OSFlockSettings::read_datagram(DatagramIterator &scan)
 {
-	set_separation_radius(scan.get_stdfloat());
-	set_separation_angle(scan.get_stdfloat());
 	set_separation_weight(scan.get_stdfloat());
-	set_alignment_radius(scan.get_stdfloat());
-	set_alignment_angle(scan.get_stdfloat());
 	set_alignment_weight(scan.get_stdfloat());
-	set_cohesion_radius(scan.get_stdfloat());
-	set_cohesion_angle(scan.get_stdfloat());
 	set_cohesion_weight(scan.get_stdfloat());
+}
+
+/**
+ * Writes a sensible description of the OSFlockSettings to the indicated output
+ * stream.
+ */
+void OSFlockSettings::output(ostream &out) const
+{
+	out << "separation_weight: " << get_separation_weight() << endl;
+	out << "alignment_weight: " << get_alignment_weight() << endl;
+	out << "cohesion_weight: " << get_cohesion_weight() << endl;
 }
 
 ///OSObstacleSettings.
@@ -259,6 +311,25 @@ void OSObstacleSettings::read_datagram(DatagramIterator &scan)
 	set_depth(scan.get_stdfloat());
 	set_radius(scan.get_stdfloat());
 	set_ref(scan.get_int32());
+}
+
+/**
+ * Writes a sensible description of the OSObstacleSettings to the indicated
+ * output stream.
+ */
+void OSObstacleSettings::output(ostream &out) const
+{
+	out << "type: " << get_type() << endl;
+	out << "seenFromState: " << get_seenFromState() << endl;
+	out << "position: " << get_position() << endl;
+	out << "forward: " << get_forward() << endl;
+	out << "up: " << get_up() << endl;
+	out << "side: " << get_side() << endl;
+	out << "width: " << get_width() << endl;
+	out << "height: " << get_height() << endl;
+	out << "depth: " << get_depth() << endl;
+	out << "radius: " << get_radius() << endl;
+	out << "ref: " << get_ref() << endl;
 }
 
 ///ValueList template

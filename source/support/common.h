@@ -72,10 +72,17 @@ typedef std::vector<OpenSteer::SegmentedPathway*> PathwayGroup;
 struct VehicleSettings
 {
 	VehicleSettings() :
-			m_mass(1.0), m_radius(1.0), m_speed(0.0), m_maxForce(1.0), m_maxSpeed(
-					1.0), m_forward(OpenSteer::Vec3::forward), m_side(
-					OpenSteer::Vec3::side), m_up(OpenSteer::Vec3::up), m_position(
-					OpenSteer::Vec3::zero), m_start(OpenSteer::Vec3::zero)
+			m_mass(1.0), m_radius(1.0), m_speed(0.0), m_maxForce(1.0),
+			m_maxSpeed(1.0), m_forward(OpenSteer::Vec3::forward),
+			m_side(OpenSteer::Vec3::side), m_up(OpenSteer::Vec3::up),
+			m_position(OpenSteer::Vec3::zero), m_start(OpenSteer::Vec3::zero),
+			m_pathPredTime(3.0), m_obstacleMinTimeColl(6.0),
+			m_neighborMinTimeColl(3.0), m_neighborMinSepDist(1.0),
+			m_separationMaxDist(5.0), m_separationCosMaxAngle(-0.707),
+			m_alignmentMaxDist(7.5), m_alignmentCosMaxAngle(0.7),
+			m_cohesionMaxDist(9.0), m_cohesionCosMaxAngle(-0.15),
+			m_pursuitMaxPredTime(20.0), m_evasionMaxPredTime(20.0),
+			m_targetSpeed(1.0)
 	{
 	}
 	bool operator == (const VehicleSettings& other)
@@ -89,7 +96,20 @@ struct VehicleSettings
 				(m_side == other.m_side) &&
 				(m_up == other.m_up) &&
 				(m_position == other.m_position) &&
-				(m_start == other.m_start);
+				(m_start == other.m_start) &&
+				(m_pathPredTime == other.m_pathPredTime) &&
+				(m_obstacleMinTimeColl == other.m_obstacleMinTimeColl) &&
+				(m_neighborMinTimeColl == other.m_neighborMinTimeColl) &&
+				(m_neighborMinSepDist == other.m_neighborMinSepDist) &&
+				(m_separationMaxDist == other.m_separationMaxDist) &&
+				(m_separationCosMaxAngle == other.m_separationCosMaxAngle) &&
+				(m_alignmentMaxDist == other.m_alignmentMaxDist) &&
+				(m_alignmentCosMaxAngle == other.m_alignmentCosMaxAngle) &&
+				(m_cohesionMaxDist == other.m_cohesionMaxDist) &&
+				(m_cohesionCosMaxAngle == other.m_cohesionCosMaxAngle) &&
+				(m_pursuitMaxPredTime == other.m_pursuitMaxPredTime) &&
+				(m_evasionMaxPredTime == other.m_evasionMaxPredTime) &&
+				(m_targetSpeed == other.m_targetSpeed);
 	}
 	// mass
 	float m_mass;
@@ -111,6 +131,20 @@ struct VehicleSettings
 	OpenSteer::Vec3 m_position;
 	// the vehicle start position.
 	OpenSteer::Vec3 m_start;
+	// steering parameters
+	float m_pathPredTime;//steerToFollowPath, steerToStayOnPath
+	float m_obstacleMinTimeColl;//steerToAvoidObstacle, steerToAvoidObstacles
+	float m_neighborMinTimeColl;//steerToAvoidNeighbors
+	float m_neighborMinSepDist;//steerToAvoidCloseNeighbors
+	float m_separationMaxDist;//steerForSeparation
+	float m_separationCosMaxAngle;//steerForSeparation
+	float m_alignmentMaxDist;//steerForAlignment
+	float m_alignmentCosMaxAngle;//steerForAlignment
+	float m_cohesionMaxDist;//steerForCohesion
+	float m_cohesionCosMaxAngle;//steerForCohesion
+	float m_pursuitMaxPredTime;//steerForPursuit
+	float m_evasionMaxPredTime;//steerForEvasion
+	float m_targetSpeed;//steerForTargetSpeed
 };
 
 template<typename Super, typename Entity>
@@ -243,10 +277,126 @@ public:
 	{
 		return m_settings.m_start;
 	}
-
 	void setStart(const OpenSteer::Vec3& start)
 	{
 		m_settings.m_start = start;
+	}
+
+	float getPathPredTime() const
+	{
+		return m_settings.m_pathPredTime;
+	}
+	void setPathPredTime(float value)
+	{
+		m_settings.m_pathPredTime = value;
+	}
+
+	float getObstacleMinTimeColl() const
+	{
+		return m_settings.m_obstacleMinTimeColl;
+	}
+	void setObstacleMinTimeColl(float value)
+	{
+		m_settings.m_obstacleMinTimeColl = value;
+	}
+
+	float getNeighborMinTimeColl() const
+	{
+		return m_settings.m_neighborMinTimeColl;
+	}
+	void setNeighborMinTimeColl(float value)
+	{
+		m_settings.m_neighborMinTimeColl = value;
+	}
+
+	float getNeighborMinSepDist() const
+	{
+		return m_settings.m_neighborMinSepDist;
+	}
+	void setNeighborMinSepDist(float value)
+	{
+		m_settings.m_neighborMinSepDist = value;
+	}
+
+	float getSeparationMaxDist() const
+	{
+		return m_settings.m_separationMaxDist;
+	}
+	void setSeparationMaxDist(float value)
+	{
+		m_settings.m_separationMaxDist = value;
+	}
+
+	float getSeparationCosMaxAngle() const
+	{
+		return m_settings.m_separationCosMaxAngle;
+	}
+	void setSeparationCosMaxAngle(float value)
+	{
+		m_settings.m_separationCosMaxAngle = value;
+	}
+
+	float getAlignmentMaxDist() const
+	{
+		return m_settings.m_alignmentMaxDist;
+	}
+	void setAlignmentMaxDist(float value)
+	{
+		m_settings.m_alignmentMaxDist = value;
+	}
+
+	float getAlignmentCosMaxAngle() const
+	{
+		return m_settings.m_alignmentCosMaxAngle;
+	}
+	void setAlignmentCosMaxAngle(float value)
+	{
+		m_settings.m_alignmentCosMaxAngle = value;
+	}
+
+	float getCohesionMaxDist() const
+	{
+		return m_settings.m_cohesionMaxDist;
+	}
+	void setCohesionMaxDist(float value)
+	{
+		m_settings.m_cohesionMaxDist = value;
+	}
+
+	float getCohesionCosMaxAngle() const
+	{
+		return m_settings.m_cohesionCosMaxAngle;
+	}
+	void setCohesionCosMaxAngle(float value)
+	{
+		m_settings.m_cohesionCosMaxAngle = value;
+	}
+
+	float getPursuitMaxPredTime() const
+	{
+		return m_settings.m_pursuitMaxPredTime;
+	}
+	void setPursuitMaxPredTime(float value)
+	{
+		m_settings.m_pursuitMaxPredTime = value;
+	}
+
+	float getEvasionMaxPredTime() const
+	{
+		return m_settings.m_evasionMaxPredTime;
+	}
+	void setEvasionMaxPredTime(float value)
+	{
+		m_settings.m_evasionMaxPredTime = value;
+	}
+
+	float getTargetSpeed() const
+	{
+		return m_settings.m_targetSpeed;
+	}
+	void setTargetSpeed(float value)
+	{
+		m_settings.m_targetSpeed = value;
 	}
 
 	/// It is called by setSettings() to perform custom tasks
@@ -259,7 +409,7 @@ public:
 		Super::setMaxForce(m_settings.m_maxForce); // steering force is clipped to this magnitude
 		Super::setMaxSpeed(m_settings.m_maxSpeed); // velocity is clipped to this magnitude
 		Super::setForward(m_settings.m_forward);
-		Super::setSide(Super::localRotateForwardToSide(m_settings.m_forward));
+		Super::setSide(m_settings.m_side);
 		Super::setUp(m_settings.m_up);
 		Super::setPosition(m_settings.m_position);
 	}

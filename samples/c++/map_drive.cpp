@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
 	steerPlugIn->enable_debug_drawing(window->get_camera_group());
 	// print debug draw to texture
 	framework.define_key("t", "debugDrawToTexture", &debugDrawToTexture,
-			(void*) NULL);
+			(void*) nullptr);
 	framework.define_key("debug_drawing_texture_ready", "onTextureReady",
 			&onTextureReady, (void*) rttTexStage.p());
 

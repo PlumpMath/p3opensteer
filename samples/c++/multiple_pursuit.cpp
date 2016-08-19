@@ -247,7 +247,7 @@ void addWanderer(const Event* e, void* data)
 	OSSteerManager::get_global_ptr()->set_parameter_value(OSSteerManager::STEERVEHICLE, "vehicle_type",
 			"mp_wanderer");
 	// handle vehicle's addition
-	handleVehicles(NULL, data);
+	handleVehicles(nullptr, data);
 }
 
 // adds a pursuer
@@ -262,5 +262,5 @@ void addPursuer(const Event* e, void* data)
 	OSSteerManager::get_global_ptr()->set_parameter_value(OSSteerManager::STEERVEHICLE, "vehicle_type",
 			"mp_pursuer");
 	// handle vehicle's addition
-	handleVehicles(NULL, data);
+	handleVehicles(nullptr, data);
 }

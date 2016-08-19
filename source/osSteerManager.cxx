@@ -395,6 +395,32 @@ void OSSteerManager::set_parameters_defaults(OSType type)
 				ParameterNameValue("max_speed", "1.0"));
 		mSteerVehiclesParameterTable.insert(
 				ParameterNameValue("radius", "1.0"));
+		mSteerVehiclesParameterTable.insert(
+				ParameterNameValue("path_pred_time", "3.0"));
+		mSteerVehiclesParameterTable.insert(
+				ParameterNameValue("obstacle_min_time_coll", "4.5"));
+		mSteerVehiclesParameterTable.insert(
+				ParameterNameValue("neighbor_min_time_coll", "3.0"));
+		mSteerVehiclesParameterTable.insert(
+				ParameterNameValue("neighbor_min_sep_dist", "1.0"));
+		mSteerVehiclesParameterTable.insert(
+				ParameterNameValue("separation_max_dist", "5.0"));
+		mSteerVehiclesParameterTable.insert(
+				ParameterNameValue("separation_cos_max_angle", "-0.707"));
+		mSteerVehiclesParameterTable.insert(
+				ParameterNameValue("alignment_max_dist", "7.5"));
+		mSteerVehiclesParameterTable.insert(
+				ParameterNameValue("alignment_cos_max_angle", "0.7"));
+		mSteerVehiclesParameterTable.insert(
+				ParameterNameValue("cohesion_max_dist", "9.0"));
+		mSteerVehiclesParameterTable.insert(
+				ParameterNameValue("cohesion_cos_max_angle", "-0.15"));
+		mSteerVehiclesParameterTable.insert(
+				ParameterNameValue("pursuit_max_pred_time", "20.0"));
+		mSteerVehiclesParameterTable.insert(
+				ParameterNameValue("evasion_max_pred_time", "20.0"));
+		mSteerVehiclesParameterTable.insert(
+				ParameterNameValue("target_speed", "1.0"));
 	}
 }
 
