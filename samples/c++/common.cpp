@@ -530,3 +530,559 @@ void handleObstacles(const Event* e, void* data)
 		}
 	}
 }
+
+// class Driver
+Driver::Driver(PandaFramework* framework, const NodePath& ownerObjectNP,
+		int taskSort)
+{
+	mWin = framework->get_window(0)->get_graphics_window();
+	mOwnerObjectNP = ownerObjectNP;
+	mTaskSort = taskSort;
+	do_reset();
+	do_initialize();
+}
+
+Driver::~Driver()
+{
+	do_finalize();
+	do_reset();
+	mOwnerObjectNP.clear();
+	mWin = NULL;
+}
+
+void Driver::do_reset()
+{
+	//
+	mEnabled = false;
+	mForward = mBackward = mStrafeLeft = mStrafeRight = mUp = mDown =
+			mHeadLeft = mHeadRight = mPitchUp = mPitchDown = false;
+	//by default we consider mouse moved on every update, because
+	//we want mouse poll by default; this can be changed by calling
+	//the enabler (for example by an handler responding to mouse-move
+	//event if it is possible. See: http://www.panda3d.org/forums/viewtopic.php?t=9326
+	// http://www.panda3d.org/forums/viewtopic.php?t=6049)
+	mMouseMove = true;
+	mForwardKey = mBackwardKey = mStrafeLeftKey = mStrafeRightKey = mUpKey = mDownKey =
+			mHeadLeftKey = mHeadRightKey = mPitchUpKey = mPitchDownKey =
+					mMouseMoveKey = false;
+	mSpeedKey = std::string("shift");
+	mMouseEnabledH = mMouseEnabledP = mHeadLimitEnabled = mPitchLimitEnabled =
+			false;
+	mHLimit = mPLimit = 0.0;
+	mSignOfTranslation = mSignOfMouse = 1;
+	mFastFactor = 0.0;
+	mActualSpeedXYZ = mMaxSpeedXYZ = mMaxSpeedSquaredXYZ = LVecBase3f::zero();
+	mActualSpeedH = mActualSpeedP = mMaxSpeedHP = mMaxSpeedSquaredHP = 0.0;
+	mAccelXYZ = LVecBase3f::zero();
+	mAccelHP = 0.0;
+	mFrictionXYZ = mFrictionHP = 0.0;
+	mStopThreshold = 0.0;
+	mSensX = mSensY = 0.0;
+	mCentX = mCentY = 0.0;
+	mUpdateData.clear();
+	mUpdateTask.clear();
+}
+
+void Driver::do_initialize()
+{
+	//inverted setting (1/-1): not inverted -> 1, inverted -> -1
+	mSignOfTranslation = 1;
+	mSignOfMouse = 1;
+	//head limit: enabled@[limit]; limit >= 0.0
+	mHeadLimitEnabled = false;
+	mHLimit = 0.0;
+	//pitch limit: enabled@[limit]; limit >= 0.0
+	mPitchLimitEnabled = false;
+	mPLimit = 0.0;
+	//mouse movement setting
+	mMouseEnabledH = false;
+	mMouseEnabledP = false;
+	//key events setting
+	//backward key
+	mBackwardKey = true;
+	//down key
+	mDownKey = true;
+	//forward key
+	mForwardKey = true;
+	//strafeLeft key
+	mStrafeLeftKey = true;
+	//strafeRight key
+	mStrafeRightKey = true;
+	//headLeft key
+	mHeadLeftKey = true;
+	//headRight key
+	mHeadRightKey = true;
+	//pitchUp key
+	mPitchUpKey = true;
+	//pitchDown key
+	mPitchDownKey = true;
+	//up key
+	mUpKey = true;
+	//mouseMove key: enabled/disabled
+	mMouseMoveKey = false;
+	//speedKey
+	if (not (mSpeedKey == std::string("control")
+			or mSpeedKey == std::string("alt")
+			or mSpeedKey == std::string("shift")))
+	{
+		mSpeedKey = std::string("shift");
+	}
+	//
+	//max linear speed (>=0)
+	mMaxSpeedXYZ = LVecBase3f(5.0, 5.0, 5.0);
+	mMaxSpeedSquaredXYZ = LVector3f(mMaxSpeedXYZ.get_x() * mMaxSpeedXYZ.get_x(),
+			mMaxSpeedXYZ.get_y() * mMaxSpeedXYZ.get_y(),
+			mMaxSpeedXYZ.get_z() * mMaxSpeedXYZ.get_z());
+	//max angular speed (>=0)
+	mMaxSpeedHP = 5.0;
+	mMaxSpeedSquaredHP = mMaxSpeedHP * mMaxSpeedHP;
+	//linear accel (>=0)
+	mAccelXYZ = LVecBase3f(5.0, 5.0, 5.0);
+	//angular accel (>=0)
+	mAccelHP = 5.0;
+	//reset actual speeds
+	mActualSpeedXYZ = LVector3f::zero();
+	mActualSpeedH = 0.0;
+	mActualSpeedP = 0.0;
+	//linear friction (>=0)
+	mFrictionXYZ = 5.0;
+	//angular friction (>=0)
+	mFrictionHP = 5.0;
+	//stop threshold ([0.0, 1.0])
+	mStopThreshold = 0.01;
+	//fast factor (>=0)
+	mFastFactor = 5.0;
+	//sens x (>=0)
+	mSensX = 0.2;
+	//sens_y (>=0)
+	mSensY = 0.2;
+	//create the task for updating Driver
+	mUpdateData = new TaskInterface<Driver>::TaskData(this,
+			&Driver::update);
+	mUpdateTask = new GenericAsyncTask(string("Driver::update"),
+			&TaskInterface<Driver>::taskFunction,
+			reinterpret_cast<void*>(mUpdateData.p()));
+	mUpdateTask->set_sort(mTaskSort);
+	//
+	mCentX = mWin->get_properties().get_x_size() / 2;
+	mCentY = mWin->get_properties().get_y_size() / 2;
+}
+
+void Driver::do_finalize()
+{
+	//if enabled: disable
+	if (mEnabled)
+	{
+		//actual disabling
+		do_disable();
+	}
+	//
+	return;
+}
+
+bool Driver::enable()
+{
+	//if enabled return
+	RETURN_ON_COND(mEnabled, false)
+
+	//actual enabling
+	do_enable();
+	//
+	return true;
+}
+
+void Driver::do_enable()
+{
+	if (mMouseEnabledH or mMouseEnabledP or mMouseMoveKey)
+	{
+		//we want control through mouse movements
+		//hide mouse cursor
+		WindowProperties props;
+		props.set_cursor_hidden(true);
+		mWin->request_properties(props);
+		//reset mouse to start position
+		mWin->move_pointer(0, mCentX, mCentY);
+	}
+	//
+	mEnabled = true;
+
+	//Add mUpdateTask to the active queue.
+	if (mUpdateTask)
+	{
+		AsyncTaskManager::get_global_ptr()->add(mUpdateTask);
+	}
+}
+
+bool Driver::disable()
+{
+	//if not enabled return
+	RETURN_ON_COND(not mEnabled, false)
+
+	//actual disabling
+	do_disable();
+	//
+	return true;
+}
+
+void Driver::do_disable()
+{
+	if (mMouseEnabledH or mMouseEnabledP or mMouseMoveKey)
+	{
+		//we have control through mouse movements
+		//show mouse cursor
+		WindowProperties props;
+		props.set_cursor_hidden(false);
+		mWin->request_properties(props);
+	}
+	//
+	mEnabled = false;
+
+	//Remove mUpdateTask from the active queue.
+	if (mUpdateTask)
+	{
+		AsyncTaskManager::get_global_ptr()->remove(mUpdateTask);
+	}
+}
+
+AsyncTask::DoneStatus Driver::update(GenericAsyncTask* task)
+{
+	float dt = ClockObject::get_global_clock()->get_dt();
+
+	//handle mouse
+	if (mMouseMove and (mMouseEnabledH or mMouseEnabledP))
+	{
+		MouseData md = mWin->get_pointer(0);
+		float deltaX = md.get_x() - mCentX;
+		float deltaY = md.get_y() - mCentY;
+
+		if (mWin->move_pointer(0, mCentX, mCentY))
+		{
+			if (mMouseEnabledH and (deltaX != 0.0))
+			{
+				mOwnerObjectNP.set_h(
+						mOwnerObjectNP.get_h() - deltaX * mSensX * mSignOfMouse);
+			}
+			if (mMouseEnabledP and (deltaY != 0.0))
+			{
+				mOwnerObjectNP.set_p(
+						mOwnerObjectNP.get_p() - deltaY * mSensY * mSignOfMouse);
+			}
+		}
+		//if mMouseMoveKey is true we are controlling mouse movements
+		//so we need to reset mMouseMove to false
+		if (mMouseMoveKey)
+		{
+			mMouseMove = false;
+		}
+	}
+	//update position/orientation
+	mOwnerObjectNP.set_y(mOwnerObjectNP,
+			mActualSpeedXYZ.get_y() * dt * mSignOfTranslation);
+	mOwnerObjectNP.set_x(mOwnerObjectNP,
+			mActualSpeedXYZ.get_x() * dt * mSignOfTranslation);
+	mOwnerObjectNP.set_z(mOwnerObjectNP, mActualSpeedXYZ.get_z() * dt);
+	//head
+	if (mHeadLimitEnabled)
+	{
+		float head = mOwnerObjectNP.get_h() + mActualSpeedH * dt * mSignOfMouse;
+		if (head > mHLimit)
+		{
+			head = mHLimit;
+		}
+		else if (head < -mHLimit)
+		{
+			head = -mHLimit;
+		}
+		mOwnerObjectNP.set_h(head);
+	}
+	else
+	{
+		mOwnerObjectNP.set_h(
+				mOwnerObjectNP.get_h() + mActualSpeedH * dt * mSignOfMouse);
+	}
+	//pitch
+	if (mPitchLimitEnabled)
+	{
+		float pitch = mOwnerObjectNP.get_p() + mActualSpeedP * dt * mSignOfMouse;
+		if (pitch > mPLimit)
+		{
+			pitch = mPLimit;
+		}
+		else if (pitch < -mPLimit)
+		{
+			pitch = -mPLimit;
+		}
+		mOwnerObjectNP.set_p(pitch);
+	}
+	else
+	{
+		mOwnerObjectNP.set_p(
+				mOwnerObjectNP.get_p() + mActualSpeedP * dt * mSignOfMouse);
+	}
+
+	//update speeds
+	//y axis
+	if (mForward and (not mBackward))
+	{
+		if (mAccelXYZ.get_y() != 0.0)
+		{
+			//accelerate
+			mActualSpeedXYZ.set_y(
+					mActualSpeedXYZ.get_y() - mAccelXYZ.get_y() * dt);
+			if (mActualSpeedXYZ.get_y() < -mMaxSpeedXYZ.get_y())
+			{
+				//limit speed
+				mActualSpeedXYZ.set_y(-mMaxSpeedXYZ.get_y());
+			}
+		}
+		else
+		{
+			//kinematic
+			mActualSpeedXYZ.set_y(-mMaxSpeedXYZ.get_y());
+		}
+	}
+	else if (mBackward and (not mForward))
+	{
+		if (mAccelXYZ.get_y() != 0.0)
+		{
+			//accelerate
+			mActualSpeedXYZ.set_y(
+					mActualSpeedXYZ.get_y() + mAccelXYZ.get_y() * dt);
+			if (mActualSpeedXYZ.get_y() > mMaxSpeedXYZ.get_y())
+			{
+				//limit speed
+				mActualSpeedXYZ.set_y(mMaxSpeedXYZ.get_y());
+			}
+		}
+		else
+		{
+			//kinematic
+			mActualSpeedXYZ.set_y(mMaxSpeedXYZ.get_y());
+		}
+	}
+	else if (mActualSpeedXYZ.get_y() != 0.0)
+	{
+		if (mActualSpeedXYZ.get_y() * mActualSpeedXYZ.get_y()
+				< mMaxSpeedSquaredXYZ.get_y() * mStopThreshold)
+		{
+			//stop
+			mActualSpeedXYZ.set_y(0.0);
+		}
+		else
+		{
+			//decelerate
+			mActualSpeedXYZ.set_y(
+					mActualSpeedXYZ.get_y() * (1.0 - min(mFrictionXYZ * dt, 1.0f)));
+		}
+	}
+	//x axis
+	if (mStrafeLeft and (not mStrafeRight))
+	{
+		if (mAccelXYZ.get_x() != 0.0)
+		{
+			//accelerate
+			mActualSpeedXYZ.set_x(
+					mActualSpeedXYZ.get_x() + mAccelXYZ.get_x() * dt);
+			if (mActualSpeedXYZ.get_x() > mMaxSpeedXYZ.get_x())
+			{
+				//limit speed
+				mActualSpeedXYZ.set_x(mMaxSpeedXYZ.get_x());
+			}
+		}
+		else
+		{
+			//kinematic
+			mActualSpeedXYZ.set_x(mMaxSpeedXYZ.get_x());
+		}
+	}
+	else if (mStrafeRight and (not mStrafeLeft))
+	{
+		if (mAccelXYZ.get_x() != 0.0)
+		{
+			//accelerate
+			mActualSpeedXYZ.set_x(
+					mActualSpeedXYZ.get_x() - mAccelXYZ.get_x() * dt);
+			if (mActualSpeedXYZ.get_x() < -mMaxSpeedXYZ.get_x())
+			{
+				//limit speed
+				mActualSpeedXYZ.set_x(-mMaxSpeedXYZ.get_x());
+			}
+		}
+		else
+		{
+			//kinematic
+			mActualSpeedXYZ.set_x(-mMaxSpeedXYZ.get_y());
+		}
+	}
+	else if (mActualSpeedXYZ.get_x() != 0.0)
+	{
+		if (mActualSpeedXYZ.get_x() * mActualSpeedXYZ.get_x()
+				< mMaxSpeedSquaredXYZ.get_x() * mStopThreshold)
+		{
+			//stop
+			mActualSpeedXYZ.set_x(0.0);
+		}
+		else
+		{
+			//decelerate
+			mActualSpeedXYZ.set_x(
+					mActualSpeedXYZ.get_x() * (1.0 - min(mFrictionXYZ * dt, 1.0f)));
+		}
+	}
+	//z axis
+	if (mUp and (not mDown))
+	{
+		if (mAccelXYZ.get_z() != 0.0)
+		{
+			//accelerate
+			mActualSpeedXYZ.set_z(
+					mActualSpeedXYZ.get_z() + mAccelXYZ.get_z() * dt);
+			if (mActualSpeedXYZ.get_z() > mMaxSpeedXYZ.get_z())
+			{
+				//limit speed
+				mActualSpeedXYZ.set_z(mMaxSpeedXYZ.get_z());
+			}
+		}
+		else
+		{
+			//kinematic
+			mActualSpeedXYZ.set_z(mMaxSpeedXYZ.get_z());
+		}
+	}
+	else if (mDown and (not mUp))
+	{
+		if (mAccelXYZ.get_z() != 0.0)
+		{
+			//accelerate
+			mActualSpeedXYZ.set_z(
+					mActualSpeedXYZ.get_z() - mAccelXYZ.get_z() * dt);
+			if (mActualSpeedXYZ.get_z() < -mMaxSpeedXYZ.get_z())
+			{
+				//limit speed
+				mActualSpeedXYZ.set_z(-mMaxSpeedXYZ.get_z());
+			}
+		}
+		else
+		{
+			//kinematic
+			mActualSpeedXYZ.set_z(-mMaxSpeedXYZ.get_z());
+		}
+	}
+	else if (mActualSpeedXYZ.get_z() != 0.0)
+	{
+		if (mActualSpeedXYZ.get_z() * mActualSpeedXYZ.get_z()
+				< mMaxSpeedSquaredXYZ.get_z() * mStopThreshold)
+		{
+			//stop
+			mActualSpeedXYZ.set_z(0.0);
+		}
+		else
+		{
+			//decelerate
+			mActualSpeedXYZ.set_z(
+					mActualSpeedXYZ.get_z() * (1.0 - min(mFrictionXYZ * dt, 1.0f)));
+		}
+	}
+	//rotation h
+	if (mHeadLeft and (not mHeadRight))
+	{
+		if (mAccelHP != 0.0)
+		{
+			//accelerate
+			mActualSpeedH += mAccelHP * dt;
+			if (mActualSpeedH > mMaxSpeedHP)
+			{
+				//limit speed
+				mActualSpeedH = mMaxSpeedHP;
+			}
+		}
+		else
+		{
+			//kinematic
+			mActualSpeedH = mMaxSpeedHP;
+		}
+	}
+	else if (mHeadRight and (not mHeadLeft))
+	{
+		if (mAccelHP != 0.0)
+		{
+			//accelerate
+			mActualSpeedH -= mAccelHP * dt;
+			if (mActualSpeedH < -mMaxSpeedHP)
+			{
+				//limit speed
+				mActualSpeedH = -mMaxSpeedHP;
+			}
+		}
+		else
+		{
+			//kinematic
+			mActualSpeedH = -mMaxSpeedHP;
+		}
+	}
+	else if (mActualSpeedH != 0.0)
+	{
+		if (mActualSpeedH * mActualSpeedH < mMaxSpeedSquaredHP * mStopThreshold)
+		{
+			//stop
+			mActualSpeedH = 0.0;
+		}
+		else
+		{
+			//decelerate
+            mActualSpeedH = mActualSpeedH * (1.0 - min(mFrictionHP * dt, 1.0f));
+		}
+	}
+	//rotation p
+	if (mPitchUp and (not mPitchDown))
+	{
+		if (mAccelHP != 0.0)
+		{
+			//accelerate
+			mActualSpeedP += mAccelHP * dt;
+			if (mActualSpeedP > mMaxSpeedHP)
+			{
+				//limit speed
+				mActualSpeedP = mMaxSpeedHP;
+			}
+		}
+		else
+		{
+			//kinematic
+			mActualSpeedP = mMaxSpeedHP;
+		}
+	}
+	else if (mPitchDown and (not mPitchUp))
+	{
+		if (mAccelHP != 0.0)
+		{
+			//accelerate
+			mActualSpeedP -= mAccelHP * dt;
+			if (mActualSpeedP < -mMaxSpeedHP)
+			{
+				//limit speed
+				mActualSpeedP = -mMaxSpeedHP;
+			}
+		}
+		else
+		{
+			//kinematic
+			mActualSpeedP = -mMaxSpeedHP;
+		}
+	}
+	else if (mActualSpeedP != 0.0)
+	{
+		if (mActualSpeedP * mActualSpeedP < mMaxSpeedSquaredHP * mStopThreshold)
+		{
+			//stop
+			mActualSpeedP = 0.0;
+		}
+		else
+		{
+			//decelerate
+			mActualSpeedP = mActualSpeedP * (1.0 - min(mFrictionHP * dt, 1.0f));
+		}
+	}
+	//
+	return AsyncTask::DS_cont;
+}

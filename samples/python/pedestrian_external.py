@@ -16,7 +16,7 @@ from common import startFramework, toggleDebugFlag, toggleDebugDraw, mask, \
         animRateFactor, writeToBamFileAndExit, readFromBamFile, bamFileName, \
         getCollisionEntryFromCamera, obstacleFile, HandleObstacleData, \
         handleObstacles, HandleVehicleData, handleVehicles, vehicleFile, \
-        vehicleAnimFiles
+        vehicleAnimFiles, Driver
 import sys, random
         
 # # specific data/functions declarations/definitions
@@ -25,6 +25,15 @@ vehicleAnimCtls = []
 steerPlugIn = None
 steerVehicles = []
 playerNP = None
+playerDriver = None
+forwardMove = 1
+forwardMoveStop = -1
+leftMove = 2
+leftMoveStop = -2
+backwardMove = 3
+backwardMoveStop = -3
+rightMove = 4
+rightMoveStop = -4
 #
 def setParametersBeforeCreation():
     """set parameters as strings before plug-ins/vehicles creation"""
@@ -32,6 +41,8 @@ def setParametersBeforeCreation():
     steerMgr = OSSteerManager.get_global_ptr()
     valueList = ValueList_string()
     # set vehicle's mass, speed
+    steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "external_update", 
+            "false")
     steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "mass",
             "2.0")
     steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE, "speed",
@@ -131,6 +142,31 @@ def getPlayerModelAnims(name, scale, vehicleFileIdx, steerPlugIn,
     steerPlugIn.add_steer_vehicle(steerVehicleNP)
     # return the steerVehicleNP
     return steerVehicleNP
+
+def movePlayer(data):
+    """player's movement callback"""
+    
+    global playerDriver, forwardMove, leftMove, backwardMove, rightMove
+    if not playerDriver:
+        return
+
+    action = data
+    if action > 0:
+        #start movement
+        enable = True
+    else:
+        action = -action
+        #stop movement
+        enable = False
+    #
+    if action == forwardMove:
+        playerDriver.enable_forward(enable)
+    elif action == leftMove:
+        playerDriver.enable_head_left(enable)
+    elif action == backwardMove:
+        playerDriver.enable_backward(enable)
+    elif action == rightMove:
+        playerDriver.enable_head_right(enable)
         
 if __name__ == '__main__':
 
@@ -152,7 +188,7 @@ if __name__ == '__main__':
     textNodePath.set_pos(-1.25, 0.0, 0.8)
     textNodePath.set_scale(0.035)
     
-    # create a steer manager; set root and mask to manage 'kinematic' vehicles
+    # create a steer manager set root and mask to manage 'kinematic' vehicles
     steerMgr = OSSteerManager(app.render, mask)
 
     # print creation parameters: defult values
@@ -187,9 +223,9 @@ if __name__ == '__main__':
         steerMgr.set_parameter_value(OSSteerManager.STEERVEHICLE,
                 "external_update", "true")
         # add the player and set a reference to it
-        playerNP = getPlayerModelAnims("PlayerNP", 0.5, 0, steerPlugIn,
+        playerNP = getPlayerModelAnims("PlayerNP", 0.8, 0, steerPlugIn,
                 steerVehicles, vehicleAnimCtls,
-                LPoint3f(79.474, 51.7236, 2.0207))
+                LPoint3f(141.597, 73.496, 2.14218))
         
         # set remaining creation parameters as strings before 
         # the other vehicles' creation
@@ -295,10 +331,22 @@ if __name__ == '__main__':
     app.win.set_close_request_event("close_request_event")
     app.accept("close_request_event", writeToBamFileAndExit, [bamFileName])
 
-
-
-
-    
+    # player will be driven by arrows keys
+    playerDriver = Driver(app, playerNP, 10)
+    playerDriver.set_max_angular_speed(100.0)
+    playerDriver.set_angular_accel(50.0)
+    playerDriver.set_linear_accel(LVecBase3f(1.0, 1.0, 1.0))
+    playerDriver.set_linear_friction(1.5)
+    playerDriver.enable()
+    app.accept("arrow_up", movePlayer, [forwardMove]) 
+    app.accept("arrow_up-up", movePlayer, [forwardMoveStop]) 
+    app.accept("arrow_left", movePlayer, [leftMove]) 
+    app.accept("arrow_left-up", movePlayer, [leftMoveStop]) 
+    app.accept("arrow_down", movePlayer, [backwardMove]) 
+    app.accept("arrow_down-up", movePlayer, [backwardMoveStop]) 
+    app.accept("arrow_right", movePlayer, [rightMove]) 
+    app.accept("arrow_right-up", movePlayer, [rightMoveStop]) 
+   
     # place camera
     trackball = app.trackball.node()
     trackball.set_pos(-128.0, 120.0, -40.0)

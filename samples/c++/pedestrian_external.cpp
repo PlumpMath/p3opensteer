@@ -13,13 +13,22 @@ vector<vector<PT(AnimControl)> > vehicleAnimCtls;
 PT(OSSteerPlugIn)steerPlugIn;
 vector<PT(OSSteerVehicle)>steerVehicles;
 NodePath playerNP;
+Driver* playerDriver;
+int forwardMove = 1;
+int forwardMoveStop = -1;
+int leftMove = 2;
+int leftMoveStop = -2;
+int backwardMove = 3;
+int backwardMoveStop = -3;
+int rightMove = 4;
+int rightMoveStop = -4;
 //
 void setParametersBeforeCreation();
 AsyncTask::DoneStatus updatePlugIn(GenericAsyncTask*, void*);
 NodePath getPlayerModelAnims(const string&, float, int, PT(OSSteerPlugIn),
 		vector<PT(OSSteerVehicle)>&, vector<vector<PT(AnimControl)> >&,
 		const LPoint3f& );
-AsyncTask::DoneStatus updatePlayer(GenericAsyncTask*, void*);
+void movePlayer(const Event*, void*);
 
 int main(int argc, char *argv[])
 {
@@ -78,9 +87,9 @@ int main(int argc, char *argv[])
 		steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE,
 				"external_update", "true");
 		// add the player and set a reference to it
-		playerNP = getPlayerModelAnims("PlayerNP", 0.5, 0, steerPlugIn,
+		playerNP = getPlayerModelAnims("PlayerNP", 0.8, 0, steerPlugIn,
 				steerVehicles, vehicleAnimCtls,
-				LPoint3f(79.474, 51.7236, 2.0207));
+				LPoint3f(141.597, 73.496, 2.14218));
 
 		// set remaining creation parameters as strings before
 		// the other vehicles' creation
@@ -213,8 +222,21 @@ int main(int argc, char *argv[])
 	framework.define_key("close_request_event", "writeToBamFile",
 			&writeToBamFileAndExit, (void*) &bamFileName);
 
-	// player will be driven by WASD keys XXX
-
+	// player will be driven by arrows keys
+	playerDriver = new (nothrow) Driver(&framework, playerNP, 10);
+    playerDriver->set_max_angular_speed(100.0);
+    playerDriver->set_angular_accel(50.0);
+    playerDriver->set_linear_accel(LVecBase3f(1.0, 1.0, 1.0));
+    playerDriver->set_linear_friction(1.5);
+	playerDriver->enable();
+	framework.define_key("arrow_up", "forwardMove", &movePlayer, &forwardMove);
+	framework.define_key("arrow_up-up", "forwardMoveStop", &movePlayer, &forwardMoveStop);
+	framework.define_key("arrow_left", "leftMove", &movePlayer, &leftMove);
+	framework.define_key("arrow_left-up", "leftMoveStop", &movePlayer, &leftMoveStop);
+	framework.define_key("arrow_down", "backwardMove", &movePlayer, &backwardMove);
+	framework.define_key("arrow_down-up", "backwardMoveStop", &movePlayer, &backwardMoveStop);
+	framework.define_key("arrow_right", "rightMove", &movePlayer, &rightMove);
+	framework.define_key("arrow_right-up", "rightMoveStop", &movePlayer, &rightMoveStop);
 
 	// place camera trackball (local coordinate)
 	PT(Trackball)trackball = DCAST(Trackball, window->get_mouse().find("**/+Trackball").node());
@@ -223,6 +245,8 @@ int main(int argc, char *argv[])
 
 	// do the main loop, equals to call app.run() in python
 	framework.main_loop();
+
+	delete playerDriver;
 
 	return (0);
 }
@@ -233,6 +257,8 @@ void setParametersBeforeCreation()
 	OSSteerManager* steerMgr = OSSteerManager::get_global_ptr();
 	ValueList<string> valueList;
 	// set vehicle's mass, speed
+	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "external_update",
+			"false");
 	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "mass", "2.0");
 	steerMgr->set_parameter_value(OSSteerManager::STEERVEHICLE, "speed",
 			"0.01");
@@ -345,952 +371,41 @@ NodePath getPlayerModelAnims(const string& name, float scale,
 	return steerVehicleNP;
 }
 
-
-//XXX
-class Driver
+// player's movement callback
+void movePlayer(const Event*, void* data)
 {
-public:
-	Driver(GraphicsWindow* win, const NodePath& ownerObject);
-	virtual ~Driver();
-
-	virtual void reset();
-	virtual void onAddToObjectSetup();
-	virtual void onRemoveFromObjectCleanup();
-	virtual void onAddToSceneSetup();
-	virtual void onRemoveFromSceneCleanup();
-
-	virtual void update(void* data);
-
-	bool enable();
-	bool disable();
-	bool isEnabled();
-
-	void enableForward(bool enable);
-	bool isForwardEnabled();
-	void enableBackward(bool enable);
-	bool isBackwardEnabled();
-	void enableStrafeLeft(bool enable);
-	bool isStrafeLeftEnabled();
-	void enableStrafeRight(bool enable);
-	bool isStrafeRightEnabled();
-	void enableUp(bool enable);
-	bool isUpEnabled();
-	void enableDown(bool enable);
-	bool isDownEnabled();
-	void enableHeadLeft(bool enable);
-	bool isHeadLeftEnabled();
-	void enableHeadRight(bool enable);
-	bool isHeadRightEnabled();
-	void enablePitchUp(bool enable);
-	bool isPitchUpEnabled();
-	void enablePitchDown(bool enable);
-	bool isPitchDownEnabled();
-	void enableMouseMove(bool enable);
-	bool isMouseMoveEnabled();
-
-	//max values
-	void setHeadLimit(bool enabled = false, float hLimit = 0.0);
-	void setPitchLimit(bool enabled = false, float pLimit = 0.0);
-	void setMaxLinearSpeed(const LVector3f& linearSpeed);
-	void setMaxAngularSpeed(float angularSpeed);
-	LVector3f getMaxSpeeds(float& angularSpeed);
-	void setLinearAccel(const LVector3f& linearAccel);
-	void setAngularAccel(float angularAccel);
-	LVector3f getAccels(float& angularAccel);
-	void setLinearFriction(float linearFriction);
-	void setAngularFriction(float angularFriction);
-	void getFrictions(float& linearFriction, float& angularFriction);
-	void setSens(float sensX, float sensY);
-	void getSens(float& sensX, float& sensY);
-	void setFastFactor(float factor);
-	float getFastFactor();
-	//speed current values
-	LVector3f getCurrentSpeeds(float& angularSpeedH, float& angularSpeedP);
-
-private:
-	///Main parameters.
-	GraphicsWindow* mWin;
-	NodePath mOwnerObjectNP;
-	///Enabling flags.
-	bool mStartEnabled, mEnabled;
-	///Key controls and effective keys.
-	bool mForward, mBackward, mStrafeLeft, mStrafeRight, mUp, mDown, mHeadLeft,
-			mHeadRight, mPitchUp, mPitchDown, mMouseMove;
-	bool mForwardKey, mBackwardKey, mStrafeLeftKey, mStrafeRightKey, mUpKey,
-			mDownKey, mHeadLeftKey, mHeadRightKey, mPitchUpKey, mPitchDownKey,
-			mMouseMoveKey;
-	std::string mSpeedKey;
-	///Key control values.
-	bool mMouseEnabledH, mMouseEnabledP;
-	bool mHeadLimitEnabled, mPitchLimitEnabled;
-	float mHLimit, mPLimit;
-	int mSignOfTranslation, mSignOfMouse;
-	/// Sensitivity settings.
-	float mFastFactor;
-	LVecBase3f mActualSpeedXYZ, mMaxSpeedXYZ, mMaxSpeedSquaredXYZ;
-	float mActualSpeedH, mActualSpeedP, mMaxSpeedHP, mMaxSpeedSquaredHP;
-	LVecBase3f mAccelXYZ;
-	float mAccelHP;
-	float mFrictionXYZ;
-	float mFrictionHP;
-	float mStopThreshold;
-	float mSensX, mSensY;
-	int mCentX, mCentY;
-	//member functions
-	virtual bool initialize();
-	void doEnable();
-	void doDisable();
-};
-
-Driver::Driver(GraphicsWindow* win, const NodePath& ownerObjectNP)
-{
-	mWin = win;
-	mOwnerObjectNP = ownerObjectNP;
-	reset();
-}
-
-Driver::~Driver()
-{
-}
-
-inline void Driver::reset()
-{
-	//
-	mStartEnabled = mEnabled = false;
-	mForward = mBackward = mStrafeLeft = mStrafeRight = mUp = mDown =
-			mHeadLeft = mHeadRight = mPitchUp = mPitchDown = false;
-	//by default we consider mouse moved on every update, because
-	//we want mouse poll by default; this can be changed by calling
-	//the enabler (for example by an handler responding to mouse-move
-	//event if it is possible. See: http://www.panda3d.org/forums/viewtopic.php?t=9326
-	// http://www.panda3d.org/forums/viewtopic.php?t=6049)
-	mMouseMove = true;
-	mForwardKey = mBackwardKey = mStrafeLeftKey = mStrafeRightKey = mUpKey, mDownKey =
-			mHeadLeftKey = mHeadRightKey = mPitchUpKey = mPitchDownKey =
-					mMouseMoveKey = false;
-	mSpeedKey = std::string("shift");
-	mMouseEnabledH = mMouseEnabledP = mHeadLimitEnabled = mPitchLimitEnabled =
-			false;
-	mHLimit = mPLimit = 0.0;
-	mSignOfTranslation = mSignOfMouse = 1;
-	mFastFactor = 0.0;
-	mActualSpeedXYZ = mMaxSpeedXYZ = mMaxSpeedSquaredXYZ = LVecBase3f::zero();
-	mActualSpeedH = mActualSpeedP = mMaxSpeedHP = mMaxSpeedSquaredHP = 0.0;
-	mAccelXYZ = LVecBase3f::zero();
-	mAccelHP = 0.0;
-	mFrictionXYZ = mFrictionHP = 0.0;
-	mStopThreshold = 0.0;
-	mSensX = mSensY = 0.0;
-	mCentX = mCentY = 0.0;
-}
-
-inline bool Driver::isEnabled()
-{
-	return mEnabled;
-}
-
-inline void Driver::enableForward(bool enable)
-{
-	if (mForwardKey)
+	if (not playerDriver)
 	{
-		mForward = enable;
+		return;
 	}
-}
-
-inline bool Driver::isForwardEnabled()
-{
-	return mForward;
-}
-
-inline void Driver::enableBackward(bool enable)
-{
-	if (mBackwardKey)
+	int action = *reinterpret_cast<int*>(data);
+	bool enable;
+	if (action > 0)
 	{
-		mBackward = enable;
-	}
-}
-
-inline bool Driver::isBackwardEnabled()
-{
-	return mBackward;
-}
-
-inline void Driver::enableStrafeLeft(bool enable)
-{
-	if (mStrafeLeftKey)
-	{
-		mStrafeLeft = enable;
-	}
-}
-
-inline bool Driver::isStrafeLeftEnabled()
-{
-
-	return mStrafeLeft;
-}
-
-inline void Driver::enableStrafeRight(bool enable)
-{
-
-	if (mStrafeRightKey)
-	{
-		mStrafeRight = enable;
-	}
-}
-
-inline bool Driver::isStrafeRightEnabled()
-{
-
-	return mStrafeRight;
-}
-
-inline void Driver::enableUp(bool enable)
-{
-
-	if (mUpKey)
-	{
-		mUp = enable;
-	}
-}
-
-inline bool Driver::isUpEnabled()
-{
-
-	return mUp;
-}
-
-inline void Driver::enableDown(bool enable)
-{
-
-	if (mDownKey)
-	{
-		mDown = enable;
-	}
-}
-
-inline bool Driver::isDownEnabled()
-{
-
-	return mDown;
-}
-
-inline void Driver::enableHeadLeft(bool enable)
-{
-
-	if (mHeadLeftKey)
-	{
-		mHeadLeft = enable;
-	}
-}
-
-inline bool Driver::isHeadLeftEnabled()
-{
-
-	return mHeadLeft;
-}
-
-inline void Driver::enableHeadRight(bool enable)
-{
-
-	if (mHeadRightKey)
-	{
-		mHeadRight = enable;
-	}
-}
-
-inline bool Driver::isHeadRightEnabled()
-{
-
-	return mHeadRight;
-}
-
-inline void Driver::enablePitchUp(bool enable)
-{
-
-	if (mPitchUpKey)
-	{
-		mPitchUp = enable;
-	}
-}
-
-inline bool Driver::isPitchUpEnabled()
-{
-
-	return mPitchUp;
-}
-
-inline void Driver::enablePitchDown(bool enable)
-{
-
-	if (mPitchDownKey)
-	{
-		mPitchDown = enable;
-	}
-}
-
-inline bool Driver::isPitchDownEnabled()
-{
-
-	return mPitchDown;
-}
-
-inline void Driver::enableMouseMove(bool enable)
-{
-
-	if (mMouseMoveKey)
-	{
-		mMouseMove = enable;
-	}
-}
-
-inline bool Driver::isMouseMoveEnabled()
-{
-
-	return mMouseMove;
-}
-
-inline void Driver::setHeadLimit(bool enabled, float hLimit)
-{
-
-	mHeadLimitEnabled = enabled;
-	hLimit >= 0.0 ? mHLimit = hLimit : mHLimit = -hLimit;
-}
-
-inline void Driver::setPitchLimit(bool enabled, float pLimit)
-{
-
-	mPitchLimitEnabled = enabled;
-	pLimit >= 0.0 ? mPLimit = pLimit : mPLimit = -pLimit;
-}
-
-inline void Driver::setMaxLinearSpeed(const LVector3f& maxLinearSpeed)
-{
-
-	mMaxSpeedXYZ = maxLinearSpeed;
-	mMaxSpeedSquaredXYZ = LVector3f(
-			maxLinearSpeed.get_x() * maxLinearSpeed.get_x(),
-			maxLinearSpeed.get_y() * maxLinearSpeed.get_y(),
-			maxLinearSpeed.get_z() * maxLinearSpeed.get_z());
-}
-
-inline void Driver::setMaxAngularSpeed(float maxAngularSpeed)
-{
-
-	mMaxSpeedHP = maxAngularSpeed;
-	mMaxSpeedSquaredHP = maxAngularSpeed * maxAngularSpeed;
-}
-
-inline LVector3f Driver::getMaxSpeeds(float& maxAngularSpeed)
-{
-
-	maxAngularSpeed = mMaxSpeedHP;
-	return mMaxSpeedXYZ;
-}
-
-inline void Driver::setLinearAccel(const LVector3f& linearAccel)
-{
-
-	mAccelXYZ = linearAccel;
-}
-
-inline void Driver::setAngularAccel(float angularAccel)
-{
-
-	mAccelHP = angularAccel;
-}
-
-inline LVector3f Driver::getAccels(float& angularAccel)
-{
-
-	angularAccel = mAccelHP;
-	return mAccelXYZ;
-}
-
-inline void Driver::setLinearFriction(float linearFriction)
-{
-
-	mFrictionXYZ = linearFriction;
-}
-
-inline void Driver::setAngularFriction(float angularFriction)
-{
-
-	mFrictionHP = angularFriction;
-	if ((mFrictionHP < 0.0) or (mFrictionHP > 1.0))
-	{
-		mFrictionHP = 0.1;
-	}
-}
-
-inline void Driver::getFrictions(float& linearFriction, float& angularFriction)
-{
-
-	linearFriction = mFrictionXYZ;
-	angularFriction = mFrictionHP;
-}
-
-inline void Driver::setSens(float sensX, float sensY)
-{
-
-	mSensX = sensX;
-	mSensY = sensY;
-}
-
-inline void Driver::getSens(float& sensX, float& sensY)
-{
-
-	sensX = mSensX;
-	sensY = mSensY;
-}
-
-inline void Driver::setFastFactor(float factor)
-{
-
-	mFastFactor = factor;
-}
-
-inline float Driver::getFastFactor()
-{
-
-	return mFastFactor;
-}
-
-inline LVector3f Driver::getCurrentSpeeds(float& angularSpeedH,
-		float& angularSpeedP)
-{
-
-	angularSpeedH = mActualSpeedH;
-	angularSpeedP = mActualSpeedP;
-	return mActualSpeedXYZ;
-}
-
-bool Driver::initialize()
-{
-	bool result = true;
-	//get settings from template
-	//enabling setting
-	mStartEnabled = true;
-	//inverted setting (1/-1): not inverted -> 1, inverted -> -1
-	mSignOfTranslation = 1;
-	mSignOfMouse = 1;
-	//head limit: enabled@[limit]; limit >= 0.0
-	mHeadLimitEnabled = false;
-	mHLimit = 0.0;
-	//pitch limit: enabled@[limit]; limit >= 0.0
-	mPitchLimitEnabled = false;
-	mPLimit = 0.0;
-	//mouse movement setting
-	mMouseEnabledH = false;
-	mMouseEnabledP = false;
-	//key events setting
-	//backward key
-	mBackwardKey = true;
-	//down key
-	mDownKey = true;
-	//forward key
-	mForwardKey = true;
-	//strafeLeft key
-	mStrafeLeftKey = true;
-	//strafeRight key
-	mStrafeRightKey = true;
-	//headLeft key
-	mHeadLeftKey = true;
-	//headRight key
-	mHeadRightKey = true;
-	//pitchUp key
-	mPitchUpKey = true;
-	//pitchDown key
-	mPitchDownKey = true;
-	//up key
-	mUpKey = true;
-	//mouseMove key: enabled/disabled
-	mMouseMoveKey = false;
-	//speedKey
-	if (not (mSpeedKey == std::string("control")
-			or mSpeedKey == std::string("alt")
-			or mSpeedKey == std::string("shift")))
-	{
-		mSpeedKey = std::string("shift");
-	}
-	//
-	float value, absValue;
-	//max linear speed (>=0)
-	mMaxSpeedXYZ = LVecBase3f(5.0, 5.0, 5.0);
-	mMaxSpeedSquaredXYZ = LVector3f(mMaxSpeedXYZ.get_x() * mMaxSpeedXYZ.get_x(),
-			mMaxSpeedXYZ.get_y() * mMaxSpeedXYZ.get_y(),
-			mMaxSpeedXYZ.get_z() * mMaxSpeedXYZ.get_z());
-	//max angular speed (>=0)
-	mMaxSpeedHP = 5.0;
-	mMaxSpeedSquaredHP = mMaxSpeedHP * mMaxSpeedHP;
-	//linear accel (>=0)
-	mAccelXYZ = LVecBase3f(5.0, 5.0, 5.0);
-	//angular accel (>=0)
-	mAccelHP = 5.0;
-	//reset actual speeds
-	mActualSpeedXYZ = LVector3f::zero();
-	mActualSpeedH = 0.0;
-	mActualSpeedP = 0.0;
-	//linear friction (>=0)
-	mFrictionXYZ = 0.1;
-	//angular friction (>=0)
-	mFrictionHP = 0.1;
-	//stop threshold [0.0, 1.0]
-	mStopThreshold = 0.01;
-	//fast factor (>=0)
-	mFastFactor = 5.0;
-	//sens x (>=0)
-	mSensX = 0.2;
-	//sens_y (>=0)
-	mSensY = 0.2;
-	//
-	return result;
-}
-
-void Driver::onAddToObjectSetup()
-{
-	//
-	mCentX = mWin->get_properties().get_x_size() / 2;
-	mCentY = mWin->get_properties().get_y_size() / 2;
-}
-
-void Driver::onRemoveFromObjectCleanup()
-{
-	//see disable
-	if (mEnabled and (mMouseEnabledH or mMouseEnabledP or mMouseMoveKey))
-	{
-		//we have control through mouse movements
-		//show mouse cursor
-		WindowProperties props;
-		props.set_cursor_hidden(false);
-		mWin->request_properties(props);
-	}
-	//
-	reset();
-}
-
-void Driver::onAddToSceneSetup()
-{
-	//enable the component (if requested)
-	if (mStartEnabled)
-	{
-		doEnable();
-	}
-}
-
-void Driver::onRemoveFromSceneCleanup()
-{
-	//remove from control manager update
-//	GameControlManager::GetSingletonPtr()->removeFromControlUpdate(this); XXX
-}
-
-bool Driver::enable()
-{
-	//if enabled return
-	RETURN_ON_COND(mEnabled, false)
-
-	//actual ebnabling
-	doEnable();
-	//
-	return true;
-}
-
-void Driver::doEnable()
-{
-	if (mMouseEnabledH or mMouseEnabledP or mMouseMoveKey)
-	{
-		//we want control through mouse movements
-		//hide mouse cursor
-		WindowProperties props;
-		props.set_cursor_hidden(true);
-		mWin->request_properties(props);
-		//reset mouse to start position
-		mWin->move_pointer(0, mCentX, mCentY);
-	}
-	//
-	mEnabled = true;
-
-	//add to the control manager update
-//	GameControlManager::GetSingletonPtr()->addToControlUpdate(this); XXX
-}
-
-bool Driver::disable()
-{
-	//if not enabled return
-	RETURN_ON_COND(not mEnabled, false)
-
-	//actual disabling
-	doDisable();
-	//
-	return true;
-}
-
-void Driver::doDisable()
-{
-	if (mMouseEnabledH or mMouseEnabledP or mMouseMoveKey)
-	{
-		//we have control through mouse movements
-		//show mouse cursor
-		WindowProperties props;
-		props.set_cursor_hidden(false);
-		mWin->request_properties(props);
-	}
-	//
-	mEnabled = false;
-}
-
-void Driver::update(void* data)
-{
-
-	float dt = *(reinterpret_cast<float*>(data));
-
-	//handle mouse
-	if (mMouseMove and (mMouseEnabledH or mMouseEnabledP))
-	{
-		MouseData md = mWin->get_pointer(0);
-		float deltaX = md.get_x() - mCentX;
-		float deltaY = md.get_y() - mCentY;
-
-		if (mWin->move_pointer(0, mCentX, mCentY))
-		{
-			if (mMouseEnabledH and (deltaX != 0.0))
-			{
-				mOwnerObjectNP.set_h(
-						mOwnerObjectNP.get_h() - deltaX * mSensX * mSignOfMouse);
-			}
-			if (mMouseEnabledP and (deltaY != 0.0))
-			{
-				mOwnerObjectNP.set_p(
-						mOwnerObjectNP.get_p() - deltaY * mSensY * mSignOfMouse);
-			}
-		}
-		//if mMouseMoveKey is true we are controlling mouse movements
-		//so we need to reset mMouseMove to false
-		if (mMouseMoveKey)
-		{
-			mMouseMove = false;
-		}
-	}
-	//update position/orientation
-	mOwnerObjectNP.set_y(mOwnerObjectNP,
-			mActualSpeedXYZ.get_y() * dt * mSignOfTranslation);
-	mOwnerObjectNP.set_x(mOwnerObjectNP,
-			mActualSpeedXYZ.get_x() * dt * mSignOfTranslation);
-	mOwnerObjectNP.set_z(mOwnerObjectNP, mActualSpeedXYZ.get_z() * dt);
-	//head
-	if (mHeadLimitEnabled)
-	{
-		float head = mOwnerObjectNP.get_h() + mActualSpeedH * dt * mSignOfMouse;
-		if (head > mHLimit)
-		{
-			head = mHLimit;
-		}
-		else if (head < -mHLimit)
-		{
-			head = -mHLimit;
-		}
-		mOwnerObjectNP.set_h(head);
+		//start movement
+		enable = true;
 	}
 	else
 	{
-		mOwnerObjectNP.set_h(
-				mOwnerObjectNP.get_h() + mActualSpeedH * dt * mSignOfMouse);
+		action = -action;
+		//stop movement
+		enable = false;
 	}
-	//pitch
-	if (mPitchLimitEnabled)
+	//
+	if (action == forwardMove)
 	{
-		float pitch = mOwnerObjectNP.get_p() + mActualSpeedP * dt * mSignOfMouse;
-		if (pitch > mPLimit)
-		{
-			pitch = mPLimit;
-		}
-		else if (pitch < -mPLimit)
-		{
-			pitch = -mPLimit;
-		}
-		mOwnerObjectNP.set_p(pitch);
+		playerDriver->enable_forward(enable);
 	}
-	else
+	else if(action == leftMove)
 	{
-		mOwnerObjectNP.set_p(
-				mOwnerObjectNP.get_p() + mActualSpeedP * dt * mSignOfMouse);
+		playerDriver->enable_head_left(enable);
 	}
-
-	//update speeds
-	float kLinearReductFactor = mFrictionXYZ * dt;
-	if (kLinearReductFactor > 1.0)
+	else if(action == backwardMove)
 	{
-		kLinearReductFactor = 1.0;
+		playerDriver->enable_backward(enable);
 	}
-	//y axis
-	if (mForward and (not mBackward))
+	else if(action == rightMove)
 	{
-		if (mAccelXYZ.get_y() != 0)
-		{
-			//accelerate
-			mActualSpeedXYZ.set_y(
-					mActualSpeedXYZ.get_y() - mAccelXYZ.get_y() * dt);
-			if (mActualSpeedXYZ.get_y() < -mMaxSpeedXYZ.get_y())
-			{
-				//limit speed
-				mActualSpeedXYZ.set_y(-mMaxSpeedXYZ.get_y());
-			}
-		}
-		else
-		{
-			//kinematic
-			mActualSpeedXYZ.set_y(-mMaxSpeedXYZ.get_y());
-		}
-	}
-	else if (mBackward and (not mForward))
-	{
-		if (mAccelXYZ.get_y() != 0)
-		{
-			//accelerate
-			mActualSpeedXYZ.set_y(
-					mActualSpeedXYZ.get_y() + mAccelXYZ.get_y() * dt);
-			if (mActualSpeedXYZ.get_y() > mMaxSpeedXYZ.get_y())
-			{
-				//limit speed
-				mActualSpeedXYZ.set_y(mMaxSpeedXYZ.get_y());
-			}
-		}
-		else
-		{
-			//kinematic
-			mActualSpeedXYZ.set_y(mMaxSpeedXYZ.get_y());
-		}
-	}
-	else if (mActualSpeedXYZ.get_y() != 0.0)
-	{
-		if (mActualSpeedXYZ.get_y() * mActualSpeedXYZ.get_y()
-				< mMaxSpeedSquaredXYZ.get_y() * mStopThreshold)
-		{
-			//stop
-			mActualSpeedXYZ.set_y(0.0);
-		}
-		else
-		{
-			//decelerate
-			mActualSpeedXYZ.set_y(
-					mActualSpeedXYZ.get_y() * (1 - kLinearReductFactor));
-		}
-	}
-	//x axis
-	if (mStrafeLeft and (not mStrafeRight))
-	{
-		if (mAccelXYZ.get_x() != 0)
-		{
-			//accelerate
-			mActualSpeedXYZ.set_x(
-					mActualSpeedXYZ.get_x() + mAccelXYZ.get_x() * dt);
-			if (mActualSpeedXYZ.get_x() > mMaxSpeedXYZ.get_x())
-			{
-				//limit speed
-				mActualSpeedXYZ.set_x(mMaxSpeedXYZ.get_x());
-			}
-		}
-		else
-		{
-			//kinematic
-			mActualSpeedXYZ.set_x(mMaxSpeedXYZ.get_x());
-		}
-	}
-	else if (mStrafeRight and (not mStrafeLeft))
-	{
-		if (mAccelXYZ.get_x() != 0)
-		{
-			//accelerate
-			mActualSpeedXYZ.set_x(
-					mActualSpeedXYZ.get_x() - mAccelXYZ.get_x() * dt);
-			if (mActualSpeedXYZ.get_x() < -mMaxSpeedXYZ.get_x())
-			{
-				//limit speed
-				mActualSpeedXYZ.set_x(-mMaxSpeedXYZ.get_x());
-			}
-		}
-		else
-		{
-			//kinematic
-			mActualSpeedXYZ.set_x(-mMaxSpeedXYZ.get_y());
-		}
-	}
-	else if (mActualSpeedXYZ.get_x() != 0.0)
-	{
-		if (mActualSpeedXYZ.get_x() * mActualSpeedXYZ.get_x()
-				< mMaxSpeedSquaredXYZ.get_x() * mStopThreshold)
-		{
-			//stop
-			mActualSpeedXYZ.set_x(0.0);
-		}
-		else
-		{
-			//decelerate
-			mActualSpeedXYZ.set_x(
-					mActualSpeedXYZ.get_x() * (1 - kLinearReductFactor));
-		}
-	}
-	//z axis
-	if (mUp and (not mDown))
-	{
-		if (mAccelXYZ.get_z() != 0)
-		{
-			//accelerate
-			mActualSpeedXYZ.set_z(
-					mActualSpeedXYZ.get_z() + mAccelXYZ.get_z() * dt);
-			if (mActualSpeedXYZ.get_z() > mMaxSpeedXYZ.get_z())
-			{
-				//limit speed
-				mActualSpeedXYZ.set_z(mMaxSpeedXYZ.get_z());
-			}
-		}
-		else
-		{
-			//kinematic
-			mActualSpeedXYZ.set_z(mMaxSpeedXYZ.get_z());
-		}
-	}
-	else if (mDown and (not mUp))
-	{
-		if (mAccelXYZ.get_z() != 0)
-		{
-			//accelerate
-			mActualSpeedXYZ.set_z(
-					mActualSpeedXYZ.get_z() - mAccelXYZ.get_z() * dt);
-			if (mActualSpeedXYZ.get_z() < -mMaxSpeedXYZ.get_z())
-			{
-				//limit speed
-				mActualSpeedXYZ.set_z(-mMaxSpeedXYZ.get_z());
-			}
-		}
-		else
-		{
-			//kinematic
-			mActualSpeedXYZ.set_z(-mMaxSpeedXYZ.get_z());
-		}
-	}
-	else if (mActualSpeedXYZ.get_z() != 0.0)
-	{
-		if (mActualSpeedXYZ.get_z() * mActualSpeedXYZ.get_z()
-				< mMaxSpeedSquaredXYZ.get_z() * mStopThreshold)
-		{
-			//stop
-			mActualSpeedXYZ.set_z(0.0);
-		}
-		else
-		{
-			//decelerate
-			mActualSpeedXYZ.set_z(
-					mActualSpeedXYZ.get_z() * (1 - kLinearReductFactor));
-		}
-	}
-	//rotation h
-	if (mHeadLeft and (not mHeadRight))
-	{
-		if (mAccelHP != 0)
-		{
-			//accelerate
-			mActualSpeedH += mAccelHP * dt;
-			if (mActualSpeedH > mMaxSpeedHP)
-			{
-				//limit speed
-				mActualSpeedH = mMaxSpeedHP;
-			}
-		}
-		else
-		{
-			//kinematic
-			mActualSpeedH = mMaxSpeedHP;
-		}
-	}
-	else if (mHeadRight and (not mHeadLeft))
-	{
-		if (mAccelHP != 0)
-		{
-			//accelerate
-			mActualSpeedH -= mAccelHP * dt;
-			if (mActualSpeedH < -mMaxSpeedHP)
-			{
-				//limit speed
-				mActualSpeedH = -mMaxSpeedHP;
-			}
-		}
-		else
-		{
-			//kinematic
-			mActualSpeedH = -mMaxSpeedHP;
-		}
-	}
-	else if (mActualSpeedH != 0.0)
-	{
-		if (mActualSpeedH * mActualSpeedH < mMaxSpeedSquaredHP * mStopThreshold)
-		{
-			//stop
-			mActualSpeedH = 0.0;
-		}
-		else
-		{
-			//decelerate
-			float kAngularReductFactor = mFrictionHP * dt;
-			if (kAngularReductFactor > 1.0)
-			{
-				kAngularReductFactor = 1.0;
-			}
-			mActualSpeedH = mActualSpeedH * (1 - kAngularReductFactor);
-		}
-	}
-	//rotation p
-	if (mPitchUp and (not mPitchDown))
-	{
-		if (mAccelHP != 0)
-		{
-			//accelerate
-			mActualSpeedP += mAccelHP * dt;
-			if (mActualSpeedP > mMaxSpeedHP)
-			{
-				//limit speed
-				mActualSpeedP = mMaxSpeedHP;
-			}
-		}
-		else
-		{
-			//kinematic
-			mActualSpeedP = mMaxSpeedHP;
-		}
-	}
-	else if (mPitchDown and (not mPitchUp))
-	{
-		if (mAccelHP != 0)
-		{
-			//accelerate
-			mActualSpeedP -= mAccelHP * dt;
-			if (mActualSpeedP < -mMaxSpeedHP)
-			{
-				//limit speed
-				mActualSpeedP = -mMaxSpeedHP;
-			}
-		}
-		else
-		{
-			//kinematic
-			mActualSpeedP = -mMaxSpeedHP;
-		}
-	}
-	else if (mActualSpeedP != 0.0)
-	{
-		if (mActualSpeedP * mActualSpeedP < mMaxSpeedSquaredHP * mStopThreshold)
-		{
-			//stop
-			mActualSpeedP = 0.0;
-		}
-		else
-		{
-			//decelerate
-			float kAngularReductFactor = mFrictionHP * dt;
-			if (kAngularReductFactor > 1.0)
-			{
-				kAngularReductFactor = 1.0;
-			}
-			mActualSpeedP = mActualSpeedP * (1 - kAngularReductFactor);
-		}
+		playerDriver->enable_head_right(enable);
 	}
 }
