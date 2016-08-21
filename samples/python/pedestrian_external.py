@@ -8,7 +8,7 @@ import panda3d.core
 from p3opensteer import OSSteerManager, ValueList_string, ValueList_LPoint3f, \
         ValueList_float
 from panda3d.core import TextNode, ClockObject, AnimControlCollection, \
-        auto_bind, LPoint3f, LVecBase3f, PartGroup
+        auto_bind, LPoint3f, LVecBase3f, PartGroup, LVector3f
 #
 from common import startFramework, toggleDebugFlag, toggleDebugDraw, mask, \
         loadTerrain, printCreationParameters, handleVehicleEvent, \
@@ -26,6 +26,7 @@ steerPlugIn = None
 steerVehicles = []
 playerNP = None
 playerDriver = None
+playerHeightRayCast = LVector3f()
 forwardMove = 1
 forwardMoveStop = -1
 leftMove = 2
@@ -84,6 +85,18 @@ def updatePlugIn(steerPlugIn, task):
             # stop any animation
             vehicleAnimCtls[i][0].stop()
             vehicleAnimCtls[i][1].stop()
+    # make playerNP kinematic (ie stand on floor)
+    if playerNP.node().get_speed() > 0.0:
+        # get steer manager
+        steerMgr = OSSteerManager.get_global_ptr()
+        # correct panda's Z: set the collision ray origin wrt collision root
+        pOrig = steerMgr.get_collision_root().get_relative_point(
+                steerMgr.get_reference_node_path(), playerNP.get_pos()) + playerHeightRayCast * 2.0
+        # get the collision height wrt the reference node path
+        gotCollisionZ = steerMgr.get_collision_height(pOrig, steerMgr.get_reference_node_path())
+        if gotCollisionZ.get_first():
+            #updatedPos.z needs correction
+            playerNP.set_z(gotCollisionZ.get_second())
     #
     return task.cont
 
@@ -330,6 +343,12 @@ if __name__ == '__main__':
     # write to bam file on exit
     app.win.set_close_request_event("close_request_event")
     app.accept("close_request_event", writeToBamFileAndExit, [bamFileName])
+
+    # get player dims for kinematic ray cast
+    modelDims = LVecBase3f() 
+    modelDeltaCenter = LVector3f()
+    steerMgr.get_bounding_dimensions(playerNP, modelDims, modelDeltaCenter)
+    playerHeightRayCast = LVector3f(0.0, 0.0, modelDims.get_z())
 
     # player will be driven by arrows keys
     playerDriver = Driver(app, playerNP, 10)

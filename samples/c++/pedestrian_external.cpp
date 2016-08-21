@@ -14,6 +14,7 @@ PT(OSSteerPlugIn)steerPlugIn;
 vector<PT(OSSteerVehicle)>steerVehicles;
 NodePath playerNP;
 Driver* playerDriver;
+LVector3f playerHeightRayCast;
 int forwardMove = 1;
 int forwardMoveStop = -1;
 int leftMove = 2;
@@ -222,6 +223,12 @@ int main(int argc, char *argv[])
 	framework.define_key("close_request_event", "writeToBamFile",
 			&writeToBamFileAndExit, (void*) &bamFileName);
 
+	// get player dims for kinematic ray cast
+	LVecBase3f modelDims;
+	LVector3f modelDeltaCenter;
+	steerMgr->get_bounding_dimensions(playerNP,	modelDims, modelDeltaCenter);
+	playerHeightRayCast = LVector3f(0.0, 0.0, modelDims.get_z());
+
 	// player will be driven by arrows keys
 	playerDriver = new (nothrow) Driver(&framework, playerNP, 10);
     playerDriver->set_max_angular_speed(100.0);
@@ -307,6 +314,23 @@ AsyncTask::DoneStatus updatePlugIn(GenericAsyncTask* task, void* data)
 			// stop any animation
 			vehicleAnimCtls[i][0]->stop();
 			vehicleAnimCtls[i][1]->stop();
+		}
+	}
+	// make playerNP kinematic (ie stand on floor)
+	if (DCAST(OSSteerVehicle, playerNP.node())->get_speed() > 0.0)
+	{
+		// get steer manager
+		WPT(OSSteerManager)steerMgr = OSSteerManager::get_global_ptr();
+		// correct panda's Z: set the collision ray origin wrt collision root
+		LPoint3f pOrig = steerMgr->get_collision_root().get_relative_point(
+				steerMgr->get_reference_node_path(), playerNP.get_pos()) + playerHeightRayCast * 2.0;
+		// get the collision height wrt the reference node path
+		Pair<bool,float> gotCollisionZ = steerMgr->get_collision_height(pOrig,
+				steerMgr->get_reference_node_path());
+		if (gotCollisionZ.get_first())
+		{
+			//updatedPos.z needs correction
+			playerNP.set_z(gotCollisionZ.get_second());
 		}
 	}
 	//
