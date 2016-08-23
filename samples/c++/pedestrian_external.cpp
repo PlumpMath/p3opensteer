@@ -217,9 +217,11 @@ int main(int argc, char *argv[])
 
 	// handle OSSteerVehicle(s)' events
 	framework.define_key("avoid_obstacle", "handleVehicleEvent",
-			&handleVehicleEvent, NULL);
+			&handleVehicleEvent, nullptr);
 	framework.define_key("avoid_close_neighbor", "handleVehicleEvent",
-			&handleVehicleEvent, NULL);
+			&handleVehicleEvent, nullptr);
+	framework.define_key("avoid_neighbor", "handleVehicleEvent",
+			&handleVehicleEvent, nullptr);
 
 	// write to bam file on exit
 	window->get_graphics_window()->set_close_request_event(
@@ -229,7 +231,7 @@ int main(int argc, char *argv[])
 
 	// 'pedestrian' specific: toggle wander behavior
 	framework.define_key("t", "toggleWanderBehavior", &toggleWanderBehavior,
-			NULL);
+			nullptr);
 
 	// get player dims for kinematic ray cast
 	LVecBase3f modelDims;
@@ -288,6 +290,26 @@ void setParametersBeforeCreation()
 			"thrown_events", valueList);
 	//
 	printCreationParameters();
+}
+
+// toggle wander behavior of last inserted vehicle
+void toggleWanderBehavior(const Event*, void*)
+{
+    if (steerVehicles.size() == 0)
+    {
+        return;
+    }
+
+	if (steerVehicles.back()->get_wander_behavior())
+	{
+		steerVehicles.back()->set_wander_behavior(false);
+	}
+	else
+	{
+		steerVehicles.back()->set_wander_behavior(true);
+	}
+	cout << *steerVehicles.back() << "'s wander behavior is "
+			<< steerVehicles.back()->get_wander_behavior() << endl;
 }
 
 // custom update task for plug-ins

@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
 
 	// handle OSSteerVehicle(s)' events
 	framework.define_key("avoid_neighbor", "handleVehicleEvent",
-			&handleVehicleEvent, NULL);
+			&handleVehicleEvent, nullptr);
 
 	// write to bam file on exit
 	window->get_graphics_window()->set_close_request_event(

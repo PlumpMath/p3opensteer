@@ -1034,9 +1034,7 @@ void OSSteerVehicle::do_external_update_steer_vehicle(const float currentTime,
 	OpenSteer::Vec3 oldPos = mVehicle->position();
 	//update steer vehicle's
 	//position,
-	mVehicle->setPosition(
-			ossup::LVecBase3fToOpenSteerVec3(
-					thisNP.get_pos() - mHeigthCorrection));
+	mVehicle->setPosition(ossup::LVecBase3fToOpenSteerVec3(thisNP.get_pos()));
 	//forward,
 	mVehicle->setForward(
 			ossup::LVecBase3fToOpenSteerVec3(

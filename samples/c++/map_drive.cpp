@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
 	steerPlugIn->enable_debug_drawing(window->get_camera_group());
 	// print debug draw to texture
 	framework.define_key("t", "debugDrawToTexture", &debugDrawToTexture,
-			(void*) NULL);
+			(void*) nullptr);
 	framework.define_key("debug_drawing_texture_ready", "onTextureReady",
 			&onTextureReady, (void*) rttTexStage.p());
 
@@ -206,9 +206,9 @@ int main(int argc, char *argv[])
 
 	// handle OSSteerVehicle(s)' events
 	framework.define_key("avoid_obstacle", "handleVehicleEvent",
-			&handleVehicleEvent, NULL);
+			&handleVehicleEvent, nullptr);
 	framework.define_key("path_following", "handleVehicleEvent",
-			&handleVehicleEvent, NULL);
+			&handleVehicleEvent, nullptr);
 
 	// write to bam file on exit
 	window->get_graphics_window()->set_close_request_event(
@@ -218,7 +218,7 @@ int main(int argc, char *argv[])
 
 	// map drive specifics: toggle prediction type
 	framework.define_key("p", "togglePredictionType", &togglePredictionType,
-			NULL);
+			nullptr);
 
 	// place camera trackball (local coordinate)
 	PT(Trackball)trackball = DCAST(Trackball, window->get_mouse().find("**/+Trackball").node());

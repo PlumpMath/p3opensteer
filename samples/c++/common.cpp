@@ -49,7 +49,7 @@ void startFramework(int argc, char *argv[], const string& msg)
 	framework.open_framework(argc, argv);
 	framework.set_window_title("p3opensteer: " + msg);
 	window = framework.open_window();
-	if (window != (WindowFramework *) NULL)
+	if (window != (WindowFramework *) nullptr)
 	{
 		cout << "Opened the window successfully!\n";
 		window->enable_keyboard();
@@ -153,13 +153,13 @@ NodePath loadTerrain(const string& name, float widthScale, float heightScale)
 		// Add a task to keep updating the terrain
 		framework.get_task_mgr().add(
 				new GenericAsyncTask("terrainUpdate", &terrainUpdate,
-						(void*) NULL));
+						(void*) nullptr));
 	}
 	//
 	return terrain->get_root();
 }
 
-// throws a ray and returns the first collision entry or NULL
+// throws a ray and returns the first collision entry or nullptr
 PT(CollisionEntry)getCollisionEntryFromCamera()
 {
 	// get steer manager
@@ -193,7 +193,7 @@ PT(CollisionEntry)getCollisionEntryFromCamera()
 			}
 		}
 	}
-	return NULL;
+	return nullptr;
 }
 
 // print creation parameters
@@ -547,7 +547,7 @@ Driver::~Driver()
 	do_finalize();
 	do_reset();
 	mOwnerObjectNP.clear();
-	mWin = NULL;
+	mWin = nullptr;
 }
 
 void Driver::do_reset()

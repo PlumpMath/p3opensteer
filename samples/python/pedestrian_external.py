@@ -357,6 +357,7 @@ if __name__ == '__main__':
     # handle OSSteerVehicle(s)' events
     app.accept("avoid_obstacle", handleVehicleEvent, ["avoid_obstacle"])
     app.accept("avoid_close_neighbor", handleVehicleEvent, ["avoid_close_neighbor"])
+    app.accept("avoid_neighbor", handleVehicleEvent, ["avoid_neighbor"])
     
     # write to bam file on exit
     app.win.set_close_request_event("close_request_event")
