@@ -108,10 +108,6 @@ def getPlayerModelAnims(name, scale, vehicleFileIdx, steerPlugIn,
     # get some models, with animations, to attach to vehicles
     # get the model
     vehicleNP = app.loader.load_model(vehicleFile[vehicleFileIdx])
-    # set name 
-    vehicleNP.set_name(name)
-    # set scale
-    vehicleNP.set_scale(scale)
     # associate an anim with a given anim control
     tmpAnims = AnimControlCollection()
     vehicleAnimNP = [None, None]
@@ -147,6 +143,10 @@ def getPlayerModelAnims(name, scale, vehicleFileIdx, steerPlugIn,
     # note: vehicle's move type is ignored
     steerVehicleNP = steerMgr.create_steer_vehicle("PlayerVehicle")
     steerVehicles.append(steerVehicleNP.node())
+    # set the name
+    steerVehicleNP.set_name(name)
+    # set scale
+    steerVehicleNP.set_scale(scale)
     # set the position
     steerVehicleNP.set_pos(pos)
     # attach some geometry (a model) to steer vehicle
@@ -239,6 +239,8 @@ if __name__ == '__main__':
         playerNP = getPlayerModelAnims("PlayerNP", 0.8, 0, steerPlugIn,
                 steerVehicles, vehicleAnimCtls,
                 LPoint3f(141.597, 73.496, 2.14218))
+        # highlight the player
+        playerNP.set_color(1.0, 1.0, 0.0, 0)
         
         # set remaining creation parameters as strings before 
         # the other vehicles' creation

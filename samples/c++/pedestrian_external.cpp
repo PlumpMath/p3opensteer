@@ -91,6 +91,8 @@ int main(int argc, char *argv[])
 		playerNP = getPlayerModelAnims("PlayerNP", 0.8, 0, steerPlugIn,
 				steerVehicles, vehicleAnimCtls,
 				LPoint3f(141.597, 73.496, 2.14218));
+		// highlight the player
+        playerNP.set_color(1.0, 1.0, 0.0, 0);
 
 		// set remaining creation parameters as strings before
 		// the other vehicles' creation
@@ -346,10 +348,6 @@ NodePath getPlayerModelAnims(const string& name, float scale,
 	// get some models, with animations, to attach to vehicles
 	// get the model
 	NodePath vehicleNP = window->load_model(framework.get_models(), vehicleFile[vehicleFileIdx]);
-	// set name
-	vehicleNP.set_name(name);
-	// set scale
-	vehicleNP.set_scale(scale);
 	// associate an anim with a given anim control
 	AnimControlCollection tmpAnims;
 	NodePath vehicleAnimNP[2];
@@ -385,6 +383,10 @@ NodePath getPlayerModelAnims(const string& name, float scale,
 	// note: vehicle's move type is ignored
 	NodePath steerVehicleNP = steerMgr->create_steer_vehicle("PlayerVehicle");
 	steerVehicles.push_back(DCAST(OSSteerVehicle, steerVehicleNP.node()));
+	// set the name
+	steerVehicleNP.set_name(name);
+	// set scale
+	steerVehicleNP.set_scale(scale);
 	// set the position
 	steerVehicleNP.set_pos(pos);
 	// attach some geometry (a model) to steer vehicle
