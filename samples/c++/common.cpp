@@ -159,7 +159,7 @@ NodePath loadTerrain(const string& name, float widthScale, float heightScale)
 	return terrain->get_root();
 }
 
-// throws a ray and returns the first collision entry or nullptr
+// throws a ray and returns the first collision entry or NULL
 PT(CollisionEntry)getCollisionEntryFromCamera()
 {
 	// get steer manager
@@ -193,7 +193,7 @@ PT(CollisionEntry)getCollisionEntryFromCamera()
 			}
 		}
 	}
-	return nullptr;
+	return NULL;
 }
 
 // print creation parameters

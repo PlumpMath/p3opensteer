@@ -161,7 +161,7 @@ int main(int argc, char *argv[])
 
 	// handle OSSteerVehicle(s)' events
 	framework.define_key("move-event", "handleVehicleEvent",
-			&handleVehicleEvent, nullptr);
+			&handleVehicleEvent, NULL);
 
 	// write to bam file on exit
 	window->get_graphics_window()->set_close_request_event(
@@ -171,7 +171,7 @@ int main(int argc, char *argv[])
 
 	// 'low speed turn' specific: toggle steering speed
 	framework.define_key("t", "toggleSteeringSpeed", &toggleSteeringSpeed,
-			nullptr);
+			NULL);
 
 	// place camera trackball (local coordinate)
 	PT(Trackball)trackball = DCAST(Trackball, window->get_mouse().find("**/+Trackball").node());

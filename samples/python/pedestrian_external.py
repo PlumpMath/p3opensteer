@@ -51,11 +51,26 @@ def setParametersBeforeCreation():
 
     # set vehicle throwing events
     valueList.clear()
-    valueList.add_value("avoid_obstacle@avoid_obstacle@1.0:avoid_close_neighbor@avoid_close_neighbor@")
+    valueList.add_value("avoid_obstacle@avoid_obstacle@1.0:"
+            "avoid_close_neighbor@avoid_close_neighbor@1.0:"
+            "avoid_neighbor@avoid_neighbor@1.0")
     steerMgr.set_parameter_values(OSSteerManager.STEERVEHICLE,
             "thrown_events", valueList)
     #
     printCreationParameters()
+
+def toggleWanderBehavior():
+    """toggle wander behavior of last inserted vehicle"""
+    
+    global steerVehicles
+    if len(steerVehicles) == 0:
+        return
+    
+    if steerVehicles[-1].get_wander_behavior():
+        steerVehicles[-1].set_wander_behavior(False)
+    else:
+        steerVehicles[-1].set_wander_behavior(True)
+    print(str(steerVehicles[-1]) + "'s wander behavior is " + str(steerVehicles[-1].get_wander_behavior()))
 
 def updatePlugIn(steerPlugIn, task):
     """custom update task for plug-ins"""
@@ -192,6 +207,7 @@ if __name__ == '__main__':
     text.set_text(
             msg + "\n\n"      
             "- press \"d\" to toggle debug drawing\n"
+            "- press \"up\"/\"left\"/\"down\"/\"right\" arrows to move the player\n"
             "- press \"a\"/\"k\" to add 'opensteer'/'kinematic' vehicle\n"
             "- press \"s\"/\"shift-s\" to increase/decrease last inserted vehicle's max speed\n"
             "- press \"f\"/\"shift-f\" to increase/decrease last inserted vehicle's max force\n"
@@ -346,6 +362,9 @@ if __name__ == '__main__':
     app.win.set_close_request_event("close_request_event")
     app.accept("close_request_event", writeToBamFileAndExit, [bamFileName])
 
+    # 'pedestrian' specific: toggle wander behavior
+    app.accept("t", toggleWanderBehavior)
+    
     # get player dims for kinematic ray cast
     modelDims = LVecBase3f() 
     modelDeltaCenter = LVector3f()
@@ -356,6 +375,7 @@ if __name__ == '__main__':
     playerDriver = Driver(app, playerNP, 10)
     playerDriver.set_max_angular_speed(100.0)
     playerDriver.set_angular_accel(50.0)
+    playerDriver.set_max_linear_speed(LVector3f(8.0, 8.0, 8.0))
     playerDriver.set_linear_accel(LVecBase3f(1.0, 1.0, 1.0))
     playerDriver.set_linear_friction(1.5)
     playerDriver.enable()

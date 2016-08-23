@@ -25,6 +25,7 @@ int rightMove = 4;
 int rightMoveStop = -4;
 //
 void setParametersBeforeCreation();
+void toggleWanderBehavior(const Event*, void*);
 AsyncTask::DoneStatus updatePlugIn(GenericAsyncTask*, void*);
 NodePath getPlayerModelAnims(const string&, float, int, PT(OSSteerPlugIn),
 		vector<PT(OSSteerVehicle)>&, vector<vector<PT(AnimControl)> >&,
@@ -43,6 +44,7 @@ int main(int argc, char *argv[])
 	text->set_text(
             msg + "\n\n"
             "- press \"d\" to toggle debug drawing\n"
+			"- press \"up\"/\"left\"/\"down\"/\"right\" arrows to move the player\n"
 			"- press \"a\"/\"k\" to add 'opensteer'/'kinematic' vehicle\n"
             "- press \"s\"/\"shift-s\" to increase/decrease last inserted vehicle's max speed\n"
             "- press \"f\"/\"shift-f\" to increase/decrease last inserted vehicle's max force\n"
@@ -215,15 +217,19 @@ int main(int argc, char *argv[])
 
 	// handle OSSteerVehicle(s)' events
 	framework.define_key("avoid_obstacle", "handleVehicleEvent",
-			&handleVehicleEvent, nullptr);
+			&handleVehicleEvent, NULL);
 	framework.define_key("avoid_close_neighbor", "handleVehicleEvent",
-			&handleVehicleEvent, nullptr);
+			&handleVehicleEvent, NULL);
 
 	// write to bam file on exit
 	window->get_graphics_window()->set_close_request_event(
 			"close_request_event");
 	framework.define_key("close_request_event", "writeToBamFile",
 			&writeToBamFileAndExit, (void*) &bamFileName);
+
+	// 'pedestrian' specific: toggle wander behavior
+	framework.define_key("t", "toggleWanderBehavior", &toggleWanderBehavior,
+			NULL);
 
 	// get player dims for kinematic ray cast
 	LVecBase3f modelDims;
@@ -235,6 +241,7 @@ int main(int argc, char *argv[])
 	playerDriver = new (nothrow) Driver(&framework, playerNP, 10);
     playerDriver->set_max_angular_speed(100.0);
     playerDriver->set_angular_accel(50.0);
+    playerDriver->set_max_linear_speed(LVector3f(8.0, 8.0, 8.0));
     playerDriver->set_linear_accel(LVecBase3f(1.0, 1.0, 1.0));
     playerDriver->set_linear_friction(1.5);
 	playerDriver->enable();
@@ -274,7 +281,9 @@ void setParametersBeforeCreation()
 
 	// set vehicle throwing events
 	valueList.clear();
-	valueList.add_value("avoid_obstacle@avoid_obstacle@1.0:avoid_close_neighbor@avoid_close_neighbor@");
+	valueList.add_value("avoid_obstacle@avoid_obstacle@1.0:"
+			"avoid_close_neighbor@avoid_close_neighbor@1.0:"
+			"avoid_neighbor@avoid_neighbor@1.0");
 	steerMgr->set_parameter_values(OSSteerManager::STEERVEHICLE,
 			"thrown_events", valueList);
 	//

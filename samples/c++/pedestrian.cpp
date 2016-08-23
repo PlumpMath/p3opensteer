@@ -178,9 +178,9 @@ int main(int argc, char *argv[])
 
 	// handle OSSteerVehicle(s)' events
 	framework.define_key("avoid_obstacle", "handleVehicleEvent",
-			&handleVehicleEvent, nullptr);
+			&handleVehicleEvent, NULL);
 	framework.define_key("avoid_close_neighbor", "handleVehicleEvent",
-			&handleVehicleEvent, nullptr);
+			&handleVehicleEvent, NULL);
 
 	// write to bam file on exit
 	window->get_graphics_window()->set_close_request_event(
@@ -190,7 +190,7 @@ int main(int argc, char *argv[])
 
 	// 'pedestrian' specific: toggle wander behavior
 	framework.define_key("t", "toggleWanderBehavior", &toggleWanderBehavior,
-			nullptr);
+			NULL);
 
 	// place camera trackball (local coordinate)
 	PT(Trackball)trackball = DCAST(Trackball, window->get_mouse().find("**/+Trackball").node());

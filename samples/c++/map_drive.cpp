@@ -206,9 +206,9 @@ int main(int argc, char *argv[])
 
 	// handle OSSteerVehicle(s)' events
 	framework.define_key("avoid_obstacle", "handleVehicleEvent",
-			&handleVehicleEvent, nullptr);
+			&handleVehicleEvent, NULL);
 	framework.define_key("path_following", "handleVehicleEvent",
-			&handleVehicleEvent, nullptr);
+			&handleVehicleEvent, NULL);
 
 	// write to bam file on exit
 	window->get_graphics_window()->set_close_request_event(
@@ -218,7 +218,7 @@ int main(int argc, char *argv[])
 
 	// map drive specifics: toggle prediction type
 	framework.define_key("p", "togglePredictionType", &togglePredictionType,
-			nullptr);
+			NULL);
 
 	// place camera trackball (local coordinate)
 	PT(Trackball)trackball = DCAST(Trackball, window->get_mouse().find("**/+Trackball").node());
