@@ -142,12 +142,18 @@ void OSVehicleSettings::write_datagram(Datagram &dg) const
 	get_up().write_datagram(dg);
 	get_position().write_datagram(dg);
 	get_start().write_datagram(dg);
-	dg.add_stdfloat(get_prediction_time());
-	dg.add_stdfloat(get_min_time_to_collision());
-	dg.add_stdfloat(get_min_separation_distance());
-	dg.add_stdfloat(get_max_distance());
-	dg.add_stdfloat(get_cos_max_angle());
-	dg.add_stdfloat(get_max_prediction_time());
+	dg.add_stdfloat(get_path_pred_time());
+	dg.add_stdfloat(get_obstacle_min_time_coll());
+	dg.add_stdfloat(get_neighbor_min_time_coll());
+	dg.add_stdfloat(get_neighbor_min_sep_dist());
+	dg.add_stdfloat(get_separation_max_dist());
+	dg.add_stdfloat(get_separation_cos_max_angle());
+	dg.add_stdfloat(get_alignment_max_dist());
+	dg.add_stdfloat(get_alignment_cos_max_angle());
+	dg.add_stdfloat(get_cohesion_max_dist());
+	dg.add_stdfloat(get_cohesion_cos_max_angle());
+	dg.add_stdfloat(get_pursuit_max_pred_time());
+	dg.add_stdfloat(get_evasion_max_pred_time());
 	dg.add_stdfloat(get_target_speed());
 }
 
@@ -172,12 +178,18 @@ void OSVehicleSettings::read_datagram(DatagramIterator &scan)
 	set_position(value);
 	value.read_datagram(scan);
 	set_start(value);
-	set_prediction_time(scan.get_stdfloat());
-	set_min_time_to_collision(scan.get_stdfloat());
-	set_min_separation_distance(scan.get_stdfloat());
-	set_max_distance(scan.get_stdfloat());
-	set_cos_max_angle(scan.get_stdfloat());
-	set_max_prediction_time(scan.get_stdfloat());
+	set_path_pred_time(scan.get_stdfloat());
+	set_obstacle_min_time_coll(scan.get_stdfloat());
+	set_neighbor_min_time_coll(scan.get_stdfloat());
+	set_neighbor_min_sep_dist(scan.get_stdfloat());
+	set_separation_max_dist(scan.get_stdfloat());
+	set_separation_cos_max_angle(scan.get_stdfloat());
+	set_alignment_max_dist(scan.get_stdfloat());
+	set_alignment_cos_max_angle(scan.get_stdfloat());
+	set_cohesion_max_dist(scan.get_stdfloat());
+	set_cohesion_cos_max_angle(scan.get_stdfloat());
+	set_pursuit_max_pred_time(scan.get_stdfloat());
+	set_evasion_max_pred_time(scan.get_stdfloat());
 	set_target_speed(scan.get_stdfloat());
 }
 
@@ -185,19 +197,14 @@ void OSVehicleSettings::read_datagram(DatagramIterator &scan)
 /**
  *
  */
-OSFlockSettings::OSFlockSettings():
-		_separationRadius(0.0), _separationAngle(0.0), _separationWeight(0.0),
-		_alignmentRadius(0.0), _alignmentAngle(0.0), _alignmentWeight(0.0),
-		_cohesionRadius(0.0), _cohesionAngle(0.0), _cohesionWeight(0.0)
+OSFlockSettings::OSFlockSettings() :
+		_separationWeight(0.0), _alignmentWeight(0.0), _cohesionWeight(0.0)
 {
 }/**
  *
  */
-OSFlockSettings::OSFlockSettings(float sR, float sA, float sW, float aR,
-		float aA, float aW, float cR, float cA, float cW) :
-		_separationRadius(sR), _separationAngle(sA), _separationWeight(sW),
-		_alignmentRadius(aR), _alignmentAngle(aA), _alignmentWeight(aW),
-		_cohesionRadius(cR), _cohesionAngle(cA), _cohesionWeight(cW)
+OSFlockSettings::OSFlockSettings(float sW, float aW, float cW) :
+		_separationWeight(sW), _alignmentWeight(aW), _cohesionWeight(cW)
 {
 }
 /**
@@ -205,14 +212,8 @@ OSFlockSettings::OSFlockSettings(float sR, float sA, float sW, float aR,
  */
 void OSFlockSettings::write_datagram(Datagram &dg) const
 {
-	dg.add_stdfloat(get_separation_radius());
-	dg.add_stdfloat(get_separation_angle());
 	dg.add_stdfloat(get_separation_weight());
-	dg.add_stdfloat(get_alignment_radius());
-	dg.add_stdfloat(get_alignment_angle());
 	dg.add_stdfloat(get_alignment_weight());
-	dg.add_stdfloat(get_cohesion_radius());
-	dg.add_stdfloat(get_cohesion_angle());
 	dg.add_stdfloat(get_cohesion_weight());
 }
 
@@ -221,14 +222,8 @@ void OSFlockSettings::write_datagram(Datagram &dg) const
  */
 void OSFlockSettings::read_datagram(DatagramIterator &scan)
 {
-	set_separation_radius(scan.get_stdfloat());
-	set_separation_angle(scan.get_stdfloat());
 	set_separation_weight(scan.get_stdfloat());
-	set_alignment_radius(scan.get_stdfloat());
-	set_alignment_angle(scan.get_stdfloat());
 	set_alignment_weight(scan.get_stdfloat());
-	set_cohesion_radius(scan.get_stdfloat());
-	set_cohesion_angle(scan.get_stdfloat());
 	set_cohesion_weight(scan.get_stdfloat());
 }
 

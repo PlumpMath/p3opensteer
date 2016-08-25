@@ -307,6 +307,71 @@ void OSSteerVehicle::do_initialize()
 	settings.set_position(thisNP.get_pos());
 	//start
 	settings.set_start(thisNP.get_pos());
+	//path pred time
+	value = STRTOF(mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
+					string("path_pred_time")).c_str(),
+			NULL);
+	settings.set_path_pred_time(value >= 0.0 ? value : 3.0);
+	//obstacle min time coll
+	value = STRTOF(mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
+					string("obstacle_min_time_coll")).c_str(),
+			NULL);
+	settings.set_obstacle_min_time_coll(value >= 0.0 ? value : 4.5);
+	//neighbor min time coll
+	value = STRTOF(mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
+					string("neighbor_min_time_coll")).c_str(),
+			NULL);
+	settings.set_neighbor_min_time_coll(value >= 0.0 ? value : 3.0);
+	//neighbor min sep dist
+	value = STRTOF(mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
+					string("neighbor_min_sep_dist")).c_str(),
+			NULL);
+	settings.set_neighbor_min_sep_dist(value >= 0.0 ? value : 1.0);
+	//separation max dist
+	value = STRTOF(mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
+					string("separation_max_dist")).c_str(),
+			NULL);
+	settings.set_separation_max_dist(value >= 0.0 ? value : 5.0);
+	//separation cos max angle
+	value = STRTOF(mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
+					string("separation_cos_max_angle")).c_str(),
+			NULL);
+	settings.set_separation_cos_max_angle(value >= 0.0 ? value : -0.707);
+	//alignment max dist
+	value = STRTOF(mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
+					string("alignment_max_dist")).c_str(),
+			NULL);
+	settings.set_alignment_max_dist(value >= 0.0 ? value : 7.5);
+	//alignment cos max angle
+	value = STRTOF(mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
+					string("alignment_cos_max_angle")).c_str(),
+			NULL);
+	settings.set_alignment_cos_max_angle(value >= 0.0 ? value : 0.7);
+	//cohesion max dist
+	value = STRTOF(mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
+					string("cohesion_max_dist")).c_str(),
+			NULL);
+	settings.set_cohesion_max_dist(value >= 0.0 ? value : 9.0);
+	//cohesion cos max angle
+	value = STRTOF(mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
+					string("cohesion_cos_max_angle")).c_str(),
+			NULL);
+	settings.set_cohesion_cos_max_angle(value >= 0.0 ? value : -0.15);
+	//pursuit max pred time
+	value = STRTOF(mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
+					string("pursuit_max_pred_time")).c_str(),
+			NULL);
+	settings.set_pursuit_max_pred_time(value >= 0.0 ? value : 20.0);
+	//evasion max pred time
+	value = STRTOF(mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
+					string("evasion_max_pred_time")).c_str(),
+			NULL);
+	settings.set_evasion_max_pred_time(value >= 0.0 ? value : 20.0);
+	//target speed
+	value = STRTOF(mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
+					string("target_speed")).c_str(),
+			NULL);
+	settings.set_target_speed(value >= 0.0 ? value : 1.0);
 	//set actually the OSSteerVehicle's and OpenSteer vehicle's settings
 	set_settings(settings);
 	//
@@ -468,14 +533,8 @@ void OSSteerVehicle::set_flock_settings(const OSFlockSettings& settings)
 	if (mVehicleType == BOID)
 	{
 		static_cast<ossup::Boid<OSSteerVehicle>*>(mVehicle)->setFlockParameters(
-				settings.get_separation_radius(),
-				settings.get_separation_angle(),
 				settings.get_separation_weight(),
-				settings.get_alignment_radius(),
-				settings.get_alignment_angle(),
 				settings.get_alignment_weight(),
-				settings.get_cohesion_radius(),
-				settings.get_cohesion_angle(),
 				settings.get_cohesion_weight());
 	}
 }
@@ -487,19 +546,12 @@ void OSSteerVehicle::set_flock_settings(const OSFlockSettings& settings)
  */
 OSFlockSettings OSSteerVehicle::get_flock_settings() const
 {
-	OSFlockSettings settings(OS_ERROR, OS_ERROR, OS_ERROR, OS_ERROR, OS_ERROR,
-			OS_ERROR, OS_ERROR, OS_ERROR, OS_ERROR);
+	OSFlockSettings settings(OS_ERROR, OS_ERROR, OS_ERROR);
 	if (mVehicleType == BOID)
 	{
 		static_cast<ossup::Boid<OSSteerVehicle>*>(mVehicle)->getFlockParameters(
-				settings.separation_radius(),
-				settings.separation_angle(),
 				settings.separation_weight(),
-				settings.alignment_radius(),
-				settings.alignment_angle(),
 				settings.alignment_weight(),
-				settings.cohesion_radius(),
-				settings.cohesion_angle(),
 				settings.cohesion_weight());
 	}
 	return settings;
@@ -581,32 +633,6 @@ OSSteerVehicle::OSSeekerState OSSteerVehicle::get_seeker_state() const
 				OSSteerVehicle>*>(mVehicle)->state;
 	}
 	return (OSSteerVehicle::OSSeekerState) OS_ERROR;
-}
-
-/**
- * Sets OSSteerVehicle's base look ahead time.
- * \note MAP_DRIVER OSSteerVehicle only.
- */
-void OSSteerVehicle::set_base_look_ahead_time(float time)
-{
-	if (mVehicleType == MAP_DRIVER)
-	{
-		static_cast<ossup::MapDriver<OSSteerVehicle>*>(mVehicle)->baseLookAheadTime =
-				time;
-	}
-}
-
-/**
- * Returns OSSteerVehicle's base look ahead time, or a negative value on error.
- * \note MAP_DRIVER OSSteerVehicle only.
- */
-float OSSteerVehicle::get_base_look_ahead_time() const
-{
-	if (mVehicleType == MAP_DRIVER)
-	{
-		return static_cast<ossup::MapDriver<OSSteerVehicle>*>(mVehicle)->baseLookAheadTime;
-	}
-	return OS_ERROR;
 }
 
 /**
@@ -1364,7 +1390,6 @@ void OSSteerVehicle::write_datagram(BamWriter *manager, Datagram &dg)
 	if(mVehicleType == MAP_DRIVER)
 	{
 		dg.add_uint8((uint8_t) get_pathway_direction());
-		dg.add_stdfloat(get_base_look_ahead_time());
 		dg.add_bool(get_incremental_steering());
 		dg.add_uint8((uint8_t) get_map_prediction_type());
 		ossup::MapDriver<OSSteerVehicle>* vehicle =
@@ -1497,7 +1522,6 @@ void OSSteerVehicle::finalize(BamReader *manager)
 	if(mVehicleType == MAP_DRIVER)
 	{
 		set_pathway_direction(mSerializedDataTmpPtr->mPathwayDirection);
-		set_base_look_ahead_time(mSerializedDataTmpPtr->mBaseLookAheadTime);
 		set_incremental_steering(mSerializedDataTmpPtr->mIncrementalSteering);
 		set_map_prediction_type(mSerializedDataTmpPtr->mMapPredictionType);
 		ossup::MapDriver<OSSteerVehicle>* vehicle =
@@ -1663,7 +1687,6 @@ void OSSteerVehicle::fillin(DatagramIterator &scan, BamReader *manager)
 	{
 		mSerializedDataTmpPtr->mPathwayDirection =
 				(OSPathDirection) scan.get_uint8();
-		mSerializedDataTmpPtr->mBaseLookAheadTime = scan.get_stdfloat();
 		mSerializedDataTmpPtr->mIncrementalSteering = scan.get_bool();
 		mSerializedDataTmpPtr->mMapPredictionType =
 				(OSSteerPlugIn::OSMapPredictionType) scan.get_uint8();

@@ -96,8 +96,8 @@ public:
 // reset all boid state
 		reset();
 
-		setFlockParameters(5.0f, -0.707f, 12.0f, 7.5f, 0.7f, 8.0f, 9.0f, -0.15f,
-				8.0f);
+		setFlockParameters(/*5.0f, -0.707f,*/ 12.0f, /*7.5f, 0.7f,*/ 8.0f,
+				/*9.0f, -0.15f,*/ 8.0f);
 	}
 
 	// destructor
@@ -165,7 +165,8 @@ public:
 	{
 		// avoid obstacles if needed
 		// XXX this should probably be moved elsewhere
-		const Vec3 avoidance = this->steerToAvoidObstacles(1.0f, *obstacles);
+		const Vec3 avoidance = this->steerToAvoidObstacles(this->getObstacleMinTimeColl(),
+				*obstacles);
 		if (avoidance != Vec3::zero)
 			return avoidance;
 
@@ -199,12 +200,12 @@ public:
 ///#endif // NO_LQ_BIN_STATS
 
 		// determine each of the three component behaviors of flocking
-		const Vec3 separation = this->steerForSeparation(separationRadius,
-				separationAngle, *neighbors);
-		const Vec3 alignment = this->steerForAlignment(alignmentRadius,
-				alignmentAngle, *neighbors);
-		const Vec3 cohesion = this->steerForCohesion(cohesionRadius, cohesionAngle,
-				*neighbors);
+		const Vec3 separation = this->steerForSeparation(this->getSeparationMaxDist(),
+				this->getSeparationCosMaxAngle(), *neighbors);
+		const Vec3 alignment = this->steerForAlignment(this->getAlignmentMaxDist(),
+				this->getAlignmentCosMaxAngle(), *neighbors);
+		const Vec3 cohesion = this->steerForCohesion(this->getCohesionMaxDist(),
+				this->getCohesionCosMaxAngle(), *neighbors);
 
 		// apply weights to components (save in variables for annotation)
 		const Vec3 separationW = separation * separationWeight;
@@ -321,35 +322,35 @@ public:
 				minDistanceToCollision);
 	}
 
-	void setFlockParameters(float sR, float sA, float sW,
-			float aR, float aA,	float aW,
-			float cR, float cA,	float cW)
+	void setFlockParameters(/*float sR, float sA,*/ float sW,
+			/*float aR, float aA,*/	float aW,
+			/*float cR, float cA,*/	float cW)
 	{
-		separationRadius = sR;
-		separationAngle = sA;
+///		separationRadius = sR;
+///		separationAngle = sA;
 		separationWeight = sW;
-		alignmentRadius = aR;
-		alignmentAngle = aA;
+///		alignmentRadius = aR;
+///		alignmentAngle = aA;
 		alignmentWeight = aW;
-		cohesionRadius = cR;
-		cohesionAngle = cA;
+///		cohesionRadius = cR;
+///		cohesionAngle = cA;
 		cohesionWeight = cW;
-		maxRadius = maxXXX(separationRadius,
-				maxXXX(alignmentRadius, cohesionRadius));
+		maxRadius = maxXXX(this->getSeparationMaxDist(),
+				maxXXX(this->getAlignmentMaxDist(), this->getCohesionMaxDist()));
 	}
 
-	void getFlockParameters(float& sR, float& sA, float& sW,
-			float& aR, float& aA,	float& aW,
-			float& cR, float& cA,	float& cW) const
+	void getFlockParameters(/*float& sR, float& sA,*/ float& sW,
+			/*float& aR, float& aA,*/	float& aW,
+			/*float& cR, float& cA,*/	float& cW) const
 	{
-		sR = separationRadius;
-		sA = separationAngle;
+///		sR = separationRadius;
+///		sA = separationAngle;
 		sW = separationWeight;
-		aR = alignmentRadius;
-		aA = alignmentAngle;
+///		aR = alignmentRadius;
+///		aA = alignmentAngle;
 		aW = alignmentWeight;
-		cR = cohesionRadius;
-		cA = cohesionAngle;
+///		cR = cohesionRadius;
+///		cA = cohesionAngle;
 		cW = cohesionWeight;
 	}
 
@@ -358,14 +359,14 @@ public:
 ///#endif // NO_LQ_BIN_STATS
 
 private:
-	float separationRadius;///serializable
-	float separationAngle;///serializable
+///	float separationRadius;///serializable
+///	float separationAngle;///serializable
 	float separationWeight;///serializable
-	float alignmentRadius;///serializable
-	float alignmentAngle;///serializable
+///	float alignmentRadius;///serializable
+///	float alignmentAngle;///serializable
 	float alignmentWeight;///serializable
-	float cohesionRadius;///serializable
-	float cohesionAngle;///serializable
+///	float cohesionRadius;///serializable
+///	float cohesionAngle;///serializable
 	float cohesionWeight;///serializable
 	float maxRadius;
 

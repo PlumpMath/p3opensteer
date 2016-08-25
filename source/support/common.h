@@ -76,9 +76,13 @@ struct VehicleSettings
 			m_maxSpeed(1.0), m_forward(OpenSteer::Vec3::forward),
 			m_side(OpenSteer::Vec3::side), m_up(OpenSteer::Vec3::up),
 			m_position(OpenSteer::Vec3::zero), m_start(OpenSteer::Vec3::zero),
-			m_predictionTime(3.0), m_minTimeToCollision(3.0),
-			m_minSeparationDistance(1.0), m_maxDistance(5.0),
-			m_cosMaxAngle(0.707), m_maxPredictionTime(1.0), m_targetSpeed(1.0)
+			m_pathPredTime(3.0), m_obstacleMinTimeColl(6.0),
+			m_neighborMinTimeColl(3.0), m_neighborMinSepDist(1.0),
+			m_separationMaxDist(5.0), m_separationCosMaxAngle(-0.707),
+			m_alignmentMaxDist(7.5), m_alignmentCosMaxAngle(0.7),
+			m_cohesionMaxDist(9.0), m_cohesionCosMaxAngle(-0.15),
+			m_pursuitMaxPredTime(20.0), m_evasionMaxPredTime(20.0),
+			m_targetSpeed(1.0)
 	{
 	}
 	bool operator == (const VehicleSettings& other)
@@ -93,13 +97,19 @@ struct VehicleSettings
 				(m_up == other.m_up) &&
 				(m_position == other.m_position) &&
 				(m_start == other.m_start) &&
-				(m_predictionTime) &&
-				(m_minTimeToCollision) &&
-				(m_minSeparationDistance) &&
-				(m_maxDistance) &&
-				(m_cosMaxAngle) &&
-				(m_maxPredictionTime) &&
-				(m_targetSpeed);
+				(m_pathPredTime == other.m_pathPredTime) &&
+				(m_obstacleMinTimeColl == other.m_obstacleMinTimeColl) &&
+				(m_neighborMinTimeColl == other.m_neighborMinTimeColl) &&
+				(m_neighborMinSepDist == other.m_neighborMinSepDist) &&
+				(m_separationMaxDist == other.m_separationMaxDist) &&
+				(m_separationCosMaxAngle == other.m_separationCosMaxAngle) &&
+				(m_alignmentMaxDist == other.m_alignmentMaxDist) &&
+				(m_alignmentCosMaxAngle == other.m_alignmentCosMaxAngle) &&
+				(m_cohesionMaxDist == other.m_cohesionMaxDist) &&
+				(m_cohesionCosMaxAngle == other.m_cohesionCosMaxAngle) &&
+				(m_pursuitMaxPredTime == other.m_pursuitMaxPredTime) &&
+				(m_evasionMaxPredTime == other.m_evasionMaxPredTime) &&
+				(m_targetSpeed == other.m_targetSpeed);
 	}
 	// mass
 	float m_mass;
@@ -122,12 +132,18 @@ struct VehicleSettings
 	// the vehicle start position.
 	OpenSteer::Vec3 m_start;
 	// steering parameters
-	float m_predictionTime;//steerToFollowPath, steerToStayOnPath
-	float m_minTimeToCollision;//steerToAvoidObstacle, steerToAvoidObstacles, steerToAvoidNeighbors
-	float m_minSeparationDistance;//steerToAvoidCloseNeighbors
-	float m_maxDistance;//steerForSeparation, steerForAlignment, steerForCohesion
-	float m_cosMaxAngle;//steerForSeparation, steerForAlignment, steerForCohesion
-	float m_maxPredictionTime;//steerForPursuit, steerForEvasion
+	float m_pathPredTime;//steerToFollowPath, steerToStayOnPath
+	float m_obstacleMinTimeColl;//steerToAvoidObstacle, steerToAvoidObstacles
+	float m_neighborMinTimeColl;//steerToAvoidNeighbors
+	float m_neighborMinSepDist;//steerToAvoidCloseNeighbors
+	float m_separationMaxDist;//steerForSeparation
+	float m_separationCosMaxAngle;//steerForSeparation
+	float m_alignmentMaxDist;//steerForAlignment
+	float m_alignmentCosMaxAngle;//steerForAlignment
+	float m_cohesionMaxDist;//steerForCohesion
+	float m_cohesionCosMaxAngle;//steerForCohesion
+	float m_pursuitMaxPredTime;//steerForPursuit
+	float m_evasionMaxPredTime;//steerForEvasion
 	float m_targetSpeed;//steerForTargetSpeed
 };
 
@@ -266,58 +282,112 @@ public:
 		m_settings.m_start = start;
 	}
 
-	float getPredictionTime() const
+	float getPathPredTime() const
 	{
-		return m_settings.m_predictionTime;
+		return m_settings.m_pathPredTime;
 	}
-	void setPredictionTime(float value)
+	void setPathPredTime(float value)
 	{
-		m_settings.m_predictionTime = value;
-	}
-
-	float getMinTimeToCollision() const
-	{
-		return m_settings.m_minTimeToCollision;
-	}
-	void setMinTimeToCollision(float value)
-	{
-		m_settings.m_minTimeToCollision = value;
+		m_settings.m_pathPredTime = value;
 	}
 
-	float getMinSeparationDistance() const
+	float getObstacleMinTimeColl() const
 	{
-		return m_settings.m_minSeparationDistance;
+		return m_settings.m_obstacleMinTimeColl;
 	}
-	void setMinSeparationDistance(float value)
+	void setObstacleMinTimeColl(float value)
 	{
-		m_settings.m_minSeparationDistance = value;
-	}
-
-	float getMaxDistance() const
-	{
-		return m_settings.m_maxDistance;
-	}
-	void setMaxDistance(float value)
-	{
-		m_settings.m_maxDistance = value;
+		m_settings.m_obstacleMinTimeColl = value;
 	}
 
-	float getCosMaxAngle() const
+	float getNeighborMinTimeColl() const
 	{
-		return m_settings.m_cosMaxAngle;
+		return m_settings.m_neighborMinTimeColl;
 	}
-	void setCosMaxAngle(float value)
+	void setNeighborMinTimeColl(float value)
 	{
-		m_settings.m_cosMaxAngle = value;
+		m_settings.m_neighborMinTimeColl = value;
 	}
 
-	float getMaxPredictionTime() const
+	float getNeighborMinSepDist() const
 	{
-		return m_settings.m_maxPredictionTime;
+		return m_settings.m_neighborMinSepDist;
 	}
-	void setMaxPredictionTime(float value)
+	void setNeighborMinSepDist(float value)
 	{
-		m_settings.m_maxPredictionTime = value;
+		m_settings.m_neighborMinSepDist = value;
+	}
+
+	float getSeparationMaxDist() const
+	{
+		return m_settings.m_separationMaxDist;
+	}
+	void setSeparationMaxDist(float value)
+	{
+		m_settings.m_separationMaxDist = value;
+	}
+
+	float getSeparationCosMaxAngle() const
+	{
+		return m_settings.m_separationCosMaxAngle;
+	}
+	void setSeparationCosMaxAngle(float value)
+	{
+		m_settings.m_separationCosMaxAngle = value;
+	}
+
+	float getAlignmentMaxDist() const
+	{
+		return m_settings.m_alignmentMaxDist;
+	}
+	void setAlignmentMaxDist(float value)
+	{
+		m_settings.m_alignmentMaxDist = value;
+	}
+
+	float getAlignmentCosMaxAngle() const
+	{
+		return m_settings.m_alignmentCosMaxAngle;
+	}
+	void setAlignmentCosMaxAngle(float value)
+	{
+		m_settings.m_alignmentCosMaxAngle = value;
+	}
+
+	float getCohesionMaxDist() const
+	{
+		return m_settings.m_cohesionMaxDist;
+	}
+	void setCohesionMaxDist(float value)
+	{
+		m_settings.m_cohesionMaxDist = value;
+	}
+
+	float getCohesionCosMaxAngle() const
+	{
+		return m_settings.m_cohesionCosMaxAngle;
+	}
+	void setCohesionCosMaxAngle(float value)
+	{
+		m_settings.m_cohesionCosMaxAngle = value;
+	}
+
+	float getPursuitMaxPredTime() const
+	{
+		return m_settings.m_pursuitMaxPredTime;
+	}
+	void setPursuitMaxPredTime(float value)
+	{
+		m_settings.m_pursuitMaxPredTime = value;
+	}
+
+	float getEvasionMaxPredTime() const
+	{
+		return m_settings.m_evasionMaxPredTime;
+	}
+	void setEvasionMaxPredTime(float value)
+	{
+		m_settings.m_evasionMaxPredTime = value;
 	}
 
 	float getTargetSpeed() const

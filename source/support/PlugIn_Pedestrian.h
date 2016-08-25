@@ -205,13 +205,14 @@ public:
 		Vec3 obstacleAvoidance;
 		if (leakThrough < frandom01())
 		{
-			const float oTime = 6; // minTimeToCollision = 6 seconds
+///			const float oTime = 6; // minTimeToCollision = 6 seconds
 			// ------------------------------------ xxxcwr11-1-04 fixing steerToAvoid
 			// just for testing
 			//             obstacleAvoidance = steerToAvoidObstacles (oTime, obstacles);
 			//             obstacleAvoidance = steerToAvoidObstacle (oTime, gObstacle1);
 			//             obstacleAvoidance = steerToAvoidObstacle (oTime, gObstacle3);
-			obstacleAvoidance = this->steerToAvoidObstacles(oTime, *obstacles);
+			obstacleAvoidance = this->steerToAvoidObstacles(this->getObstacleMinTimeColl(),
+					*obstacles);
 			// ------------------------------------ xxxcwr11-1-04 fixing steerToAvoid
 		}
 
@@ -224,18 +225,18 @@ public:
 		{
 			// otherwise consider avoiding collisions with others
 			Vec3 collisionAvoidance;
-			const float caLeadTime = 3;
+///			const float caLeadTime = 3;
 
 			// find all neighbors within maxRadius using proximity database
 			// (radius is largest distance between vehicles traveling head-on
 			// where a collision is possible within caLeadTime seconds.)
-			const float maxRadius = caLeadTime * this->maxSpeed() * 2;
+			const float maxRadius = this->getNeighborMinTimeColl() * this->maxSpeed() * 2;
 			neighbors->clear();
 			proximityToken->findNeighbors(this->position(), maxRadius,
 					*neighbors);
 
 			if (leakThrough < frandom01())
-				collisionAvoidance = this->steerToAvoidNeighbors(caLeadTime,
+				collisionAvoidance = this->steerToAvoidNeighbors(this->getNeighborMinTimeColl(),
 						*neighbors) * 10;
 
 			// if collision avoidance is needed, do it
@@ -250,12 +251,12 @@ public:
 					steeringForce += this->steerForWander(elapsedTime);
 
 				// do (interactively) selected type of path following
-				const float pfLeadTime = 3;
 				const Vec3 pathFollow =
 						(useDirectedPathFollowing ?
 								this->steerToFollowPath(pathDirection,
-										pfLeadTime, *(*path)[0]) :
-								this->steerToStayOnPath(pfLeadTime, *(*path)[0]));
+										this->getPathPredTime(), *(*path)[0]) :
+								this->steerToStayOnPath(this->getPathPredTime(),
+										*(*path)[0]));
 
 				// add in to steeringForce
 				steeringForce += pathFollow * 0.5;

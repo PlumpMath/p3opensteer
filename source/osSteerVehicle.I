@@ -237,101 +237,216 @@ INLINE LPoint3f OSSteerVehicle::get_start() const
 }
 
 /**
- * Sets the OSSteerVehicle's 'prediction time' steering parameter.
+ * Sets the OSSteerVehicle's 'pathway's prediction time' steering parameter.
  */
-INLINE void OSSteerVehicle::set_prediction_time(float predTime)
+INLINE void OSSteerVehicle::set_path_pred_time(float predTime)
 {
-	static_cast<VehicleAddOn*>(mVehicle)->setPredictionTime(predTime);
+	static_cast<VehicleAddOn*>(mVehicle)->setPathPredTime(predTime);
 }
 
 /**
- * Returns the OSSteerVehicle's 'prediction time' steering parameter.
+ * Returns the OSSteerVehicle's 'pathway's prediction time' steering parameter.
  */
-INLINE float OSSteerVehicle::get_prediction_time() const
+INLINE float OSSteerVehicle::get_path_pred_time() const
 {
-	return static_cast<VehicleAddOn*>(mVehicle)->getPredictionTime();
+	return static_cast<VehicleAddOn*>(mVehicle)->getPathPredTime();
 }
 
 /**
- * Sets the OSSteerVehicle's 'minimum time to collision' steering parameter.
- */
-INLINE void OSSteerVehicle::set_min_time_to_collision(float collTime)
-{
-	static_cast<VehicleAddOn*>(mVehicle)->setMinTimeToCollision(collTime);
-}
-
-/**
- * Returns the OSSteerVehicle's 'minimum time to collision' steering parameter.
- */
-INLINE float OSSteerVehicle::get_min_time_to_collision() const
-{
-	return static_cast<VehicleAddOn*>(mVehicle)->getMinTimeToCollision();
-}
-
-/**
- * Sets the OSSteerVehicle's 'minimum separation distance' steering parameter.
- */
-INLINE void OSSteerVehicle::set_min_separation_distance(float sepDist)
-{
-	static_cast<VehicleAddOn*>(mVehicle)->setMinSeparationDistance(sepDist);
-}
-
-/**
- * Returns the OSSteerVehicle's 'minimum separation distance' steering
+ * Sets the OSSteerVehicle's 'obstacle's minimum time to collision' steering
  * parameter.
  */
-INLINE float OSSteerVehicle::get_min_separation_distance() const
+INLINE void OSSteerVehicle::set_obstacle_min_time_coll(float collTime)
 {
-	return static_cast<VehicleAddOn*>(mVehicle)->getMinSeparationDistance();
+	static_cast<VehicleAddOn*>(mVehicle)->setObstacleMinTimeColl(collTime);
 }
 
 /**
- * Sets the OSSteerVehicle's 'maximum distance' steering parameter.
+ * Returns the OSSteerVehicle's 'obstacle's minimum time to collision' steering
+ * parameter.
  */
-INLINE void OSSteerVehicle::set_max_distance(float dist)
+INLINE float OSSteerVehicle::get_obstacle_min_time_coll() const
 {
-	static_cast<VehicleAddOn*>(mVehicle)->setMaxDistance(dist);
+	return static_cast<VehicleAddOn*>(mVehicle)->getObstacleMinTimeColl();
 }
 
 /**
- * Returns the OSSteerVehicle's 'maximum distance' steering parameter.
+ * Sets the OSSteerVehicle's 'neighbor's minimum time to collision' steering
+ * parameter.
  */
-INLINE float OSSteerVehicle::get_max_distance() const
+INLINE void OSSteerVehicle::set_neighbor_min_time_coll(float collTime)
 {
-	return static_cast<VehicleAddOn*>(mVehicle)->getMaxDistance();
+	static_cast<VehicleAddOn*>(mVehicle)->setNeighborMinTimeColl(collTime);
 }
 
 /**
- * Sets the OSSteerVehicle's cosine 'maximum angle' steering parameter.
+ * Returns the OSSteerVehicle's 'neighbor's minimum time to collision' steering
+ * parameter.
  */
-INLINE void OSSteerVehicle::set_cos_max_angle(float angle)
+INLINE float OSSteerVehicle::get_neighbor_min_time_coll() const
 {
-	static_cast<VehicleAddOn*>(mVehicle)->setCosMaxAngle(angle);
+	return static_cast<VehicleAddOn*>(mVehicle)->getNeighborMinTimeColl();
 }
 
 /**
- * Returns the OSSteerVehicle's 'cosine maximum angle' steering parameter.
+ * Sets the OSSteerVehicle's 'neighbor's minimum separation distance' steering
+ * parameter.
  */
-INLINE float OSSteerVehicle::get_cos_max_angle() const
+INLINE void OSSteerVehicle::set_neighbor_min_sep_dist(float sepDist)
 {
-	return static_cast<VehicleAddOn*>(mVehicle)->getCosMaxAngle();
+	static_cast<VehicleAddOn*>(mVehicle)->setNeighborMinSepDist(sepDist);
 }
 
 /**
- * Sets the OSSteerVehicle's 'maximum prediction time' steering parameter.
+ * Returns the OSSteerVehicle's 'neighbor's minimum separation distance' steering
+ * parameter.
  */
-INLINE void OSSteerVehicle::set_max_prediction_time(float predTime)
+INLINE float OSSteerVehicle::get_neighbor_min_sep_dist() const
 {
-	static_cast<VehicleAddOn*>(mVehicle)->setMaxPredictionTime(predTime);
+	return static_cast<VehicleAddOn*>(mVehicle)->getNeighborMinSepDist();
 }
 
 /**
- * Returns the OSSteerVehicle's 'maximum prediction time' steering parameter.
+ * Sets the OSSteerVehicle's 'separation's maximum distance' steering parameter.
  */
-INLINE float OSSteerVehicle::get_max_prediction_time() const
+INLINE void OSSteerVehicle::set_separation_max_dist(float dist)
 {
-	return static_cast<VehicleAddOn*>(mVehicle)->getMaxPredictionTime();
+	static_cast<VehicleAddOn*>(mVehicle)->setSeparationMaxDist(dist);
 }
+
+/**
+ * Returns the OSSteerVehicle's 'separation's maximum distance' steering
+ * parameter.
+ */
+INLINE float OSSteerVehicle::get_separation_max_dist() const
+{
+	return static_cast<VehicleAddOn*>(mVehicle)->getSeparationMaxDist();
+}
+
+/**
+ * Sets the OSSteerVehicle's 'separation's cosine of the maximum angle'
+ * steering parameter.
+ */
+INLINE void OSSteerVehicle::set_separation_cos_max_angle(float angle)
+{
+	static_cast<VehicleAddOn*>(mVehicle)->setSeparationCosMaxAngle(angle);
+}
+
+/**
+ * Returns the OSSteerVehicle's 'separation's cosine of the maximum angle'
+ * steering parameter.
+ */
+INLINE float OSSteerVehicle::get_separation_cos_max_angle() const
+{
+	return static_cast<VehicleAddOn*>(mVehicle)->getSeparationCosMaxAngle();
+}
+
+/**
+ * Sets the OSSteerVehicle's 'alignment's maximum distance' steering parameter.
+ */
+INLINE void OSSteerVehicle::set_alignment_max_dist(float dist)
+{
+	static_cast<VehicleAddOn*>(mVehicle)->setAlignmentMaxDist(dist);
+}
+
+/**
+ * Returns the OSSteerVehicle's 'alignment's maximum distance' steering
+ * parameter.
+ */
+INLINE float OSSteerVehicle::get_alignment_max_dist() const
+{
+	return static_cast<VehicleAddOn*>(mVehicle)->getAlignmentMaxDist();
+}
+
+/**
+ * Sets the OSSteerVehicle's 'alignment's cosine of the maximum angle' steering
+ * parameter.
+ */
+INLINE void OSSteerVehicle::set_alignment_cos_max_angle(float angle)
+{
+	static_cast<VehicleAddOn*>(mVehicle)->setAlignmentCosMaxAngle(angle);
+}
+
+/**
+ * Returns the OSSteerVehicle's 'alignment cosine of the maximum angle' steering
+ * parameter.
+ */
+INLINE float OSSteerVehicle::get_alignment_cos_max_angle() const
+{
+	return static_cast<VehicleAddOn*>(mVehicle)->getAlignmentCosMaxAngle();
+}
+
+/**
+ * Sets the OSSteerVehicle's 'cohesion's maximum distance' steering parameter.
+ */
+INLINE void OSSteerVehicle::set_cohesion_max_dist(float dist)
+{
+	static_cast<VehicleAddOn*>(mVehicle)->setCohesionMaxDist(dist);
+}
+
+/**
+ * Returns the OSSteerVehicle's 'cohesion's maximum distance' steering
+ * parameter.
+ */
+INLINE float OSSteerVehicle::get_cohesion_max_dist() const
+{
+	return static_cast<VehicleAddOn*>(mVehicle)->getCohesionMaxDist();
+}
+
+/**
+ * Sets the OSSteerVehicle's 'cohesion's cosine of the maximum angle' steering
+ * parameter.
+ */
+INLINE void OSSteerVehicle::set_cohesion_cos_max_angle(float angle)
+{
+	static_cast<VehicleAddOn*>(mVehicle)->setCohesionCosMaxAngle(angle);
+}
+
+/**
+ * Returns the OSSteerVehicle's 'cohesion's cosine of the maximum angle'
+ * steering parameter.
+ */
+INLINE float OSSteerVehicle::get_cohesion_cos_max_angle() const
+{
+	return static_cast<VehicleAddOn*>(mVehicle)->getCohesionCosMaxAngle();
+}
+
+/**
+ * Sets the OSSteerVehicle's 'pursuit's maximum prediction time' steering
+ * parameter.
+ */
+INLINE void OSSteerVehicle::set_pursuit_max_pred_time(float predTime)
+{
+	static_cast<VehicleAddOn*>(mVehicle)->setPursuitMaxPredTime(predTime);
+}
+
+/**
+ * Returns the OSSteerVehicle's 'pursuit's maximum prediction time' steering
+ * parameter.
+ */
+INLINE float OSSteerVehicle::get_pursuit_max_pred_time() const
+{
+	return static_cast<VehicleAddOn*>(mVehicle)->getPursuitMaxPredTime();
+}
+
+/**
+ * Sets the OSSteerVehicle's 'evasion's maximum prediction time' steering
+ * parameter.
+ */
+INLINE void OSSteerVehicle::set_evasion_max_pred_time(float predTime)
+{
+	static_cast<VehicleAddOn*>(mVehicle)->setEvasionMaxPredTime(predTime);
+}
+
+/**
+ * Returns the OSSteerVehicle's 'evasion's maximum prediction time' steering
+ * parameter.
+ */
+INLINE float OSSteerVehicle::get_evasion_max_pred_time() const
+{
+	return static_cast<VehicleAddOn*>(mVehicle)->getEvasionMaxPredTime();
+}
+
 /**
  * Sets the OSSteerVehicle's 'target speed' steering parameter.
  */

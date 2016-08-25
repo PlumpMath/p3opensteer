@@ -106,7 +106,6 @@ struct CtfPlugInData
 	float gBrakingRate;///serializable //0.75
 	float gAvoidancePredictTimeMin;///serializable //0.9
 	float gAvoidancePredictTimeMax;///serializable //2.0 (>=gAvoidancePredictTimeMin)
-	float gAvoidancePredictTime;///serializable //0.9 (=gAvoidancePredictTimeMin)
 ///	int resetCount;
 	bool gDelayedResetPlugInXXX;///serializable
 #ifdef OS_DEBUG
@@ -320,8 +319,7 @@ public:
 		const bool clearPath = clearPathToGoal();
 		adjustObstacleAvoidanceLookAhead(clearPath);
 		const Vec3 obstacleAvoidance = this->steerToAvoidObstacles(
-				this->gCtfPlugInData->gAvoidancePredictTime,
-				*(this->allObstacles));
+				this->getObstacleMinTimeColl(), *(this->allObstacles));
 
 		// saved for annotation
 		this->avoiding = (obstacleAvoidance != Vec3::zero);
@@ -489,7 +487,7 @@ public:
 			const bool isNear = (goalDistance / this->speed())
 					< this->gCtfPlugInData->gAvoidancePredictTimeMax;
 			const bool useMax = headingTowardGoal && !isNear;
-			this->gCtfPlugInData->gAvoidancePredictTime = (
+			this->setObstacleMinTimeColl(
 					useMax ?
 							this->gCtfPlugInData->gAvoidancePredictTimeMax :
 							this->gCtfPlugInData->gAvoidancePredictTimeMin);
@@ -497,8 +495,8 @@ public:
 		else
 		{
 			evading = true;
-			this->gCtfPlugInData->gAvoidancePredictTime =
-					this->gCtfPlugInData->gAvoidancePredictTimeMin;
+			this->setObstacleMinTimeColl(
+					this->gCtfPlugInData->gAvoidancePredictTimeMin);
 		}
 	}
 
@@ -920,7 +918,7 @@ public:
 		m_CtfPlugInData.gBrakingRate = 0.75;
 		m_CtfPlugInData.gAvoidancePredictTimeMin = 0.9f;
 		m_CtfPlugInData.gAvoidancePredictTimeMax = 2;
-		m_CtfPlugInData.gAvoidancePredictTime = m_CtfPlugInData.gAvoidancePredictTimeMin;
+//	REFACTOR	m_CtfPlugInData.gAvoidancePredictTime = m_CtfPlugInData.gAvoidancePredictTimeMin;
 ///		m_CtfPlugInData.resetCount = 0;
 		m_CtfPlugInData.gDelayedResetPlugInXXX = false;
 #ifdef OS_DEBUG

@@ -212,9 +212,10 @@ public:
 			this->resetToStart();
 		}
 
-		const float maxTime = 20; // xxx hard-to-justify value
+///		const float maxTime = 20; // xxx hard-to-justify value
 		//XXX put "steering force for pursuit" constrained to global XZ "ground" plane
-		this->applySteeringForce(this->steerForPursuit(*wanderer, maxTime), elapsedTime);
+		this->applySteeringForce(this->steerForPursuit(*wanderer,
+				this->getPursuitMaxPredTime()), elapsedTime);
 
 		///call the entity update
 		this->entityUpdate(currentTime, elapsedTime);

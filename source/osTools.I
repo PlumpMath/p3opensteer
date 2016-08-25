@@ -298,53 +298,101 @@ INLINE void OSVehicleSettings::set_start(const LPoint3f& value)
 {
 	_vehicleSettings.m_start = ossup::LVecBase3fToOpenSteerVec3(value);
 }
-INLINE float OSVehicleSettings::get_prediction_time() const
+INLINE float OSVehicleSettings::get_path_pred_time() const
 {
-	return _vehicleSettings.m_predictionTime;
+	return _vehicleSettings.m_pathPredTime;
 }
-INLINE void OSVehicleSettings::set_prediction_time(float value)
+INLINE void OSVehicleSettings::set_path_pred_time(float value)
 {
-	_vehicleSettings.m_predictionTime = value;
+	_vehicleSettings.m_pathPredTime = value;
 }
-INLINE float OSVehicleSettings::get_min_time_to_collision() const
+INLINE float OSVehicleSettings::get_obstacle_min_time_coll() const
 {
-	return _vehicleSettings.m_minTimeToCollision;
+	return _vehicleSettings.m_obstacleMinTimeColl;
 }
-INLINE void OSVehicleSettings::set_min_time_to_collision(float value)
+INLINE void OSVehicleSettings::set_obstacle_min_time_coll(float value)
 {
-	_vehicleSettings.m_minTimeToCollision = value;
+	_vehicleSettings.m_obstacleMinTimeColl = value;
 }
-INLINE float OSVehicleSettings::get_min_separation_distance() const
+INLINE float OSVehicleSettings::get_neighbor_min_time_coll() const
 {
-	return _vehicleSettings.m_minSeparationDistance;
+	return _vehicleSettings.m_neighborMinTimeColl;
 }
-INLINE void OSVehicleSettings::set_min_separation_distance(float value)
+INLINE void OSVehicleSettings::set_neighbor_min_time_coll(float value)
 {
-	_vehicleSettings.m_minSeparationDistance = value;
+	_vehicleSettings.m_neighborMinTimeColl = value;
 }
-INLINE float OSVehicleSettings::get_max_distance() const
+INLINE float OSVehicleSettings::get_neighbor_min_sep_dist() const
 {
-	return _vehicleSettings.m_maxDistance;
+	return _vehicleSettings.m_neighborMinSepDist;
 }
-INLINE void OSVehicleSettings::set_max_distance(float value)
+INLINE void OSVehicleSettings::set_neighbor_min_sep_dist(float value)
 {
-	_vehicleSettings.m_maxDistance = value;
+	_vehicleSettings.m_neighborMinSepDist = value;
 }
-INLINE float OSVehicleSettings::get_cos_max_angle() const
+INLINE float OSVehicleSettings::get_separation_max_dist() const
 {
-	return _vehicleSettings.m_cosMaxAngle;
+	return _vehicleSettings.m_separationMaxDist;
 }
-INLINE void OSVehicleSettings::set_cos_max_angle(float value)
+INLINE void OSVehicleSettings::set_separation_max_dist(float value)
 {
-	_vehicleSettings.m_cosMaxAngle = value;
+	_vehicleSettings.m_separationMaxDist = value;
 }
-INLINE float OSVehicleSettings::get_max_prediction_time() const
+INLINE float OSVehicleSettings::get_separation_cos_max_angle() const
 {
-	return _vehicleSettings.m_maxPredictionTime;
+	return _vehicleSettings.m_separationCosMaxAngle;
 }
-INLINE void OSVehicleSettings::set_max_prediction_time(float value)
+INLINE void OSVehicleSettings::set_separation_cos_max_angle(float value)
 {
-	_vehicleSettings.m_maxPredictionTime = value;
+	_vehicleSettings.m_separationCosMaxAngle = value;
+}
+INLINE float OSVehicleSettings::get_alignment_max_dist() const
+{
+	return _vehicleSettings.m_alignmentMaxDist;
+}
+INLINE void OSVehicleSettings::set_alignment_max_dist(float value)
+{
+	_vehicleSettings.m_alignmentMaxDist = value;
+}
+INLINE float OSVehicleSettings::get_alignment_cos_max_angle() const
+{
+	return _vehicleSettings.m_alignmentCosMaxAngle;
+}
+INLINE void OSVehicleSettings::set_alignment_cos_max_angle(float value)
+{
+	_vehicleSettings.m_alignmentCosMaxAngle = value;
+}
+INLINE float OSVehicleSettings::get_cohesion_max_dist() const
+{
+	return _vehicleSettings.m_cohesionMaxDist;
+}
+INLINE void OSVehicleSettings::set_cohesion_max_dist(float value)
+{
+	_vehicleSettings.m_cohesionMaxDist = value;
+}
+INLINE float OSVehicleSettings::get_cohesion_cos_max_angle() const
+{
+	return _vehicleSettings.m_cohesionCosMaxAngle;
+}
+INLINE void OSVehicleSettings::set_cohesion_cos_max_angle(float value)
+{
+	_vehicleSettings.m_cohesionCosMaxAngle = value;
+}
+INLINE float OSVehicleSettings::get_pursuit_max_pred_time() const
+{
+	return _vehicleSettings.m_pursuitMaxPredTime;
+}
+INLINE void OSVehicleSettings::set_pursuit_max_pred_time(float value)
+{
+	_vehicleSettings.m_pursuitMaxPredTime = value;
+}
+INLINE float OSVehicleSettings::get_evasion_max_pred_time() const
+{
+	return _vehicleSettings.m_evasionMaxPredTime;
+}
+INLINE void OSVehicleSettings::set_evasion_max_pred_time(float value)
+{
+	_vehicleSettings.m_evasionMaxPredTime = value;
 }
 INLINE float OSVehicleSettings::get_target_speed() const
 {
@@ -356,22 +404,6 @@ INLINE void OSVehicleSettings::set_target_speed(float value)
 }
 
 ///Flock settings.
-INLINE float OSFlockSettings::get_separation_radius() const
-{
-	return _separationRadius;
-}
-INLINE void OSFlockSettings::set_separation_radius(float value)
-{
-	_separationRadius = value;
-}
-INLINE float OSFlockSettings::get_separation_angle() const
-{
-	return _separationAngle;
-}
-INLINE void OSFlockSettings::set_separation_angle(float value)
-{
-	_separationAngle = value;
-}
 INLINE float OSFlockSettings::get_separation_weight() const
 {
 	return _separationWeight;
@@ -380,22 +412,6 @@ INLINE void OSFlockSettings::set_separation_weight(float value)
 {
 	_separationWeight = value;
 }
-INLINE float OSFlockSettings::get_alignment_radius() const
-{
-	return _alignmentRadius;
-}
-INLINE void OSFlockSettings::set_alignment_radius(float value)
-{
-	_alignmentRadius = value;
-}
-INLINE float OSFlockSettings::get_alignment_angle() const
-{
-	return _alignmentAngle;
-}
-INLINE void OSFlockSettings::set_alignment_angle(float value)
-{
-	_alignmentAngle = value;
-}
 INLINE float OSFlockSettings::get_alignment_weight() const
 {
 	return _alignmentWeight;
@@ -403,22 +419,6 @@ INLINE float OSFlockSettings::get_alignment_weight() const
 INLINE void OSFlockSettings::set_alignment_weight(float value)
 {
 	_alignmentWeight = value;
-}
-INLINE float OSFlockSettings::get_cohesion_radius() const
-{
-	return _cohesionRadius;
-}
-INLINE void OSFlockSettings::set_cohesion_radius(float value)
-{
-	_cohesionRadius = value;
-}
-INLINE float OSFlockSettings::get_cohesion_angle() const
-{
-	return _cohesionAngle;
-}
-INLINE void OSFlockSettings::set_cohesion_angle(float value)
-{
-	_cohesionAngle = value;
 }
 INLINE float OSFlockSettings::get_cohesion_weight() const
 {

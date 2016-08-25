@@ -333,7 +333,7 @@ public:
 		if ((! m_Ball) || (! m_TeamAssigned))
 		{
 			// otherwise consider avoiding collisions with others
-			Vec3 collisionAvoidance = this->steerToAvoidNeighbors(1,
+			Vec3 collisionAvoidance = this->steerToAvoidNeighbors(this->getNeighborMinTimeColl(),
 					(AVGroup&) *m_AllPlayers);
 			if (collisionAvoidance != Vec3::zero)
 				this->applySteeringForce(collisionAvoidance, elapsedTime);
@@ -356,7 +356,7 @@ public:
 						elapsedTime);
 
 			// otherwise consider avoiding collisions with others
-			Vec3 collisionAvoidance = this->steerToAvoidNeighbors(1,
+			Vec3 collisionAvoidance = this->steerToAvoidNeighbors(this->getNeighborMinTimeColl(),
 					(AVGroup&) *m_AllPlayers);
 			if (collisionAvoidance != Vec3::zero)
 				this->applySteeringForce(collisionAvoidance, elapsedTime);
@@ -453,7 +453,7 @@ public:
 
 #ifdef OS_DEBUG
 		//annotation
-		Vec3 collisionAvoidance = this->steerToAvoidNeighbors(1,
+		Vec3 collisionAvoidance = this->steerToAvoidNeighbors(this->getNeighborMinTimeColl(),
 				(AVGroup&) this->m_AllPlayers);
 		if (collisionAvoidance == Vec3::zero)
 		{

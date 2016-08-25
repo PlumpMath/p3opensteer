@@ -64,6 +64,19 @@
  * | *speed*					|single| 0.0 | -
  * | *max_force*				|single| 0.1 | -
  * | *max_speed*				|single| 1.0 | -
+ * | *path_pred_time*			|single| 3.0 | -
+ * | *obstacle_min_time_coll*	|single| 4.5 | -
+ * | *neighbor_min_time_coll*	|single| 3.0 | -
+ * | *neighbor_min_sep_dist*	|single| 1.0 | -
+ * | *separation_max_dist*		|single| 5.0 | -
+ * | *separation_cos_max_angle*	|single| -0.707 | -
+ * | *alignment_max_dist*		|single| 7.5 | -
+ * | *alignment_cos_max_angle*	|single| 0.7 | -
+ * | *cohesion_max_dist*		|single| 9.0 | -
+ * | *cohesion_cos_max_angle*	|single| -0.15 | -
+ * | *pursuit_max_pred_time*	|single| 20.0 | -
+ * | *evasion_max_pred_time*	|single| 20.0 | -
+ * | *target_speed*				|single| 1.0 | -
  * | *up_axis_fixed*			|single| *false* | -
  * | *up_axis_fixed_mode*		|single| *light* | valid when up_axis_fixed = true; values: light,medium,strong
  * | *external_update*			|single| *false* | -
@@ -187,18 +200,30 @@ PUBLISHED:
 	INLINE LPoint3f get_position() const;
 	INLINE void set_start(const LPoint3f& position);
 	INLINE LPoint3f get_start() const;
-	INLINE void set_prediction_time(float predTime);
-	INLINE float get_prediction_time() const;
-	INLINE void set_min_time_to_collision(float collTime);
-	INLINE float get_min_time_to_collision() const;
-	INLINE void set_min_separation_distance(float sepDist);
-	INLINE float get_min_separation_distance() const;
-	INLINE void set_max_distance(float dist);
-	INLINE float get_max_distance() const;
-	INLINE void set_cos_max_angle(float angle);
-	INLINE float get_cos_max_angle() const;
-	INLINE void set_max_prediction_time(float predTime);
-	INLINE float get_max_prediction_time() const;
+	INLINE void set_path_pred_time(float predTime);
+	INLINE float get_path_pred_time() const;
+	INLINE void set_obstacle_min_time_coll(float collTime);
+	INLINE float get_obstacle_min_time_coll() const;
+	INLINE void set_neighbor_min_time_coll(float collTime);
+	INLINE float get_neighbor_min_time_coll() const;
+	INLINE void set_neighbor_min_sep_dist(float sepDist);
+	INLINE float get_neighbor_min_sep_dist() const;
+	INLINE void set_separation_max_dist(float dist);
+	INLINE float get_separation_max_dist() const;
+	INLINE void set_separation_cos_max_angle(float angle);
+	INLINE float get_separation_cos_max_angle() const;
+	INLINE void set_alignment_max_dist(float dist);
+	INLINE float get_alignment_max_dist() const;
+	INLINE void set_alignment_cos_max_angle(float angle);
+	INLINE float get_alignment_cos_max_angle() const;
+	INLINE void set_cohesion_max_dist(float dist);
+	INLINE float get_cohesion_max_dist() const;
+	INLINE void set_cohesion_cos_max_angle(float angle);
+	INLINE float get_cohesion_cos_max_angle() const;
+	INLINE void set_pursuit_max_pred_time(float predTime);
+	INLINE float get_pursuit_max_pred_time() const;
+	INLINE void set_evasion_max_pred_time(float predTime);
+	INLINE float get_evasion_max_pred_time() const;
 	INLINE void set_target_speed(float speed);
 	INLINE float get_target_speed() const;
 	void set_external_update(bool enable);
@@ -258,8 +283,6 @@ PUBLISHED:
 	 * \name MAP STEERING SETTINGS (MAP_DRIVER)
 	 */
 	///@{
-	void set_base_look_ahead_time(float time = 3.0);
-	float get_base_look_ahead_time() const;
 	void set_incremental_steering(bool enable = true);
 	bool get_incremental_steering() const;
 	void set_map_prediction_type(OSSteerPlugIn::OSMapPredictionType
@@ -394,7 +417,6 @@ private:
 		//low speed turn
 		float mSteeringSpeed;
 		//map driver
-		float mBaseLookAheadTime;
 		bool mIncrementalSteering;
 		OSSteerPlugIn::OSMapPredictionType mMapPredictionType;
 		LVector3f mCurrentSteering, mQqqLastNearestObstacle;
