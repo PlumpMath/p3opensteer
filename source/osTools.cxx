@@ -142,6 +142,13 @@ void OSVehicleSettings::write_datagram(Datagram &dg) const
 	get_up().write_datagram(dg);
 	get_position().write_datagram(dg);
 	get_start().write_datagram(dg);
+	dg.add_stdfloat(get_prediction_time());
+	dg.add_stdfloat(get_min_time_to_collision());
+	dg.add_stdfloat(get_min_separation_distance());
+	dg.add_stdfloat(get_max_distance());
+	dg.add_stdfloat(get_cos_max_angle());
+	dg.add_stdfloat(get_max_prediction_time());
+	dg.add_stdfloat(get_target_speed());
 }
 
 /**
@@ -165,6 +172,13 @@ void OSVehicleSettings::read_datagram(DatagramIterator &scan)
 	set_position(value);
 	value.read_datagram(scan);
 	set_start(value);
+	set_prediction_time(scan.get_stdfloat());
+	set_min_time_to_collision(scan.get_stdfloat());
+	set_min_separation_distance(scan.get_stdfloat());
+	set_max_distance(scan.get_stdfloat());
+	set_cos_max_angle(scan.get_stdfloat());
+	set_max_prediction_time(scan.get_stdfloat());
+	set_target_speed(scan.get_stdfloat());
 }
 
 ///Flock settings.

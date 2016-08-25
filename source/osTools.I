@@ -298,6 +298,62 @@ INLINE void OSVehicleSettings::set_start(const LPoint3f& value)
 {
 	_vehicleSettings.m_start = ossup::LVecBase3fToOpenSteerVec3(value);
 }
+INLINE float OSVehicleSettings::get_prediction_time() const
+{
+	return _vehicleSettings.m_predictionTime;
+}
+INLINE void OSVehicleSettings::set_prediction_time(float value)
+{
+	_vehicleSettings.m_predictionTime = value;
+}
+INLINE float OSVehicleSettings::get_min_time_to_collision() const
+{
+	return _vehicleSettings.m_minTimeToCollision;
+}
+INLINE void OSVehicleSettings::set_min_time_to_collision(float value)
+{
+	_vehicleSettings.m_minTimeToCollision = value;
+}
+INLINE float OSVehicleSettings::get_min_separation_distance() const
+{
+	return _vehicleSettings.m_minSeparationDistance;
+}
+INLINE void OSVehicleSettings::set_min_separation_distance(float value)
+{
+	_vehicleSettings.m_minSeparationDistance = value;
+}
+INLINE float OSVehicleSettings::get_max_distance() const
+{
+	return _vehicleSettings.m_maxDistance;
+}
+INLINE void OSVehicleSettings::set_max_distance(float value)
+{
+	_vehicleSettings.m_maxDistance = value;
+}
+INLINE float OSVehicleSettings::get_cos_max_angle() const
+{
+	return _vehicleSettings.m_cosMaxAngle;
+}
+INLINE void OSVehicleSettings::set_cos_max_angle(float value)
+{
+	_vehicleSettings.m_cosMaxAngle = value;
+}
+INLINE float OSVehicleSettings::get_max_prediction_time() const
+{
+	return _vehicleSettings.m_maxPredictionTime;
+}
+INLINE void OSVehicleSettings::set_max_prediction_time(float value)
+{
+	_vehicleSettings.m_maxPredictionTime = value;
+}
+INLINE float OSVehicleSettings::get_target_speed() const
+{
+	return _vehicleSettings.m_targetSpeed;
+}
+INLINE void OSVehicleSettings::set_target_speed(float value)
+{
+	_vehicleSettings.m_targetSpeed = value;
+}
 
 ///Flock settings.
 INLINE float OSFlockSettings::get_separation_radius() const

@@ -72,10 +72,13 @@ typedef std::vector<OpenSteer::SegmentedPathway*> PathwayGroup;
 struct VehicleSettings
 {
 	VehicleSettings() :
-			m_mass(1.0), m_radius(1.0), m_speed(0.0), m_maxForce(1.0), m_maxSpeed(
-					1.0), m_forward(OpenSteer::Vec3::forward), m_side(
-					OpenSteer::Vec3::side), m_up(OpenSteer::Vec3::up), m_position(
-					OpenSteer::Vec3::zero), m_start(OpenSteer::Vec3::zero)
+			m_mass(1.0), m_radius(1.0), m_speed(0.0), m_maxForce(1.0),
+			m_maxSpeed(1.0), m_forward(OpenSteer::Vec3::forward),
+			m_side(OpenSteer::Vec3::side), m_up(OpenSteer::Vec3::up),
+			m_position(OpenSteer::Vec3::zero), m_start(OpenSteer::Vec3::zero),
+			m_predictionTime(3.0), m_minTimeToCollision(3.0),
+			m_minSeparationDistance(1.0), m_maxDistance(5.0),
+			m_cosMaxAngle(0.707), m_maxPredictionTime(1.0), m_targetSpeed(1.0)
 	{
 	}
 	bool operator == (const VehicleSettings& other)
@@ -89,7 +92,14 @@ struct VehicleSettings
 				(m_side == other.m_side) &&
 				(m_up == other.m_up) &&
 				(m_position == other.m_position) &&
-				(m_start == other.m_start);
+				(m_start == other.m_start) &&
+				(m_predictionTime) &&
+				(m_minTimeToCollision) &&
+				(m_minSeparationDistance) &&
+				(m_maxDistance) &&
+				(m_cosMaxAngle) &&
+				(m_maxPredictionTime) &&
+				(m_targetSpeed);
 	}
 	// mass
 	float m_mass;
@@ -111,6 +121,14 @@ struct VehicleSettings
 	OpenSteer::Vec3 m_position;
 	// the vehicle start position.
 	OpenSteer::Vec3 m_start;
+	// steering parameters
+	float m_predictionTime;//steerToFollowPath, steerToStayOnPath
+	float m_minTimeToCollision;//steerToAvoidObstacle, steerToAvoidObstacles, steerToAvoidNeighbors
+	float m_minSeparationDistance;//steerToAvoidCloseNeighbors
+	float m_maxDistance;//steerForSeparation, steerForAlignment, steerForCohesion
+	float m_cosMaxAngle;//steerForSeparation, steerForAlignment, steerForCohesion
+	float m_maxPredictionTime;//steerForPursuit, steerForEvasion
+	float m_targetSpeed;//steerForTargetSpeed
 };
 
 template<typename Super, typename Entity>
@@ -243,10 +261,72 @@ public:
 	{
 		return m_settings.m_start;
 	}
-
 	void setStart(const OpenSteer::Vec3& start)
 	{
 		m_settings.m_start = start;
+	}
+
+	float getPredictionTime() const
+	{
+		return m_settings.m_predictionTime;
+	}
+	void setPredictionTime(float value)
+	{
+		m_settings.m_predictionTime = value;
+	}
+
+	float getMinTimeToCollision() const
+	{
+		return m_settings.m_minTimeToCollision;
+	}
+	void setMinTimeToCollision(float value)
+	{
+		m_settings.m_minTimeToCollision = value;
+	}
+
+	float getMinSeparationDistance() const
+	{
+		return m_settings.m_minSeparationDistance;
+	}
+	void setMinSeparationDistance(float value)
+	{
+		m_settings.m_minSeparationDistance = value;
+	}
+
+	float getMaxDistance() const
+	{
+		return m_settings.m_maxDistance;
+	}
+	void setMaxDistance(float value)
+	{
+		m_settings.m_maxDistance = value;
+	}
+
+	float getCosMaxAngle() const
+	{
+		return m_settings.m_cosMaxAngle;
+	}
+	void setCosMaxAngle(float value)
+	{
+		m_settings.m_cosMaxAngle = value;
+	}
+
+	float getMaxPredictionTime() const
+	{
+		return m_settings.m_maxPredictionTime;
+	}
+	void setMaxPredictionTime(float value)
+	{
+		m_settings.m_maxPredictionTime = value;
+	}
+
+	float getTargetSpeed() const
+	{
+		return m_settings.m_targetSpeed;
+	}
+	void setTargetSpeed(float value)
+	{
+		m_settings.m_targetSpeed = value;
 	}
 
 	/// It is called by setSettings() to perform custom tasks

@@ -365,6 +365,20 @@ PUBLISHED:
 	INLINE void set_position(const LPoint3f& value);
 	INLINE LPoint3f get_start() const;
 	INLINE void set_start(const LPoint3f& value);
+	INLINE float get_prediction_time() const;
+	INLINE void set_prediction_time(float value);
+	INLINE float get_min_time_to_collision() const;
+	INLINE void set_min_time_to_collision(float value);
+	INLINE float get_min_separation_distance() const;
+	INLINE void set_min_separation_distance(float value);
+	INLINE float get_max_distance() const;
+	INLINE void set_max_distance(float value);
+	INLINE float get_cos_max_angle() const;
+	INLINE void set_cos_max_angle(float value);
+	INLINE float get_max_prediction_time() const;
+	INLINE void set_max_prediction_time(float value);
+	INLINE float get_target_speed() const;
+	INLINE void set_target_speed(float value);
 private:
 	ossup::VehicleSettings _vehicleSettings;
 
