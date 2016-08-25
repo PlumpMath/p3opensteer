@@ -249,7 +249,7 @@ public:
 				if (wanderSwitch)
 					steeringForce += this->steerForWander(elapsedTime);
 
-				// do (interactivossup) selected type of path following
+				// do (interactively) selected type of path following
 				const float pfLeadTime = 3;
 				const Vec3 pathFollow =
 						(useDirectedPathFollowing ?
