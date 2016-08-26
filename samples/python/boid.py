@@ -88,6 +88,7 @@ def writeToBamFileAndExitBoid(fileName):
         vehicle = OSSteerManager.get_global_ptr().get_steer_vehicle(i).node()
         print(str(i) + "th OSSteerVehicle's settings: ")
         print(vehicle.get_settings())
+        print(vehicle.get_flock_settings())
     #
     writeToBamFileAndExit(fileName)
         
@@ -166,6 +167,7 @@ if __name__ == '__main__':
             # print vehicle settings
             print(str(i) + "th OSSteerVehicle's settings: ")
             print(steerVehicles[i].get_settings())
+            print(steerVehicles[i].get_flock_settings())
             # restore animations
             tmpAnims = AnimControlCollection()
             auto_bind(steerVehicles[i], tmpAnims)

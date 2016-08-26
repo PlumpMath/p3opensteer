@@ -102,6 +102,7 @@ int main(int argc, char *argv[])
 			// print vehicle settings
 			cout << i << "th OSSteerVehicle's settings: " << endl;
 			cout << steerVehicles[i]->get_settings() << endl;
+			cout << steerVehicles[i]->get_flock_settings() << endl;
 			// restore animations
 			AnimControlCollection tmpAnims;
 			auto_bind(steerVehicles[i], tmpAnims);
@@ -265,6 +266,7 @@ void writeToBamFileAndExitBoid(const Event* e, void* data)
 				DCAST(OSSteerVehicle, OSSteerManager::get_global_ptr()->get_steer_vehicle(i).node());
 		cout << i << "th OSSteerVehicle's settings: " << endl;
 		cout << vehicle->get_settings() << endl;
+		cout << vehicle->get_flock_settings() << endl;
 	}
 	//
 	writeToBamFileAndExit(e, data);
