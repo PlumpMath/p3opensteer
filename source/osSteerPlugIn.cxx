@@ -466,6 +466,7 @@ int OSSteerPlugIn::add_steer_vehicle(NodePath steerVehicleNP)
 		OSVehicleSettings settings = steerVehicle->get_settings();
 		settings.set_forward(forward);
 		settings.set_up(up);
+		settings.set_side(forward.cross(up).normalize());
 		settings.set_position(pos);
 		settings.set_start(pos);
 		//update radius

@@ -409,7 +409,7 @@ public:
 		Super::setMaxForce(m_settings.m_maxForce); // steering force is clipped to this magnitude
 		Super::setMaxSpeed(m_settings.m_maxSpeed); // velocity is clipped to this magnitude
 		Super::setForward(m_settings.m_forward);
-		Super::setSide(Super::localRotateForwardToSide(m_settings.m_forward));
+		Super::setSide(m_settings.m_side);
 		Super::setUp(m_settings.m_up);
 		Super::setPosition(m_settings.m_position);
 	}

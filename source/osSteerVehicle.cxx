@@ -303,6 +303,8 @@ void OSSteerVehicle::do_initialize()
 	LVector3f up = mReferenceNP.get_relative_vector(
 			thisNP, LVector3f::up());
 	settings.set_up(up);
+	//side
+	settings.set_side(forward.cross(up).normalize());
 	//position
 	settings.set_position(thisNP.get_pos());
 	//start
