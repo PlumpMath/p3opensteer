@@ -193,6 +193,10 @@ void OSVehicleSettings::read_datagram(DatagramIterator &scan)
 	set_target_speed(scan.get_stdfloat());
 }
 
+/**
+ * Writes a sensible description of the OSVehicleSettings to the indicated
+ * output stream.
+ */
 void OSVehicleSettings::output(ostream &out) const
 {
 	out << "mass: " << get_mass() << endl;
@@ -255,6 +259,10 @@ void OSFlockSettings::read_datagram(DatagramIterator &scan)
 	set_cohesion_weight(scan.get_stdfloat());
 }
 
+/**
+ * Writes a sensible description of the OSFlockSettings to the indicated output
+ * stream.
+ */
 void OSFlockSettings::output(ostream &out) const
 {
 	out << "separation_weight: " << get_separation_weight() << endl;
@@ -305,6 +313,10 @@ void OSObstacleSettings::read_datagram(DatagramIterator &scan)
 	set_ref(scan.get_int32());
 }
 
+/**
+ * Writes a sensible description of the OSObstacleSettings to the indicated
+ * output stream.
+ */
 void OSObstacleSettings::output(ostream &out) const
 {
 	out << "type: " << get_type() << endl;
