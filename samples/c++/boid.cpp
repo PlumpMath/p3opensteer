@@ -15,6 +15,7 @@ vector<PT(OSSteerVehicle)>steerVehicles;
 //
 void setParametersBeforeCreation();
 AsyncTask::DoneStatus updatePlugIn(GenericAsyncTask*, void*);
+void writeToBamFileAndExitBoid(const Event*, void*);
 
 int main(int argc, char *argv[])
 {
@@ -98,6 +99,9 @@ int main(int argc, char *argv[])
 			NodePath steerVehicleNP =
 					OSSteerManager::get_global_ptr()->get_steer_vehicle(i);
 			steerVehicles[i] = DCAST(OSSteerVehicle, steerVehicleNP.node());
+			// print vehicle settings
+			cout << i << "th OSSteerVehicle's settings: " << endl;
+			cout << steerVehicles[i]->get_settings() << endl;
 			// restore animations
 			AnimControlCollection tmpAnims;
 			auto_bind(steerVehicles[i], tmpAnims);
@@ -170,7 +174,7 @@ int main(int argc, char *argv[])
 	window->get_graphics_window()->set_close_request_event(
 			"close_request_event");
 	framework.define_key("close_request_event", "writeToBamFile",
-			&writeToBamFileAndExit, (void*) &bamFileName);
+			&writeToBamFileAndExitBoid, (void*) &bamFileName);
 
 	// place camera trackball (local coordinate)
 	PT(Trackball)trackball = DCAST(Trackball, window->get_mouse().find("**/+Trackball").node());
@@ -249,4 +253,19 @@ AsyncTask::DoneStatus updatePlugIn(GenericAsyncTask* task, void* data)
 	}
 	//
 	return AsyncTask::DS_cont;
+}
+
+// override writeToBamFileAndExit
+void writeToBamFileAndExitBoid(const Event* e, void* data)
+{
+	for (int i = 0;
+			i < OSSteerManager::get_global_ptr()->get_num_steer_vehicles(); ++i)
+	{
+		PT(OSSteerVehicle)vehicle =
+				DCAST(OSSteerVehicle, OSSteerManager::get_global_ptr()->get_steer_vehicle(i).node());
+		cout << i << "th OSSteerVehicle's settings: " << endl;
+		cout << vehicle->get_settings() << endl;
+	}
+	//
+	writeToBamFileAndExit(e, data);
 }

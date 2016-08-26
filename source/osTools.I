@@ -402,6 +402,11 @@ INLINE void OSVehicleSettings::set_target_speed(float value)
 {
 	_vehicleSettings.m_targetSpeed = value;
 }
+INLINE ostream &operator << (ostream &out, const OSVehicleSettings & settings)
+{
+	settings.output(out);
+	return out;
+}
 
 ///Flock settings.
 INLINE float OSFlockSettings::get_separation_weight() const
@@ -427,6 +432,11 @@ INLINE float OSFlockSettings::get_cohesion_weight() const
 INLINE void OSFlockSettings::set_cohesion_weight(float value)
 {
 	_cohesionWeight = value;
+}
+INLINE ostream &operator << (ostream &out, const OSFlockSettings & settings)
+{
+	settings.output(out);
+	return out;
 }
 
 ///OSObstacleSettings.
@@ -527,6 +537,11 @@ INLINE int OSObstacleSettings::get_ref() const
 INLINE void OSObstacleSettings::set_ref(int value)
 {
 	_ref = value;
+}
+INLINE ostream &operator << (ostream &out, const OSObstacleSettings & settings)
+{
+	settings.output(out);
+	return out;
 }
 inline OpenSteer::AbstractObstacle* OSObstacleSettings::get_obstacle() const
 {

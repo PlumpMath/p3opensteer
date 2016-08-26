@@ -193,6 +193,34 @@ void OSVehicleSettings::read_datagram(DatagramIterator &scan)
 	set_target_speed(scan.get_stdfloat());
 }
 
+void OSVehicleSettings::output(ostream &out) const
+{
+	out << "mass: " << get_mass() << endl;
+	out << "radius: " << get_radius() << endl;
+	out << "speed: " << get_speed() << endl;
+	out << "maxForce: " << get_maxForce() << endl;
+	out << "maxSpeed: " << get_maxSpeed() << endl;
+	out << "forward: " << get_forward() << endl;
+	out << "side: " << get_side() << endl;
+	out << "up: " << get_up() << endl;
+	out << "position: " << get_position() << endl;
+	out << "start: " << get_start() << endl;
+	out << "path_pred_time: " << get_path_pred_time() << endl;
+	out << "obstacle_min_time_coll: " << get_obstacle_min_time_coll() << endl;
+	out << "neighbor_min_time_coll: " << get_neighbor_min_time_coll() << endl;
+	out << "neighbor_min_sep_dist: " << get_neighbor_min_sep_dist() << endl;
+	out << "separation_max_dist: " << get_separation_max_dist() << endl;
+	out << "separation_cos_max_angle: " << get_separation_cos_max_angle()
+			<< endl;
+	out << "alignment_max_dist: " << get_alignment_max_dist() << endl;
+	out << "alignment_cos_max_angle: " << get_alignment_cos_max_angle() << endl;
+	out << "cohesion_max_dist: " << get_cohesion_max_dist() << endl;
+	out << "cohesion_cos_max_angle: " << get_cohesion_cos_max_angle() << endl;
+	out << "pursuit_max_pred_time: " << get_pursuit_max_pred_time() << endl;
+	out << "evasion_max_pred_time: " << get_evasion_max_pred_time() << endl;
+	out << "speed: " << get_speed() << endl;
+}
+
 ///Flock settings.
 /**
  *
@@ -225,6 +253,13 @@ void OSFlockSettings::read_datagram(DatagramIterator &scan)
 	set_separation_weight(scan.get_stdfloat());
 	set_alignment_weight(scan.get_stdfloat());
 	set_cohesion_weight(scan.get_stdfloat());
+}
+
+void OSFlockSettings::output(ostream &out) const
+{
+	out << "separation_weight: " << get_separation_weight() << endl;
+	out << "alignment_weight: " << get_alignment_weight() << endl;
+	out << "cohesion_weight: " << get_cohesion_weight() << endl;
 }
 
 ///OSObstacleSettings.
@@ -268,6 +303,21 @@ void OSObstacleSettings::read_datagram(DatagramIterator &scan)
 	set_depth(scan.get_stdfloat());
 	set_radius(scan.get_stdfloat());
 	set_ref(scan.get_int32());
+}
+
+void OSObstacleSettings::output(ostream &out) const
+{
+	out << "type: " << get_type() << endl;
+	out << "seenFromState: " << get_seenFromState() << endl;
+	out << "position: " << get_position() << endl;
+	out << "forward: " << get_forward() << endl;
+	out << "up: " << get_up() << endl;
+	out << "side: " << get_side() << endl;
+	out << "width: " << get_width() << endl;
+	out << "height: " << get_height() << endl;
+	out << "depth: " << get_depth() << endl;
+	out << "radius: " << get_radius() << endl;
+	out << "ref: " << get_ref() << endl;
 }
 
 ///ValueList template

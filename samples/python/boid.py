@@ -80,6 +80,16 @@ def updatePlugIn(steerPlugIn, task):
             vehicleAnimCtls[i][1].stop()
     #
     return task.cont
+
+def writeToBamFileAndExitBoid(fileName):
+    """override writeToBamFileAndExit"""
+    
+    for i in range(OSSteerManager.get_global_ptr().get_num_steer_vehicles()):
+        vehicle = OSSteerManager.get_global_ptr().get_steer_vehicle(i).node()
+        print(str(i) + "th OSSteerVehicle's settings: ")
+        print(vehicle.get_settings())
+    #
+    writeToBamFileAndExit(fileName)
         
 if __name__ == '__main__':
 
@@ -153,6 +163,9 @@ if __name__ == '__main__':
             # restore the steer vehicle: through steer manager
             steerVehicleNP = OSSteerManager.get_global_ptr().get_steer_vehicle(i)
             steerVehicles[i] = steerVehicleNP.node()
+            # print vehicle settings
+            print(str(i) + "th OSSteerVehicle's settings: ")
+            print(steerVehicles[i].get_settings())
             # restore animations
             tmpAnims = AnimControlCollection()
             auto_bind(steerVehicles[i], tmpAnims)
@@ -208,7 +221,7 @@ if __name__ == '__main__':
     
     # write to bam file on exit
     app.win.set_close_request_event("close_request_event")
-    app.accept("close_request_event", writeToBamFileAndExit, [bamFileName])
+    app.accept("close_request_event", writeToBamFileAndExitBoid, [bamFileName])
     
     # place camera
     trackball = app.trackball.node()

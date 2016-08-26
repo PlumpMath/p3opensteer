@@ -391,6 +391,7 @@ PUBLISHED:
 	INLINE void set_evasion_max_pred_time(float value);
 	INLINE float get_target_speed() const;
 	INLINE void set_target_speed(float value);
+	void output(ostream &out) const;
 private:
 	ossup::VehicleSettings _vehicleSettings;
 
@@ -398,6 +399,7 @@ public:
 	void write_datagram(Datagram &dg) const;
 	void read_datagram(DatagramIterator &scan);
 };
+INLINE ostream &operator << (ostream &out, const OSVehicleSettings & settings);
 
 ///Flock settings.
 struct EXPORT_CLASS OSFlockSettings
@@ -414,6 +416,7 @@ PUBLISHED:
 	INLINE void set_alignment_weight(float value);
 	INLINE float get_cohesion_weight() const;
 	INLINE void set_cohesion_weight(float value);
+	void output(ostream &out) const;
 #ifndef CPPPARSER
 	float& separation_weight(){return _separationWeight;}
 	float& alignment_weight(){return _alignmentWeight;}
@@ -428,6 +431,7 @@ public:
 	void write_datagram(Datagram &dg) const;
 	void read_datagram(DatagramIterator &scan);
 };
+INLINE ostream &operator << (ostream &out, const OSFlockSettings & settings);
 
 ///OSObstacleSettings.
 struct EXPORT_CLASS OSObstacleSettings
@@ -459,6 +463,7 @@ PUBLISHED:
 	INLINE void set_radius(float value);
 	INLINE int get_ref() const;
 	INLINE void set_ref(int value);
+	void output(ostream &out) const;
 public:
 	inline OpenSteer::AbstractObstacle* get_obstacle() const;
 	inline void set_obstacle(OpenSteer::AbstractObstacle* value);
@@ -481,6 +486,7 @@ public:
 	void write_datagram(Datagram &dg) const;
 	void read_datagram(DatagramIterator &scan);
 };
+INLINE ostream &operator << (ostream &out, const OSObstacleSettings & settings);
 
 ///ValueList template
 template<typename Type>
