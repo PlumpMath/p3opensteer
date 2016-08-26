@@ -106,6 +106,7 @@ struct CtfPlugInData
 	float gBrakingRate;///serializable //0.75
 	float gAvoidancePredictTimeMin;///serializable //0.9
 	float gAvoidancePredictTimeMax;///serializable //2.0 (>=gAvoidancePredictTimeMin)
+///	float gAvoidancePredictTime;///serializable //0.9 (=gAvoidancePredictTimeMin)
 ///	int resetCount;
 	bool gDelayedResetPlugInXXX;///serializable
 #ifdef OS_DEBUG
@@ -918,7 +919,7 @@ public:
 		m_CtfPlugInData.gBrakingRate = 0.75;
 		m_CtfPlugInData.gAvoidancePredictTimeMin = 0.9f;
 		m_CtfPlugInData.gAvoidancePredictTimeMax = 2;
-//	REFACTOR	m_CtfPlugInData.gAvoidancePredictTime = m_CtfPlugInData.gAvoidancePredictTimeMin;
+///		m_CtfPlugInData.gAvoidancePredictTime = m_CtfPlugInData.gAvoidancePredictTimeMin;
 ///		m_CtfPlugInData.resetCount = 0;
 		m_CtfPlugInData.gDelayedResetPlugInXXX = false;
 #ifdef OS_DEBUG

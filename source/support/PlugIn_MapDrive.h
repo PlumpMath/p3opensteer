@@ -1064,7 +1064,7 @@ public:
 		qqqLastNearestObstacle = Vec3::zero;
 
 		// master look ahead (prediction) time
-///		this->setObstacleMinTimeColl(3.0);
+///		baseLookAheadTime = 3;
 
 		// assume no previous steering
 		currentSteering = Vec3::zero;
@@ -2843,6 +2843,9 @@ public:
 
 	// follow the path "upstream or downstream" (+1/-1)
 	int pathFollowDirection;///serializable
+
+///	// master look ahead (prediction) time
+///	float baseLookAheadTime;///serializable
 
 	// vehicle dimensions in meters
 	float halfWidth;///serializable

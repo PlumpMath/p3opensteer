@@ -131,6 +131,9 @@ public:
 
 ///		// notify proximity database that our position has changed
 ///		proximityToken->updateForNewPosition(position());
+
+		maxRadius = maxXXX(this->getSeparationMaxDist(),
+				maxXXX(this->getAlignmentMaxDist(), this->getCohesionMaxDist()));
 	}
 
 #ifdef OS_DEBUG
@@ -165,8 +168,7 @@ public:
 	{
 		// avoid obstacles if needed
 		// XXX this should probably be moved elsewhere
-		const Vec3 avoidance = this->steerToAvoidObstacles(this->getObstacleMinTimeColl(),
-				*obstacles);
+		const Vec3 avoidance = this->steerToAvoidObstacles(this->getObstacleMinTimeColl(), *obstacles);
 		if (avoidance != Vec3::zero)
 			return avoidance;
 
@@ -335,8 +337,8 @@ public:
 ///		cohesionRadius = cR;
 ///		cohesionAngle = cA;
 		cohesionWeight = cW;
-		maxRadius = maxXXX(this->getSeparationMaxDist(),
-				maxXXX(this->getAlignmentMaxDist(), this->getCohesionMaxDist()));
+///		maxRadius = maxXXX(this->getSeparationMaxDist(),
+///				maxXXX(this->getAlignmentMaxDist(), this->getCohesionMaxDist()));
 	}
 
 	void getFlockParameters(/*float& sR, float& sA,*/ float& sW,

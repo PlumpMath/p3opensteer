@@ -211,8 +211,7 @@ public:
 			//             obstacleAvoidance = steerToAvoidObstacles (oTime, obstacles);
 			//             obstacleAvoidance = steerToAvoidObstacle (oTime, gObstacle1);
 			//             obstacleAvoidance = steerToAvoidObstacle (oTime, gObstacle3);
-			obstacleAvoidance = this->steerToAvoidObstacles(this->getObstacleMinTimeColl(),
-					*obstacles);
+			obstacleAvoidance = this->steerToAvoidObstacles(this->getObstacleMinTimeColl(), *obstacles);
 			// ------------------------------------ xxxcwr11-1-04 fixing steerToAvoid
 		}
 
@@ -251,12 +250,12 @@ public:
 					steeringForce += this->steerForWander(elapsedTime);
 
 				// do (interactively) selected type of path following
+///				const float pfLeadTime = 3;
 				const Vec3 pathFollow =
 						(useDirectedPathFollowing ?
 								this->steerToFollowPath(pathDirection,
 										this->getPathPredTime(), *(*path)[0]) :
-								this->steerToStayOnPath(this->getPathPredTime(),
-										*(*path)[0]));
+								this->steerToStayOnPath(this->getPathPredTime(), *(*path)[0]));
 
 				// add in to steeringForce
 				steeringForce += pathFollow * 0.5;

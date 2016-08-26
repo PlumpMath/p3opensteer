@@ -253,8 +253,8 @@ INLINE float OSSteerVehicle::get_path_pred_time() const
 }
 
 /**
- * Sets the OSSteerVehicle's 'obstacle's minimum time to collision' steering
- * parameter.
+ * Sets the OSSteerVehicle's 'minimum time to collision with an obstacle'
+ * steering parameter.
  */
 INLINE void OSSteerVehicle::set_obstacle_min_time_coll(float collTime)
 {
@@ -262,8 +262,8 @@ INLINE void OSSteerVehicle::set_obstacle_min_time_coll(float collTime)
 }
 
 /**
- * Returns the OSSteerVehicle's 'obstacle's minimum time to collision' steering
- * parameter.
+ * Returns the OSSteerVehicle's 'minimum time to collision with an obstacle'
+ * steering parameter.
  */
 INLINE float OSSteerVehicle::get_obstacle_min_time_coll() const
 {
@@ -271,8 +271,8 @@ INLINE float OSSteerVehicle::get_obstacle_min_time_coll() const
 }
 
 /**
- * Sets the OSSteerVehicle's 'neighbor's minimum time to collision' steering
- * parameter.
+ * Sets the OSSteerVehicle's 'minimum time to collision with a neighbor'
+ * steering parameter.
  */
 INLINE void OSSteerVehicle::set_neighbor_min_time_coll(float collTime)
 {
@@ -280,8 +280,8 @@ INLINE void OSSteerVehicle::set_neighbor_min_time_coll(float collTime)
 }
 
 /**
- * Returns the OSSteerVehicle's 'neighbor's minimum time to collision' steering
- * parameter.
+ * Returns the OSSteerVehicle's 'minimum time to collision with a neighbor'
+ * steering parameter.
  */
 INLINE float OSSteerVehicle::get_neighbor_min_time_coll() const
 {
@@ -289,8 +289,8 @@ INLINE float OSSteerVehicle::get_neighbor_min_time_coll() const
 }
 
 /**
- * Sets the OSSteerVehicle's 'neighbor's minimum separation distance' steering
- * parameter.
+ * Sets the OSSteerVehicle's 'minimum separation distance with a neighbor'
+ * steering parameter.
  */
 INLINE void OSSteerVehicle::set_neighbor_min_sep_dist(float sepDist)
 {
@@ -298,8 +298,8 @@ INLINE void OSSteerVehicle::set_neighbor_min_sep_dist(float sepDist)
 }
 
 /**
- * Returns the OSSteerVehicle's 'neighbor's minimum separation distance' steering
- * parameter.
+ * Returns the OSSteerVehicle's 'minimum separation distance with a neighbor'
+ * steering parameter.
  */
 INLINE float OSSteerVehicle::get_neighbor_min_sep_dist() const
 {
@@ -307,7 +307,7 @@ INLINE float OSSteerVehicle::get_neighbor_min_sep_dist() const
 }
 
 /**
- * Sets the OSSteerVehicle's 'separation's maximum distance' steering parameter.
+ * Sets the OSSteerVehicle's 'maximum distance of separation' steering parameter.
  */
 INLINE void OSSteerVehicle::set_separation_max_dist(float dist)
 {
@@ -315,7 +315,7 @@ INLINE void OSSteerVehicle::set_separation_max_dist(float dist)
 }
 
 /**
- * Returns the OSSteerVehicle's 'separation's maximum distance' steering
+ * Returns the OSSteerVehicle's 'maximum distance of separation' steering
  * parameter.
  */
 INLINE float OSSteerVehicle::get_separation_max_dist() const
@@ -324,7 +324,7 @@ INLINE float OSSteerVehicle::get_separation_max_dist() const
 }
 
 /**
- * Sets the OSSteerVehicle's 'separation's cosine of the maximum angle'
+ * Sets the OSSteerVehicle's 'cosine of the maximum angle of separation'
  * steering parameter.
  */
 INLINE void OSSteerVehicle::set_separation_cos_max_angle(float angle)
@@ -333,7 +333,7 @@ INLINE void OSSteerVehicle::set_separation_cos_max_angle(float angle)
 }
 
 /**
- * Returns the OSSteerVehicle's 'separation's cosine of the maximum angle'
+ * Returns the OSSteerVehicle's 'cosine of the maximum angle of separation'
  * steering parameter.
  */
 INLINE float OSSteerVehicle::get_separation_cos_max_angle() const
@@ -342,7 +342,7 @@ INLINE float OSSteerVehicle::get_separation_cos_max_angle() const
 }
 
 /**
- * Sets the OSSteerVehicle's 'alignment's maximum distance' steering parameter.
+ * Sets the OSSteerVehicle's 'maximum distance of alignment' steering parameter.
  */
 INLINE void OSSteerVehicle::set_alignment_max_dist(float dist)
 {
@@ -350,7 +350,7 @@ INLINE void OSSteerVehicle::set_alignment_max_dist(float dist)
 }
 
 /**
- * Returns the OSSteerVehicle's 'alignment's maximum distance' steering
+ * Returns the OSSteerVehicle's 'maximum distance of alignment' steering
  * parameter.
  */
 INLINE float OSSteerVehicle::get_alignment_max_dist() const
@@ -359,7 +359,7 @@ INLINE float OSSteerVehicle::get_alignment_max_dist() const
 }
 
 /**
- * Sets the OSSteerVehicle's 'alignment's cosine of the maximum angle' steering
+ * Sets the OSSteerVehicle's 'cosine of the maximum angle of alignment' steering
  * parameter.
  */
 INLINE void OSSteerVehicle::set_alignment_cos_max_angle(float angle)
@@ -368,8 +368,8 @@ INLINE void OSSteerVehicle::set_alignment_cos_max_angle(float angle)
 }
 
 /**
- * Returns the OSSteerVehicle's 'alignment cosine of the maximum angle' steering
- * parameter.
+ * Returns the OSSteerVehicle's 'cosine of the maximum angle of alignment'
+ * steering parameter.
  */
 INLINE float OSSteerVehicle::get_alignment_cos_max_angle() const
 {
@@ -377,7 +377,7 @@ INLINE float OSSteerVehicle::get_alignment_cos_max_angle() const
 }
 
 /**
- * Sets the OSSteerVehicle's 'cohesion's maximum distance' steering parameter.
+ * Sets the OSSteerVehicle's 'maximum distance of cohesion' steering parameter.
  */
 INLINE void OSSteerVehicle::set_cohesion_max_dist(float dist)
 {
@@ -385,7 +385,7 @@ INLINE void OSSteerVehicle::set_cohesion_max_dist(float dist)
 }
 
 /**
- * Returns the OSSteerVehicle's 'cohesion's maximum distance' steering
+ * Returns the OSSteerVehicle's 'maximum distance of cohesion' steering
  * parameter.
  */
 INLINE float OSSteerVehicle::get_cohesion_max_dist() const
@@ -394,7 +394,7 @@ INLINE float OSSteerVehicle::get_cohesion_max_dist() const
 }
 
 /**
- * Sets the OSSteerVehicle's 'cohesion's cosine of the maximum angle' steering
+ * Sets the OSSteerVehicle's 'cosine of the maximum angle of cohesion' steering
  * parameter.
  */
 INLINE void OSSteerVehicle::set_cohesion_cos_max_angle(float angle)
@@ -403,7 +403,7 @@ INLINE void OSSteerVehicle::set_cohesion_cos_max_angle(float angle)
 }
 
 /**
- * Returns the OSSteerVehicle's 'cohesion's cosine of the maximum angle'
+ * Returns the OSSteerVehicle's 'cosine of the maximum angle of cohesion'
  * steering parameter.
  */
 INLINE float OSSteerVehicle::get_cohesion_cos_max_angle() const
