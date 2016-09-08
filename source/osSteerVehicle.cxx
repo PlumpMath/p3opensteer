@@ -4,6 +4,10 @@
  * \date 2016-05-13
  * \author consultit
  */
+
+#ifdef HAVE_PYTHON
+#include <python2.7/Python.h>
+#endif
 #include "osSteerVehicle.h"
 #include "throw_event.h"
 #include "support/PlugIn_OneTurning.h"
@@ -917,6 +921,31 @@ void OSSteerVehicle::output(ostream &out) const
 {
 	out << get_type() << " " << get_name();
 }
+
+#ifdef HAVE_PYTHON
+	int OSSteerVehicle::set_callback(PyObject *value)
+	{
+		if (value == NULL)
+		{
+			PyErr_SetString(PyExc_TypeError,
+					"Cannot delete the callback attribute");
+			return -1;
+		}
+
+		if ((!PyCallable_Check(value)) && (value != Py_None))
+		{
+			PyErr_SetString(PyExc_TypeError,
+					"The callback attribute value must be callable or None");
+			return -1;
+		}
+
+		Py_DECREF(callback);
+		Py_INCREF(value);
+		callback = value;
+
+		return 0;
+	}
+#endif
 
 /**
  * Updates the OSSteerVehicle.

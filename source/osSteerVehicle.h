@@ -313,6 +313,10 @@ PUBLISHED:
 	void output(ostream &out) const;
 	///@}
 
+#ifdef HAVE_PYTHON
+	int set_callback(PyObject *value);
+#endif
+
 public:
 	/**
 	 * \name C++ ONLY
@@ -330,6 +334,11 @@ protected:
 	OSSteerVehicle(const string& name);
 
 private:
+
+#ifdef HAVE_PYTHON
+	PyObject *callback;
+#endif
+
 	///Current underlying OpenSteer Vehicle.
 	OpenSteer::AbstractVehicle* mVehicle;
 	///The type of this OSSteerPlugIn.
