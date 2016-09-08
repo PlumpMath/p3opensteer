@@ -313,9 +313,7 @@ PUBLISHED:
 	void output(ostream &out) const;
 	///@}
 
-#ifdef HAVE_PYTHON
 	int set_callback(PyObject *value);
-#endif
 
 public:
 	/**
@@ -335,9 +333,7 @@ protected:
 
 private:
 
-#ifdef HAVE_PYTHON
 	PyObject *callback;
-#endif
 
 	///Current underlying OpenSteer Vehicle.
 	OpenSteer::AbstractVehicle* mVehicle;

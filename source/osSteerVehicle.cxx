@@ -5,9 +5,8 @@
  * \author consultit
  */
 
-#ifdef HAVE_PYTHON
-#include <python2.7/Python.h>
-#endif
+#include <Python.h>
+
 #include "osSteerVehicle.h"
 #include "throw_event.h"
 #include "support/PlugIn_OneTurning.h"
@@ -922,7 +921,6 @@ void OSSteerVehicle::output(ostream &out) const
 	out << get_type() << " " << get_name();
 }
 
-#ifdef HAVE_PYTHON
 	int OSSteerVehicle::set_callback(PyObject *value)
 	{
 		if (value == NULL)
@@ -945,7 +943,6 @@ void OSSteerVehicle::output(ostream &out) const
 
 		return 0;
 	}
-#endif
 
 /**
  * Updates the OSSteerVehicle.

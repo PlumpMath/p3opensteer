@@ -5,8 +5,8 @@ AM_CPPFLAGS = \
 	-I$(srcdir)/../../source \
 	-I$(srcdir)/../../source/library \
 	-I$(srcdir)/../../source/support \
-	-I/usr/include/panda3d -I/usr/include/eigen3 \
-	-DOS_DEBUG= -DHAVE_PYTHON
+	-I/usr/include/panda3d -I/usr/include/eigen3 -I/usr/include/python2.7 \
+	-DOS_DEBUG=
 
 AM_CXXFLAGS = -O0 -g3 -Wall -Wno-reorder -fmessage-length=0 -std=c++11
 AM_LDFLAGS = -L/usr/lib/x86_64-linux-gnu/panda3d
