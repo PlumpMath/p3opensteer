@@ -546,6 +546,7 @@ inline void OSSteerVehicle::do_reset()
 	//serialization
 	mSerializedDataTmpPtr = NULL;
 	mPlayingTeam_ser = OSSteerPlugIn::NO_TEAM;
+	callback = self = NULL;
 }
 
 INLINE ostream &operator <<(ostream &out, const OSSteerVehicle& steerVehicle)

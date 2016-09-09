@@ -275,9 +275,6 @@ if (MSVC)
 
   # Use multi-core compilation
   add_definitions("/GM- /MP")
-  
-  #define HAVE_PYTHON (python is required)
-  add_definitions("/DHAVE_PYTHON")
 
 else()
 
@@ -312,9 +309,6 @@ else()
   else()
     message(FATAL_ERROR "Invalid optimize value! Was: '${OPTIMIZE}'")
   endif()
-  
-  #define HAVE_PYTHON (python is required)
-  add_definitions("-DHAVE_PYTHON")
 
 endif()
 

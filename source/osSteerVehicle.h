@@ -334,6 +334,7 @@ protected:
 private:
 
 	PyObject *callback;
+	PyObject *self;
 
 	///Current underlying OpenSteer Vehicle.
 	OpenSteer::AbstractVehicle* mVehicle;

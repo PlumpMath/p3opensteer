@@ -11,6 +11,9 @@ from panda3d.core import LPoint3f
 from common import app, startFramework, dataDir, getCollisionEntryFromCamera, \
             loadTerrain, mask, loadPlane
             
+def callback(v):
+    print("My name is " + v.get_name())
+            
 if __name__ == '__main__':
 
     app = startFramework("'one turning'")
@@ -42,6 +45,7 @@ if __name__ == '__main__':
     vehicleNP = steerMgr.create_steer_vehicle("vehicle")
     vehicle = vehicleNP.node()
     vehicleNP.set_pos(5.0, -8.0, 0.1)
+    vehicle.set_callback(callback)
     
     print("attach the model to steer vehicle")
     modelNP.reparent_to(vehicleNP)

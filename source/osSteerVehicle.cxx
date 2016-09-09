@@ -6,6 +6,8 @@
  */
 
 #include <Python.h>
+#include <py_panda.h>
+extern Dtool_PyTypedObject Dtool_OSSteerVehicle;
 
 #include "osSteerVehicle.h"
 #include "throw_event.h"
@@ -921,28 +923,32 @@ void OSSteerVehicle::output(ostream &out) const
 	out << get_type() << " " << get_name();
 }
 
-	int OSSteerVehicle::set_callback(PyObject *value)
+int OSSteerVehicle::set_callback(PyObject *value)
+{
+	if (value == NULL)
 	{
-		if (value == NULL)
-		{
-			PyErr_SetString(PyExc_TypeError,
-					"Cannot delete the callback attribute");
-			return -1;
-		}
-
-		if ((!PyCallable_Check(value)) && (value != Py_None))
-		{
-			PyErr_SetString(PyExc_TypeError,
-					"The callback attribute value must be callable or None");
-			return -1;
-		}
-
-		Py_DECREF(callback);
-		Py_INCREF(value);
-		callback = value;
-
-		return 0;
+		PyErr_SetString(PyExc_TypeError,
+				"Cannot delete the callback attribute");
+		return -1;
 	}
+
+	if ((!PyCallable_Check(value)) && (value != Py_None))
+	{
+		PyErr_SetString(PyExc_TypeError,
+				"The callback attribute value must be callable or None");
+		return -1;
+	}
+
+	Py_XDECREF(callback);
+	Py_INCREF(value);
+	callback = value;
+
+	this->ref();
+	self = DTool_CreatePyInstanceTyped(this, Dtool_OSSteerVehicle, true, false,
+			get_type_index());
+
+	return 0;
+}
 
 /**
  * Updates the OSSteerVehicle.
@@ -1074,6 +1080,25 @@ void OSSteerVehicle::do_update_steer_vehicle(const float currentTime,
 	do_handle_steer_library_event(mAvoidObstacle, mAOCallbackCalled);
 	do_handle_steer_library_event(mAvoidCloseNeighbor, mACNCallbackCalled);
 	do_handle_steer_library_event(mAvoidNeighbor, mANCallbackCalled);
+
+	// execute callback if any
+	if (callback && (callback != Py_None))
+	{
+		PyObject *arglist;
+		PyObject *result;
+		arglist = Py_BuildValue("(O)", self);
+		result = PyObject_CallObject(callback, arglist);
+		Py_DECREF(arglist);
+		Py_DECREF(self);
+		if (result == NULL)
+		{
+			PyErr_SetString(PyExc_TypeError,
+							"Error calling callback function");
+			return;
+		}
+		Py_DECREF(result);
+
+	}
 }
 
 /**
