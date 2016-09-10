@@ -4,7 +4,6 @@
  * \date 2016-05-13
  * \author consultit
  */
-
 #include "osSteerVehicle.h"
 #include "throw_event.h"
 #include "support/PlugIn_OneTurning.h"
@@ -15,9 +14,10 @@
 #include "support/PlugIn_CaptureTheFlag.h"
 #include "support/PlugIn_LowSpeedTurn.h"
 #include "support/PlugIn_MapDrive.h"
-
+#ifdef PYTHON_BUILD
 #include <py_panda.h>
 extern Dtool_PyTypedObject Dtool_OSSteerVehicle;
+#endif
 
 /**
  *
@@ -29,10 +29,12 @@ OSSteerVehicle::OSSteerVehicle(const string& name) :
 
 	do_reset();
 
+#ifdef PYTHON_BUILD
 	//Python callback
 	this->ref();
 	mSelf = DTool_CreatePyInstanceTyped(this, Dtool_OSSteerVehicle, true, false,
 			get_type_index());
+#endif
 }
 
 /**
@@ -40,10 +42,12 @@ OSSteerVehicle::OSSteerVehicle(const string& name) :
  */
 OSSteerVehicle::~OSSteerVehicle()
 {
+#ifdef PYTHON_BUILD
 	//Python callback
 	Py_DECREF(mSelf);
 	Py_XDECREF(mUpdateCallback);
 	Py_XDECREF(mUpdateArgList);
+#endif
 }
 
 /**
@@ -931,6 +935,7 @@ void OSSteerVehicle::output(ostream &out) const
 	out << get_type() << " " << get_name();
 }
 
+#ifdef PYTHON_BUILD
 /**
  * Sets the update callback as a (python) function taking this OSSteerVehicle as
  * an argument, or None. On error raises an (python) exception.
@@ -959,6 +964,7 @@ void OSSteerVehicle::set_update_callback(PyObject *value)
 	Py_INCREF(value);
 	mUpdateCallback = value;
 }
+#endif
 
 /**
  * Updates the OSSteerVehicle.
@@ -1091,6 +1097,7 @@ void OSSteerVehicle::do_update_steer_vehicle(const float currentTime,
 	do_handle_steer_library_event(mAvoidCloseNeighbor, mACNCallbackCalled);
 	do_handle_steer_library_event(mAvoidNeighbor, mANCallbackCalled);
 
+#ifdef PYTHON_BUILD
 	// execute python callback (if any)
 	if (mUpdateCallback && (mUpdateCallback != Py_None))
 	{
@@ -1104,6 +1111,7 @@ void OSSteerVehicle::do_update_steer_vehicle(const float currentTime,
 		}
 		Py_DECREF(result);
 	}
+#endif
 }
 
 /**
@@ -1135,6 +1143,7 @@ void OSSteerVehicle::do_external_update_steer_vehicle(const float currentTime,
 	//
 	//no event thrown: external updating sub-system will do, if expected
 
+#ifdef PYTHON_BUILD
 	// execute python callback (if any)
 	if (mUpdateCallback && (mUpdateCallback != Py_None))
 	{
@@ -1148,6 +1157,7 @@ void OSSteerVehicle::do_external_update_steer_vehicle(const float currentTime,
 		}
 		Py_DECREF(result);
 	}
+#endif
 }
 
 /**

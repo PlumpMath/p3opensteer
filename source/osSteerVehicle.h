@@ -313,12 +313,14 @@ PUBLISHED:
 	void output(ostream &out) const;
 	///@}
 
+#ifdef PYTHON_BUILD
 	/**
 	 * \name PYTHON UPDATE CALLBACK
 	 */
 	///@{
 	void set_update_callback(PyObject *value);
 	///@}
+#endif
 
 public:
 	/**
@@ -396,6 +398,7 @@ private:
 	void do_handle_steer_library_event(ThrowEventData& eventData, bool callbackCalled);
 	///@}
 
+#ifdef PYTHON_BUILD
 	/**
 	 * \name Python callback.
 	 */
@@ -404,6 +407,7 @@ private:
 	PyObject *mUpdateCallback;
 	PyObject *mUpdateArgList;
 	///@}
+#endif
 
 	/**
 	 * \name SERIALIZATION ONLY SETTINGS.

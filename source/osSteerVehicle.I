@@ -543,9 +543,11 @@ inline void OSSteerVehicle::do_reset()
 			mANCallbackCalled = false;
 	mMove = mSteady = mPathFollowing = mAvoidObstacle = mAvoidCloseNeighbor =
 			mAvoidNeighbor = ThrowEventData();
+#ifdef PYTHON_BUILD
 	mSelf = NULL;
 	mUpdateCallback = NULL;
 	mUpdateArgList = NULL;
+#endif
 	//serialization
 	mSerializedDataTmpPtr = NULL;
 	mPlayingTeam_ser = OSSteerPlugIn::NO_TEAM;
