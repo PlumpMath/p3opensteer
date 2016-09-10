@@ -29,6 +29,11 @@ OSSteerVehicle::OSSteerVehicle(const string& name) :
 	mSteerPlugIn.clear();
 
 	do_reset();
+
+	//Python callback
+	this->ref();
+	mSelf = DTool_CreatePyInstanceTyped(this, Dtool_OSSteerVehicle, true, false,
+			get_type_index());
 }
 
 /**
@@ -36,6 +41,10 @@ OSSteerVehicle::OSSteerVehicle(const string& name) :
  */
 OSSteerVehicle::~OSSteerVehicle()
 {
+	//Python callback
+	Py_DECREF(mSelf);
+	Py_XDECREF(mUpdateCallback);
+	Py_XDECREF(mUpdateArgList);
 }
 
 /**
@@ -923,31 +932,33 @@ void OSSteerVehicle::output(ostream &out) const
 	out << get_type() << " " << get_name();
 }
 
-int OSSteerVehicle::set_callback(PyObject *value)
+/**
+ * Sets the update callback as a (python) function taking this OSSteerVehicle as
+ * an argument, or None. On error raises an (python) exception.
+ * \note Python only.
+ */
+void OSSteerVehicle::set_update_callback(PyObject *value)
 {
-	if (value == NULL)
-	{
-		PyErr_SetString(PyExc_TypeError,
-				"Cannot delete the callback attribute");
-		return -1;
-	}
-
 	if ((!PyCallable_Check(value)) && (value != Py_None))
 	{
 		PyErr_SetString(PyExc_TypeError,
-				"The callback attribute value must be callable or None");
-		return -1;
+				"Error: the argument must be callable or None");
+		return;
 	}
 
-	Py_XDECREF(callback);
+	if (mUpdateArgList == NULL)
+	{
+		mUpdateArgList = Py_BuildValue("(O)", mSelf);
+		if (mUpdateArgList == NULL)
+		{
+			return;
+		}
+	}
+	Py_DECREF(mSelf);
+
+	Py_XDECREF(mUpdateCallback);
 	Py_INCREF(value);
-	callback = value;
-
-	this->ref();
-	self = DTool_CreatePyInstanceTyped(this, Dtool_OSSteerVehicle, true, false,
-			get_type_index());
-
-	return 0;
+	mUpdateCallback = value;
 }
 
 /**
@@ -1081,15 +1092,11 @@ void OSSteerVehicle::do_update_steer_vehicle(const float currentTime,
 	do_handle_steer_library_event(mAvoidCloseNeighbor, mACNCallbackCalled);
 	do_handle_steer_library_event(mAvoidNeighbor, mANCallbackCalled);
 
-	// execute callback if any
-	if (callback && (callback != Py_None))
+	// execute python callback (if any)
+	if (mUpdateCallback && (mUpdateCallback != Py_None))
 	{
-		PyObject *arglist;
 		PyObject *result;
-		arglist = Py_BuildValue("(O)", self);
-		result = PyObject_CallObject(callback, arglist);
-		Py_DECREF(arglist);
-		Py_DECREF(self);
+		result = PyObject_CallObject(mUpdateCallback, mUpdateArgList);
 		if (result == NULL)
 		{
 			PyErr_SetString(PyExc_TypeError,
@@ -1097,7 +1104,6 @@ void OSSteerVehicle::do_update_steer_vehicle(const float currentTime,
 			return;
 		}
 		Py_DECREF(result);
-
 	}
 }
 
@@ -1129,6 +1135,20 @@ void OSSteerVehicle::do_external_update_steer_vehicle(const float currentTime,
 	mVehicle->setSpeed((mVehicle->position() - oldPos).length() / elapsedTime);
 	//
 	//no event thrown: external updating sub-system will do, if expected
+
+	// execute python callback (if any)
+	if (mUpdateCallback && (mUpdateCallback != Py_None))
+	{
+		PyObject *result;
+		result = PyObject_CallObject(mUpdateCallback, mUpdateArgList);
+		if (result == NULL)
+		{
+			PyErr_SetString(PyExc_TypeError,
+							"Error calling callback function");
+			return;
+		}
+		Py_DECREF(result);
+	}
 }
 
 /**

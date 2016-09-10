@@ -313,7 +313,12 @@ PUBLISHED:
 	void output(ostream &out) const;
 	///@}
 
-	int set_callback(PyObject *value);
+	/**
+	 * \name PYTHON UPDATE CALLBACK
+	 */
+	///@{
+	void set_update_callback(PyObject *value);
+	///@}
 
 public:
 	/**
@@ -332,10 +337,6 @@ protected:
 	OSSteerVehicle(const string& name);
 
 private:
-
-	PyObject *callback;
-	PyObject *self;
-
 	///Current underlying OpenSteer Vehicle.
 	OpenSteer::AbstractVehicle* mVehicle;
 	///The type of this OSSteerPlugIn.
@@ -393,6 +394,15 @@ private:
 	void do_enable_steer_vehicle_event(OSEventThrown event, ThrowEventData eventData);
 	void do_throw_event(ThrowEventData& eventData);
 	void do_handle_steer_library_event(ThrowEventData& eventData, bool callbackCalled);
+	///@}
+
+	/**
+	 * \name Python callback.
+	 */
+	///@{
+	PyObject *mSelf;
+	PyObject *mUpdateCallback;
+	PyObject *mUpdateArgList;
 	///@}
 
 	/**

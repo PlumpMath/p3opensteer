@@ -1,18 +1,21 @@
 '''
-Created on Jun 18, 2016
+Created on Sep 10, 2016
 
 @author: consultit
 '''
 
-import panda3d.core
+from panda3d.core import ClockObject
 from p3opensteer import OSSteerManager
-from panda3d.core import LPoint3f
 #
-from common import app, startFramework, dataDir, getCollisionEntryFromCamera, \
-            loadTerrain, mask, loadPlane
-            
-def callback(v):
-    print("My name is " + v.get_name())
+from common import startFramework, mask, loadPlane
+
+globalClock = None
+def callback(vehicle):
+    
+    global globalClock
+    print("real time and dt: " + str(globalClock.get_real_time()) + 
+          str(globalClock.get_dt()))
+    print(vehicle.get_name() + " params: " + str(vehicle.get_settings()))
             
 if __name__ == '__main__':
 
@@ -45,7 +48,8 @@ if __name__ == '__main__':
     vehicleNP = steerMgr.create_steer_vehicle("vehicle")
     vehicle = vehicleNP.node()
     vehicleNP.set_pos(5.0, -8.0, 0.1)
-    vehicle.set_callback(callback)
+    vehicle.set_update_callback(callback)
+    globalClock = ClockObject.get_global_clock()
     
     print("attach the model to steer vehicle")
     modelNP.reparent_to(vehicleNP)

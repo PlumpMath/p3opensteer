@@ -543,10 +543,12 @@ inline void OSSteerVehicle::do_reset()
 			mANCallbackCalled = false;
 	mMove = mSteady = mPathFollowing = mAvoidObstacle = mAvoidCloseNeighbor =
 			mAvoidNeighbor = ThrowEventData();
+	mSelf = NULL;
+	mUpdateCallback = NULL;
+	mUpdateArgList = NULL;
 	//serialization
 	mSerializedDataTmpPtr = NULL;
 	mPlayingTeam_ser = OSSteerPlugIn::NO_TEAM;
-	callback = self = NULL;
 }
 
 INLINE ostream &operator <<(ostream &out, const OSSteerVehicle& steerVehicle)
