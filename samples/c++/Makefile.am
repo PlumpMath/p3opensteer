@@ -12,7 +12,8 @@ AM_CXXFLAGS = -O0 -g3 -Wall -Wno-reorder -fmessage-length=0 -std=c++11
 AM_LDFLAGS = -L/usr/lib/x86_64-linux-gnu/panda3d
 
 LDADD = -lp3framework -lpanda -lpandaexpress -lp3dtool -lp3dtoolconfig \
-		-lp3pystub -lXxf86dga -lpython2.7 -lpandaphysics -lpthread
+		-lp3pystub -lXxf86dga -lpython2.7 -lpandaphysics -lpthread \
+		-lp3interrogatedb
 
 noinst_HEADERS = common.h
 
@@ -31,6 +32,7 @@ EXTRA_DIST = data.h.in
 
 common_sources = \
 	common.cpp \
+	$(srcdir)/../../source/interrogate_wrapper.cpp \
 	$(srcdir)/../../source/osSteerManager.cxx \
 	$(srcdir)/../../source/osSteerPlugIn.cxx \
 	$(srcdir)/../../source/osSteerVehicle.cxx \

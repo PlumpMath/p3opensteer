@@ -5,10 +5,6 @@
  * \author consultit
  */
 
-#include <Python.h>
-#include <py_panda.h>
-extern Dtool_PyTypedObject Dtool_OSSteerVehicle;
-
 #include "osSteerVehicle.h"
 #include "throw_event.h"
 #include "support/PlugIn_OneTurning.h"
@@ -19,6 +15,9 @@ extern Dtool_PyTypedObject Dtool_OSSteerVehicle;
 #include "support/PlugIn_CaptureTheFlag.h"
 #include "support/PlugIn_LowSpeedTurn.h"
 #include "support/PlugIn_MapDrive.h"
+
+#include <py_panda.h>
+extern Dtool_PyTypedObject Dtool_OSSteerVehicle;
 
 /**
  *
