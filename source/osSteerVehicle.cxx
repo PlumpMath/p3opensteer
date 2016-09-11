@@ -498,8 +498,7 @@ void OSSteerVehicle::do_initialize()
 			index < OSSteerManager::get_global_ptr()->get_num_steer_plug_ins();
 			++index)
 	{
-		plugIn = DCAST(OSSteerPlugIn,
-				OSSteerManager::get_global_ptr()->get_steer_plug_in(index).node());
+		plugIn = OSSteerManager::get_global_ptr()->get_steer_plug_in(index);
 		if (plugIn->get_name() == mSteerPlugInObjectId)
 		{
 			plugIn->add_steer_vehicle(thisNP);

@@ -162,7 +162,10 @@ PUBLISHED:
 
 	};
 
+	// To avoid interrogatedb warning.
+#ifdef CPPPARSER
 	virtual ~OSSteerVehicle();
+#endif //CPPPARSER
 
 	/**
 	 * \name VEHICLE
@@ -324,10 +327,12 @@ public:
 	///@}
 
 protected:
+	friend void unref_delete<OSSteerVehicle>(OSSteerVehicle*);
 	friend class OSSteerManager;
 	friend class OSSteerPlugIn;
 
 	OSSteerVehicle(const string& name);
+	virtual ~OSSteerVehicle();
 
 private:
 	///Current underlying OpenSteer Vehicle.
