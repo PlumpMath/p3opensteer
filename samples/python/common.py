@@ -4,12 +4,11 @@ Created on Jun 20, 2016
 @author: consultit
 '''
 
-import panda3d.core
-from p3opensteer import OSSteerManager, ValueList_float
 from panda3d.core import load_prc_file_data, GeoMipTerrain, PNMImage, \
                 Filename, TextureStage, TexturePool, BitMask32, CardMaker, \
                 NodePath, WindowProperties, AnimControlCollection, auto_bind, \
                 LVecBase3f, LVector3f, LPoint3f, PartGroup, ClockObject
+from p3opensteer import OSSteerManager, ValueList_float
 from direct.showbase.ShowBase import ShowBase
 import sys, random
 
@@ -381,6 +380,22 @@ def writeToBamFileAndExit(fileName):
     """write scene to a file (and exit)"""
     
     OSSteerManager.get_global_ptr().write_to_bam_file(fileName)
+    # # this is for testing explicit removal and destruction of all elements
+    steerMgr = OSSteerManager.get_global_ptr()
+    # remove steer vehicles from steer plug-ins
+    for plugInTmp in steerMgr.get_steer_plug_ins():
+        for vehicleTmp in plugInTmp:
+            # remove vehicleTmp
+            plugInTmp.remove_steer_vehicle(NodePath.any_path(vehicleTmp))
+    # destroy steer vehicles
+    for vehicleTmp in steerMgr.get_steer_vehicles():
+        # destroy vehicleTmp
+        steerMgr.destroy_steer_vehicle(NodePath.any_path(vehicleTmp))
+    # destroy steer plug-ins
+    for plugInTmp in steerMgr.get_steer_plug_ins():
+        # destroy vehicleTmp
+        steerMgr.destroy_steer_plug_in(NodePath.any_path(plugInTmp))
+    # #
     #
     sys.exit(0)
 
@@ -809,7 +824,7 @@ class Driver:
         self.mAccelXYZ = LVector3f(
                 abs(linearAccel.get_x()),
                 abs(linearAccel.get_y()),
-                abs(linearAccel.get_z()));
+                abs(linearAccel.get_z()))
     
     def set_angular_accel(self, angularAccel):
         self.mAccelHP = abs(angularAccel)

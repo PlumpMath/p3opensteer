@@ -77,8 +77,8 @@ int main(int argc, char *argv[])
 	{
 		// valid bamFile
 		// restore plug-in: through steer manager
-		NodePath steerPlugInNP =
-				OSSteerManager::get_global_ptr()->get_steer_plug_in(0);
+		NodePath steerPlugInNP = NodePath::any_path(
+				OSSteerManager::get_global_ptr()->get_steer_plug_in(0));
 		steerPlugIn = DCAST(OSSteerPlugIn, steerPlugInNP.node());
 		// restore sceneNP: through panda3d
 		sceneNP =
@@ -96,9 +96,8 @@ int main(int argc, char *argv[])
 		for (int i = 0; i < NUMVEHICLES; ++i)
 		{
 			// restore the steer vehicle: through steer manager
-			NodePath steerVehicleNP =
+			steerVehicles[i] =
 					OSSteerManager::get_global_ptr()->get_steer_vehicle(i);
-			steerVehicles[i] = DCAST(OSSteerVehicle, steerVehicleNP.node());
 			// print vehicle settings
 			cout << i << "th OSSteerVehicle's settings: " << endl;
 			cout << steerVehicles[i]->get_settings() << endl;
@@ -263,7 +262,7 @@ void writeToBamFileAndExitBoid(const Event* e, void* data)
 			i < OSSteerManager::get_global_ptr()->get_num_steer_vehicles(); ++i)
 	{
 		PT(OSSteerVehicle)vehicle =
-				DCAST(OSSteerVehicle, OSSteerManager::get_global_ptr()->get_steer_vehicle(i).node());
+				OSSteerManager::get_global_ptr()->get_steer_vehicle(i);
 		cout << i << "th OSSteerVehicle's settings: " << endl;
 		cout << vehicle->get_settings() << endl;
 		cout << vehicle->get_flock_settings() << endl;

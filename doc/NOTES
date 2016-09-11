@@ -101,10 +101,9 @@ In addition, the manager is provided with some other utilities:
 - to manage the collisions with the models (get_collision_traverser(), 
   get_collision_ray() etc...); these are used internally, for example for 
   kinematic OSSteerVehicle(s), but can be used for general purposes too (see 
-  samples).
+  samples)
 - to perform a default update (start/stop_default_update()), that is a task 
-  which calls all of the OSSteerPlugIn(s)' update methods, with no possibility of 
-  interaction (usually it is used for test purposes).
+  which calls all of the OSSteerPlugIn(s)' update methods
 - to write/read to/from "bam" files the objects of (part of) a scene having its 
   root as the default reference NodePath (write_to/read_from_bam_file()).
   
@@ -126,9 +125,17 @@ OSSteerPlugIn's types are:
 - "map drive"
 
 The main task of a OSSteerPlugIn is to allow any OSSteerVehicle added to it, to 
-express its steering behavior: to accomplish this, you must create a task that 
-at every tick of the game loop (frame), calls the update() method of the 
-OSSteerPlugIn.
+express its steering behavior. To accomplish this, you have this options:
+- create a task that at every tick of the game loop (frame), calls the update() 
+  method of the OSSteerPlugIn
+- call the default update from the OSSteerManager.
+
+The update() method, in turn, will update the state of every added 
+OSSteerVehicle.
+
+For each OSSteerPlugIn can be defined a custom "update callback", taking the 
+same OSSteerPlugIn as parameter and which is called at (the end) of every 
+update. 
 
 Each type of OSSteerPlugIn match one or more types of OSSteerVehicle(s) that can 
 be added to it: adding a wrong type is not in itself a mistake, simply does not 
@@ -148,6 +155,9 @@ This object embodies the capabilities of the underlying OpenSteer vehicle.
 
 An OSSteerVehicle can live alone doing nothing, or be "added" to an 
 OSSteerPlugIn in order to accomplish its steering behavior.
+
+For each OSSteerVehicle can be defined a custom "update callback", taking the 
+same OSSteerVehicle as parameter and which is called after every state update. 
 
 p3opensteer defines different types of OSSteerVehicle, currently corresponding 
 to the vehicles that are distributed with OpenSteer library. the OSSteerVehicle 

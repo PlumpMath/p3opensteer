@@ -14,6 +14,10 @@
 #include "support/PlugIn_CaptureTheFlag.h"
 #include "support/PlugIn_LowSpeedTurn.h"
 #include "support/PlugIn_MapDrive.h"
+#ifdef PYTHON_BUILD
+#include <py_panda.h>
+extern Dtool_PyTypedObject Dtool_OSSteerVehicle;
+#endif //PYTHON_BUILD
 
 /**
  *
@@ -498,14 +502,19 @@ void OSSteerVehicle::do_initialize()
 			index < OSSteerManager::get_global_ptr()->get_num_steer_plug_ins();
 			++index)
 	{
-		plugIn = DCAST(OSSteerPlugIn,
-				OSSteerManager::get_global_ptr()->get_steer_plug_in(index).node());
+		plugIn = OSSteerManager::get_global_ptr()->get_steer_plug_in(index);
 		if (plugIn->get_name() == mSteerPlugInObjectId)
 		{
 			plugIn->add_steer_vehicle(thisNP);
 			break;
 		}
 	}
+#ifdef PYTHON_BUILD
+	//Python callback
+	this->ref();
+	mSelf = DTool_CreatePyInstanceTyped(this, Dtool_OSSteerVehicle, true, false,
+			get_type_index());
+#endif //PYTHON_BUILD
 }
 
 /**
@@ -523,6 +532,12 @@ void OSSteerVehicle::do_finalize()
 	}
 	//
 	delete mVehicle;
+#ifdef PYTHON_BUILD
+	//Python callback
+	Py_DECREF(mSelf);
+	Py_XDECREF(mUpdateCallback);
+	Py_XDECREF(mUpdateArgList);
+#endif //PYTHON_BUILD
 	do_reset();
 }
 
@@ -918,6 +933,47 @@ void OSSteerVehicle::output(ostream &out) const
 	out << get_type() << " " << get_name();
 }
 
+#ifdef PYTHON_BUILD
+/**
+ * Sets the update callback as a python function taking this OSSteerVehicle as
+ * an argument, or None. On error raises an python exception.
+ * \note Python only.
+ */
+void OSSteerVehicle::set_update_callback(PyObject *value)
+{
+	if ((!PyCallable_Check(value)) && (value != Py_None))
+	{
+		PyErr_SetString(PyExc_TypeError,
+				"Error: the argument must be callable or None");
+		return;
+	}
+
+	if (mUpdateArgList == NULL)
+	{
+		mUpdateArgList = Py_BuildValue("(O)", mSelf);
+		if (mUpdateArgList == NULL)
+		{
+			return;
+		}
+	}
+	Py_DECREF(mSelf);
+
+	Py_XDECREF(mUpdateCallback);
+	Py_INCREF(value);
+	mUpdateCallback = value;
+}
+#else
+/**
+ * Sets the update callback as a c++ function taking this OSSteerVehicle as
+ * an argument, or NULL.
+ * \note C++ only.
+ */
+void OSSteerVehicle::set_update_callback(UPDATECALLBACKFUNC value)
+{
+	mUpdateCallback = value;
+}
+#endif //PYTHON_BUILD
+
 /**
  * Updates the OSSteerVehicle.
  * Called by the underlying OpenSteer component update.
@@ -1048,6 +1104,29 @@ void OSSteerVehicle::do_update_steer_vehicle(const float currentTime,
 	do_handle_steer_library_event(mAvoidObstacle, mAOCallbackCalled);
 	do_handle_steer_library_event(mAvoidCloseNeighbor, mACNCallbackCalled);
 	do_handle_steer_library_event(mAvoidNeighbor, mANCallbackCalled);
+
+#ifdef PYTHON_BUILD
+	// execute python callback (if any)
+	if (mUpdateCallback && (mUpdateCallback != Py_None))
+	{
+		PyObject *result;
+		result = PyObject_CallObject(mUpdateCallback, mUpdateArgList);
+		if (result == NULL)
+		{
+			string errStr = get_name() +
+					string(": Error calling callback function");
+			PyErr_SetString(PyExc_TypeError, errStr.c_str());
+			return;
+		}
+		Py_DECREF(result);
+	}
+#else
+	// execute c++ callback (if any)
+	if (mUpdateCallback)
+	{
+		mUpdateCallback(this);
+	}
+#endif //PYTHON_BUILD
 }
 
 /**
@@ -1078,6 +1157,29 @@ void OSSteerVehicle::do_external_update_steer_vehicle(const float currentTime,
 	mVehicle->setSpeed((mVehicle->position() - oldPos).length() / elapsedTime);
 	//
 	//no event thrown: external updating sub-system will do, if expected
+
+#ifdef PYTHON_BUILD
+	// execute python callback (if any)
+	if (mUpdateCallback && (mUpdateCallback != Py_None))
+	{
+		PyObject *result;
+		result = PyObject_CallObject(mUpdateCallback, mUpdateArgList);
+		if (result == NULL)
+		{
+			string errStr = get_name() +
+					string(": Error calling callback function");
+			PyErr_SetString(PyExc_TypeError, errStr.c_str());
+			return;
+		}
+		Py_DECREF(result);
+	}
+#else
+	// execute c++ callback (if any)
+	if (mUpdateCallback)
+	{
+		mUpdateCallback(this);
+	}
+#endif //PYTHON_BUILD
 }
 
 /**

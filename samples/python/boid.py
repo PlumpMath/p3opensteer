@@ -4,11 +4,10 @@ Created on Jun 26, 2016
 @author: consultit
 '''
 
-import panda3d.core
-from p3opensteer import OSSteerManager, ValueList_string, ValueList_LPoint3f, \
-        ValueList_float
 from panda3d.core import TextNode, ClockObject, AnimControlCollection, \
         auto_bind, LPoint3f, LVector3f, LVecBase3f
+from p3opensteer import OSSteerManager, ValueList_string, ValueList_LPoint3f, \
+        ValueList_float
 #
 from common import startFramework, toggleDebugFlag, toggleDebugDraw, mask, \
         loadTerrain, printCreationParameters, handleVehicleEvent, \
@@ -85,7 +84,7 @@ def writeToBamFileAndExitBoid(fileName):
     """override writeToBamFileAndExit"""
     
     for i in range(OSSteerManager.get_global_ptr().get_num_steer_vehicles()):
-        vehicle = OSSteerManager.get_global_ptr().get_steer_vehicle(i).node()
+        vehicle = OSSteerManager.get_global_ptr().get_steer_vehicle(i)
         print(str(i) + "th OSSteerVehicle's settings: ")
         print(vehicle.get_settings())
         print(vehicle.get_flock_settings())
@@ -148,8 +147,7 @@ if __name__ == '__main__':
     else:
         # valid bamFile
         # restore plug-in: through steer manager
-        steerPlugInNP = OSSteerManager.get_global_ptr().get_steer_plug_in(0)
-        steerPlugIn = steerPlugInNP.node()
+        steerPlugIn = OSSteerManager.get_global_ptr().get_steer_plug_in(0)
         # restore sceneNP: through panda3d
         sceneNP = OSSteerManager.get_global_ptr().get_reference_node_path().find("**/SceneNP")
         # reparent the reference node to render
@@ -162,8 +160,7 @@ if __name__ == '__main__':
         vehicleAnimCtls.extend(tmpList)
         for i in range(NUMVEHICLES):
             # restore the steer vehicle: through steer manager
-            steerVehicleNP = OSSteerManager.get_global_ptr().get_steer_vehicle(i)
-            steerVehicles[i] = steerVehicleNP.node()
+            steerVehicles[i] = OSSteerManager.get_global_ptr().get_steer_vehicle(i)
             # print vehicle settings
             print(str(i) + "th OSSteerVehicle's settings: ")
             print(steerVehicles[i].get_settings())

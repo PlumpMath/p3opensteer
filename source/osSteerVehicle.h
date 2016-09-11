@@ -162,7 +162,10 @@ PUBLISHED:
 
 	};
 
+	// To avoid interrogatedb warning.
+#ifdef CPPPARSER
 	virtual ~OSSteerVehicle();
+#endif //CPPPARSER
 
 	/**
 	 * \name VEHICLE
@@ -313,6 +316,23 @@ PUBLISHED:
 	void output(ostream &out) const;
 	///@}
 
+#if defined(PYTHON_BUILD) || defined(CPPPARSER)
+	/**
+	 * \name PYTHON UPDATE CALLBACK
+	 */
+	///@{
+	void set_update_callback(PyObject *value);
+	///@}
+#else
+	/**
+	 * \name C++ UPDATE CALLBACK
+	 */
+	///@{
+	typedef void (*UPDATECALLBACKFUNC)(PT(OSSteerVehicle));
+	void set_update_callback(UPDATECALLBACKFUNC value);
+	///@}
+#endif //PYTHON_BUILD
+
 public:
 	/**
 	 * \name C++ ONLY
@@ -324,10 +344,12 @@ public:
 	///@}
 
 protected:
+	friend void unref_delete<OSSteerVehicle>(OSSteerVehicle*);
 	friend class OSSteerManager;
 	friend class OSSteerPlugIn;
 
 	OSSteerVehicle(const string& name);
+	virtual ~OSSteerVehicle();
 
 private:
 	///Current underlying OpenSteer Vehicle.
@@ -388,6 +410,24 @@ private:
 	void do_throw_event(ThrowEventData& eventData);
 	void do_handle_steer_library_event(ThrowEventData& eventData, bool callbackCalled);
 	///@}
+
+#if defined(PYTHON_BUILD) || defined(CPPPARSER)
+	/**
+	 * \name Python callback.
+	 */
+	///@{
+	PyObject *mSelf;
+	PyObject *mUpdateCallback;
+	PyObject *mUpdateArgList;
+	///@}
+#else
+	/**
+	 * \name C++ callback.
+	 */
+	///@{
+	UPDATECALLBACKFUNC mUpdateCallback;
+	///@}
+#endif //PYTHON_BUILD
 
 	/**
 	 * \name SERIALIZATION ONLY SETTINGS.
