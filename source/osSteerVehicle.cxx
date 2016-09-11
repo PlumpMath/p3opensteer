@@ -17,7 +17,7 @@
 #ifdef PYTHON_BUILD
 #include <py_panda.h>
 extern Dtool_PyTypedObject Dtool_OSSteerVehicle;
-#endif
+#endif //PYTHON_BUILD
 
 /**
  *
@@ -28,13 +28,6 @@ OSSteerVehicle::OSSteerVehicle(const string& name) :
 	mSteerPlugIn.clear();
 
 	do_reset();
-
-#ifdef PYTHON_BUILD
-	//Python callback
-	this->ref();
-	mSelf = DTool_CreatePyInstanceTyped(this, Dtool_OSSteerVehicle, true, false,
-			get_type_index());
-#endif
 }
 
 /**
@@ -42,12 +35,6 @@ OSSteerVehicle::OSSteerVehicle(const string& name) :
  */
 OSSteerVehicle::~OSSteerVehicle()
 {
-#ifdef PYTHON_BUILD
-	//Python callback
-	Py_DECREF(mSelf);
-	Py_XDECREF(mUpdateCallback);
-	Py_XDECREF(mUpdateArgList);
-#endif
 }
 
 /**
@@ -523,6 +510,12 @@ void OSSteerVehicle::do_initialize()
 			break;
 		}
 	}
+#ifdef PYTHON_BUILD
+	//Python callback
+	this->ref();
+	mSelf = DTool_CreatePyInstanceTyped(this, Dtool_OSSteerVehicle, true, false,
+			get_type_index());
+#endif //PYTHON_BUILD
 }
 
 /**
@@ -540,6 +533,12 @@ void OSSteerVehicle::do_finalize()
 	}
 	//
 	delete mVehicle;
+#ifdef PYTHON_BUILD
+	//Python callback
+	Py_DECREF(mSelf);
+	Py_XDECREF(mUpdateCallback);
+	Py_XDECREF(mUpdateArgList);
+#endif //PYTHON_BUILD
 	do_reset();
 }
 
@@ -937,7 +936,7 @@ void OSSteerVehicle::output(ostream &out) const
 
 #ifdef PYTHON_BUILD
 /**
- * Sets the update callback as a (python) function taking this OSSteerVehicle as
+ * Sets the update callback as a python function taking this OSSteerVehicle as
  * an argument, or None. On error raises an (python) exception.
  * \note Python only.
  */
@@ -964,7 +963,17 @@ void OSSteerVehicle::set_update_callback(PyObject *value)
 	Py_INCREF(value);
 	mUpdateCallback = value;
 }
-#endif
+#else
+/**
+ * Sets the update callback as a c++ function taking this OSSteerVehicle as
+ * an argument, or NULL.
+ * \note C++ only.
+ */
+void OSSteerVehicle::set_update_callback(UPDATECALLBACKFUNC value)
+{
+	mUpdateCallback = value;
+}
+#endif //PYTHON_BUILD
 
 /**
  * Updates the OSSteerVehicle.
@@ -1111,7 +1120,13 @@ void OSSteerVehicle::do_update_steer_vehicle(const float currentTime,
 		}
 		Py_DECREF(result);
 	}
-#endif
+#else
+	// execute c++ callback (if any)
+	if (mUpdateCallback)
+	{
+		mUpdateCallback(this);
+	}
+#endif //PYTHON_BUILD
 }
 
 /**
@@ -1157,7 +1172,13 @@ void OSSteerVehicle::do_external_update_steer_vehicle(const float currentTime,
 		}
 		Py_DECREF(result);
 	}
-#endif
+#else
+	// execute c++ callback (if any)
+	if (mUpdateCallback)
+	{
+		mUpdateCallback(this);
+	}
+#endif //PYTHON_BUILD
 }
 
 /**

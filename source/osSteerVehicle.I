@@ -547,7 +547,9 @@ inline void OSSteerVehicle::do_reset()
 	mSelf = NULL;
 	mUpdateCallback = NULL;
 	mUpdateArgList = NULL;
-#endif
+#else
+	mUpdateCallback = NULL;
+#endif //PYTHON_BUILD
 	//serialization
 	mSerializedDataTmpPtr = NULL;
 	mPlayingTeam_ser = OSSteerPlugIn::NO_TEAM;

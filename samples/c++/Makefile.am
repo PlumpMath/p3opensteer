@@ -16,7 +16,7 @@ LDADD = -lp3framework -lpanda -lpandaexpress -lp3dtool -lp3dtoolconfig \
 
 noinst_HEADERS = common.h
 
-noinst_PROGRAMS = basic low_speed_turn pedestrian boid \
+noinst_PROGRAMS = basic callback_test low_speed_turn pedestrian boid \
 	multiple_pursuit capture_the_flag map_drive pedestrian_external \
 	soccer #soccer_gprof soccer_gcov
 
@@ -65,6 +65,12 @@ basic_SOURCES = \
 	basic.cpp
 
 nodist_basic_SOURCES = $(common_sources)
+
+#callback_test
+callback_test_SOURCES = \
+	callback_test.cpp
+
+nodist_callback_test_SOURCES = $(common_sources)
 
 #low_speed_turn
 low_speed_turn_SOURCES = \

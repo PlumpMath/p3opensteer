@@ -313,14 +313,22 @@ PUBLISHED:
 	void output(ostream &out) const;
 	///@}
 
-#ifdef PYTHON_BUILD
+#if defined(PYTHON_BUILD) || defined(CPPPARSER)
 	/**
 	 * \name PYTHON UPDATE CALLBACK
 	 */
 	///@{
 	void set_update_callback(PyObject *value);
 	///@}
-#endif
+#else
+	/**
+	 * \name C++ UPDATE CALLBACK
+	 */
+	///@{
+	typedef void (*UPDATECALLBACKFUNC)(PT(OSSteerVehicle));
+	void set_update_callback(UPDATECALLBACKFUNC value);
+	///@}
+#endif //PYTHON_BUILD
 
 public:
 	/**
@@ -398,7 +406,7 @@ private:
 	void do_handle_steer_library_event(ThrowEventData& eventData, bool callbackCalled);
 	///@}
 
-#ifdef PYTHON_BUILD
+#if defined(PYTHON_BUILD) || defined(CPPPARSER)
 	/**
 	 * \name Python callback.
 	 */
@@ -407,7 +415,14 @@ private:
 	PyObject *mUpdateCallback;
 	PyObject *mUpdateArgList;
 	///@}
-#endif
+#else
+	/**
+	 * \name C++ callback.
+	 */
+	///@{
+	UPDATECALLBACKFUNC mUpdateCallback;
+	///@}
+#endif //PYTHON_BUILD
 
 	/**
 	 * \name SERIALIZATION ONLY SETTINGS.
