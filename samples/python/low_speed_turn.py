@@ -4,10 +4,9 @@ Created on Jun 26, 2016
 @author: consultit
 '''
 
-import panda3d.core
-from p3opensteer import OSSteerManager, ValueList_string
 from panda3d.core import TextNode, ClockObject, AnimControlCollection, \
         auto_bind
+from p3opensteer import OSSteerManager, ValueList_string
 #
 from common import startFramework, toggleDebugFlag, toggleDebugDraw, mask, \
         loadPlane, printCreationParameters, handleVehicleEvent, \
@@ -153,8 +152,7 @@ if __name__ == '__main__':
     else:
         # valid bamFile
         # restore plug-in: through steer manager
-        steerPlugInNP = OSSteerManager.get_global_ptr().get_steer_plug_in(0)
-        steerPlugIn = steerPlugInNP.node()
+        steerPlugIn = OSSteerManager.get_global_ptr().get_steer_plug_in(0)
         # restore sceneNP: through panda3d
         sceneNP = OSSteerManager.get_global_ptr().get_reference_node_path().find("**/SceneNP")
         # reparent the reference node to render
@@ -167,8 +165,7 @@ if __name__ == '__main__':
         vehicleAnimCtls.extend(tmpList)
         for i in range(NUMVEHICLES):
             # restore the steer vehicle: through steer manager
-            steerVehicleNP = OSSteerManager.get_global_ptr().get_steer_vehicle(i)
-            steerVehicles[i] = steerVehicleNP.node()
+            steerVehicles[i] = OSSteerManager.get_global_ptr().get_steer_vehicle(i)
             # restore animations
             tmpAnims = AnimControlCollection()
             auto_bind(steerVehicles[i], tmpAnims)

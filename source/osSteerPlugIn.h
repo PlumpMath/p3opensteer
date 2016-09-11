@@ -101,7 +101,10 @@ PUBLISHED:
 		LINEAR_PREDICTION
 	};
 
+	// To avoid interrogatedb warning.
+#ifdef CPPPARSER
 	virtual ~OSSteerPlugIn();
+#endif //CPPPARSER
 
 	/**
 	 * \name PLUGIN
@@ -259,9 +262,11 @@ public:
 	///@}
 
 protected:
+	friend void unref_delete<OSSteerPlugIn>(OSSteerPlugIn*);
 	friend class OSSteerManager;
 
 	OSSteerPlugIn(const string& name = "SteerPlugIn");
+	virtual ~OSSteerPlugIn();
 
 private:
 	///Current underlying AbstractPlugIn.

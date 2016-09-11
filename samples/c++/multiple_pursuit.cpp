@@ -78,8 +78,8 @@ int main(int argc, char *argv[])
 	{
 		// valid bamFile
 		// restore plug-in: through steer manager
-		NodePath steerPlugInNP =
-				OSSteerManager::get_global_ptr()->get_steer_plug_in(0);
+		NodePath steerPlugInNP = NodePath::any_path(
+				OSSteerManager::get_global_ptr()->get_steer_plug_in(0));
 		steerPlugIn = DCAST(OSSteerPlugIn, steerPlugInNP.node());
 		// restore sceneNP: through panda3d
 		sceneNP =
@@ -97,9 +97,8 @@ int main(int argc, char *argv[])
 		for (int i = 0; i < NUMVEHICLES; ++i)
 		{
 			// restore the steer vehicle: through steer manager
-			NodePath steerVehicleNP =
+			steerVehicles[i] =
 					OSSteerManager::get_global_ptr()->get_steer_vehicle(i);
-			steerVehicles[i] = DCAST(OSSteerVehicle, steerVehicleNP.node());
 			// restore animations
 			AnimControlCollection tmpAnims;
 			auto_bind(steerVehicles[i], tmpAnims);
