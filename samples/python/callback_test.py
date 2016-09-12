@@ -12,13 +12,13 @@ from common import startFramework, mask, loadPlane
 globalClock = None
 
 def vehicleCallback(vehicle):
-    """vehicle update vehicleCallback function"""
+    """vehicle update callback function"""
     
     print(vehicle.get_name() + " params:")
     print(vehicle.get_settings())
 
 def plugInCallback(plugIn):
-    """plug-in update vehicleCallback function"""
+    """plug-in update callback function"""
     
     global globalClock
     print(plugIn.get_name() + " real time and dt: "
