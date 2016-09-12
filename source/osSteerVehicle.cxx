@@ -936,7 +936,7 @@ void OSSteerVehicle::output(ostream &out) const
 #ifdef PYTHON_BUILD
 /**
  * Sets the update callback as a python function taking this OSSteerVehicle as
- * an argument, or None. On error raises an (python) exception.
+ * an argument, or None. On error raises an python exception.
  * \note Python only.
  */
 void OSSteerVehicle::set_update_callback(PyObject *value)
@@ -1113,8 +1113,9 @@ void OSSteerVehicle::do_update_steer_vehicle(const float currentTime,
 		result = PyObject_CallObject(mUpdateCallback, mUpdateArgList);
 		if (result == NULL)
 		{
-			PyErr_SetString(PyExc_TypeError,
-							"Error calling callback function");
+			string errStr = get_name() +
+					string(": Error calling callback function");
+			PyErr_SetString(PyExc_TypeError, errStr.c_str());
 			return;
 		}
 		Py_DECREF(result);
@@ -1165,8 +1166,9 @@ void OSSteerVehicle::do_external_update_steer_vehicle(const float currentTime,
 		result = PyObject_CallObject(mUpdateCallback, mUpdateArgList);
 		if (result == NULL)
 		{
-			PyErr_SetString(PyExc_TypeError,
-							"Error calling callback function");
+			string errStr = get_name() +
+					string(": Error calling callback function");
+			PyErr_SetString(PyExc_TypeError, errStr.c_str());
 			return;
 		}
 		Py_DECREF(result);

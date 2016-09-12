@@ -7,8 +7,9 @@
 
 #include "common.h"
 
-void callback(PT(OSSteerVehicle));
 ClockObject* globalClock = NULL;
+void vehicleCallback(PT(OSSteerVehicle));
+void plugInCallback(PT(OSSteerPlugIn));
 
 int main(int argc, char *argv[])
 {
@@ -32,6 +33,7 @@ int main(int argc, char *argv[])
 	cout << "create the default plug-in (attached to the reference node): 'one turning'" << endl;
 	NodePath plugInNP = steerMgr->create_steer_plug_in();
 	PT(OSSteerPlugIn)plugIn = DCAST(OSSteerPlugIn, plugInNP.node());
+	plugIn->set_update_callback(plugInCallback);
 
 	cout << "get the model" << endl;
 	NodePath modelNP = window->load_model(framework.get_models(), "eve.egg");
@@ -41,7 +43,7 @@ int main(int argc, char *argv[])
 	NodePath vehicleNP = steerMgr->create_steer_vehicle("vehicle");
 	PT(OSSteerVehicle)vehicle = DCAST(OSSteerVehicle, vehicleNP.node());
 	vehicleNP.set_pos(5.0, -8.0, 0.1);
-    vehicle->set_update_callback(callback);
+    vehicle->set_update_callback(vehicleCallback);
     globalClock = ClockObject::get_global_clock();
 
 	cout << "attach the model to steer vehicle" << endl;
@@ -75,11 +77,16 @@ int main(int argc, char *argv[])
 	return (0);
 }
 
-//update callback function
-void callback(PT(OSSteerVehicle)vehicle)
+// vehicle update callback function
+void vehicleCallback(PT(OSSteerVehicle)vehicle)
 {
-	cout << "real time and dt: " + str(globalClock->get_real_time()) +
-			str(globalClock->get_dt()) << endl;
     cout << vehicle->get_name() + " params:" << endl;
     cout << vehicle->get_settings() << endl;
+}
+
+// plug-in update callback function
+void plugInCallback(PT(OSSteerPlugIn)plugIn)
+{
+	cout << plugIn->get_name() + " real time and dt: " +
+			str(globalClock->get_real_time()) + str(globalClock->get_dt()) << endl;
 }

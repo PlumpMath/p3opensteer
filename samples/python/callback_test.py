@@ -10,14 +10,19 @@ from p3opensteer import OSSteerManager
 from common import startFramework, mask, loadPlane
 
 globalClock = None
-def callback(vehicle):
-    """update callback function"""
+
+def vehicleCallback(vehicle):
+    """vehicle update vehicleCallback function"""
     
-    global globalClock
-    print("real time and dt: " 
-          + str(globalClock.get_real_time()) + str(globalClock.get_dt()))
     print(vehicle.get_name() + " params:")
     print(vehicle.get_settings())
+
+def plugInCallback(plugIn):
+    """plug-in update vehicleCallback function"""
+    
+    global globalClock
+    print(plugIn.get_name() + " real time and dt: "
+          + str(globalClock.get_real_time()) + str(globalClock.get_dt()))
             
 if __name__ == '__main__':
 
@@ -41,6 +46,7 @@ if __name__ == '__main__':
     print("create the default plug-in (attached to the reference node): 'one turning'")
     plugInNP = steerMgr.create_steer_plug_in()
     plugIn = plugInNP.node()
+    plugIn.set_update_callback(plugInCallback)
     
     print("get the model")
     modelNP = app.loader.load_model("eve.egg")
@@ -50,7 +56,7 @@ if __name__ == '__main__':
     vehicleNP = steerMgr.create_steer_vehicle("vehicle")
     vehicle = vehicleNP.node()
     vehicleNP.set_pos(5.0, -8.0, 0.1)
-    vehicle.set_update_callback(callback)
+    vehicle.set_update_callback(vehicleCallback)
     globalClock = ClockObject.get_global_clock()
     
     print("attach the model to steer vehicle")
