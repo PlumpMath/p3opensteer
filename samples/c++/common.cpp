@@ -449,6 +449,37 @@ void writeToBamFileAndExit(const Event* e, void* data)
 	OSSteerManager::get_global_ptr()->write_to_bam_file(fileName);
 	/// second option: remove custom update updateTask
 	framework.get_task_mgr().remove(updateTask);
+
+	/// this is for testing explicit removal and destruction of all elements
+	WPT(OSSteerManager)steerMgr = OSSteerManager::get_global_ptr();
+	// remove steer vehicles from steer plug-ins
+	for (int i = 0; i < steerMgr->get_num_steer_plug_ins(); ++i)
+	{
+		PT(OSSteerPlugIn)plugInTmp = steerMgr->get_steer_plug_in(i);
+		while(plugInTmp->get_num_steer_vehicles() > 0)
+		{
+			// remove the first one on every cycle
+			plugInTmp->remove_steer_vehicle(
+					NodePath::any_path(plugInTmp->get_steer_vehicle(0)));
+		}
+	}
+	// destroy steer vehicles
+	while (steerMgr->get_num_steer_vehicles() > 0)
+	{
+		// destroy the first one on every cycle
+		steerMgr->destroy_steer_vehicle(
+				NodePath::any_path(steerMgr->get_steer_vehicle(0)));
+///		delete DCAST(OSSteerVehicle, steerMgr->get_steer_vehicle(0).node()); //ERROR
+	}
+	// destroy steer plug-ins
+	while (steerMgr->get_num_steer_plug_ins() > 0)
+	{
+		// destroy the first one on every cycle
+		steerMgr->destroy_steer_plug_in(
+				NodePath::any_path(steerMgr->get_steer_plug_in(0)));
+///		delete DCAST(OSSteerPlugIn, steerMgr->get_steer_plug_in(0).node()); //ERROR
+	}
+	///
 	// delete steer manager
 	delete OSSteerManager::get_global_ptr();
 	// close the window framework

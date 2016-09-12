@@ -101,7 +101,10 @@ PUBLISHED:
 		LINEAR_PREDICTION
 	};
 
+	// To avoid interrogatedb warning.
+#ifdef CPPPARSER
 	virtual ~OSSteerPlugIn();
+#endif //CPPPARSER
 
 	/**
 	 * \name PLUGIN
@@ -248,6 +251,23 @@ PUBLISHED:
 			const string& fileName = "debug_texture.png");
 	///@}
 
+#if defined(PYTHON_BUILD) || defined(CPPPARSER)
+	/**
+	 * \name PYTHON UPDATE CALLBACK
+	 */
+	///@{
+	void set_update_callback(PyObject *value);
+	///@}
+#else
+	/**
+	 * \name C++ UPDATE CALLBACK
+	 */
+	///@{
+	typedef void (*UPDATECALLBACKFUNC)(PT(OSSteerPlugIn));
+	void set_update_callback(UPDATECALLBACKFUNC value);
+	///@}
+#endif //PYTHON_BUILD
+
 public:
 	/**
 	 * \name C++ ONLY
@@ -259,9 +279,11 @@ public:
 	///@}
 
 protected:
+	friend void unref_delete<OSSteerPlugIn>(OSSteerPlugIn*);
 	friend class OSSteerManager;
 
 	OSSteerPlugIn(const string& name = "SteerPlugIn");
+	virtual ~OSSteerPlugIn();
 
 private:
 	///Current underlying AbstractPlugIn.
@@ -303,6 +325,24 @@ private:
 			const LVector3f& forward, const LPoint3f& position);
 	void do_on_static_geometry_change(bool dirtyPathway, bool dirtyObstacles);
 	///@}
+
+#if defined(PYTHON_BUILD) || defined(CPPPARSER)
+	/**
+	 * \name Python callback.
+	 */
+	///@{
+	PyObject *mSelf;
+	PyObject *mUpdateCallback;
+	PyObject *mUpdateArgList;
+	///@}
+#else
+	/**
+	 * \name C++ callback.
+	 */
+	///@{
+	UPDATECALLBACKFUNC mUpdateCallback;
+	///@}
+#endif //PYTHON_BUILD
 
 	/**
 	 * \name SERIALIZATION ONLY SETTINGS.

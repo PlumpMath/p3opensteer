@@ -141,6 +141,13 @@ inline void OSSteerPlugIn::do_reset()
 	mPathwayPoints.clear();
 	mPathwayRadii.clear();
 	mPathwaySingleRadius = mPathwayClosedCycle = false;
+#ifdef PYTHON_BUILD
+	mSelf = NULL;
+	mUpdateCallback = NULL;
+	mUpdateArgList = NULL;
+#else
+	mUpdateCallback = NULL;
+#endif //PYTHON_BUILD
 	//serialization
 	mSerializedDataTmpPtr = NULL;
 #ifdef OS_DEBUG

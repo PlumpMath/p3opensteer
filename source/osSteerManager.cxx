@@ -154,15 +154,14 @@ bool OSSteerManager::destroy_steer_plug_in(NodePath steerPlugInNP)
 }
 
 /**
- * Gets a NodePath to OSSteerPlugIn by index.
- * Return an empty NodePath with the ET_fail error type set on error.
+ * Gets an OSSteerPlugIn by index, or NULL on error.
  */
-NodePath OSSteerManager::get_steer_plug_in(int index) const
+PT(OSSteerPlugIn) OSSteerManager::get_steer_plug_in(int index) const
 {
 	nassertr_always((index >= 0) && (index < (int ) mSteerPlugIns.size()),
-			NodePath::fail())
+			NULL)
 
-	return NodePath::any_path(mSteerPlugIns[index]);
+	return mSteerPlugIns[index];
 }
 
 /**
@@ -214,15 +213,14 @@ bool OSSteerManager::destroy_steer_vehicle(NodePath steerVehicleNP)
 }
 
 /**
- * Gets a NodePath to OSSteerVehicle by index.
- * Return an empty NodePath with the ET_fail error type set on error.
+ * Gets an OSSteerVehicle by index, or NULL on error.
  */
-NodePath OSSteerManager::get_steer_vehicle(int index) const
+PT(OSSteerVehicle) OSSteerManager::get_steer_vehicle(int index) const
 {
 	nassertr_always((index >= 0) && (index < (int ) mSteerVehicles.size()),
-			NodePath::fail())
+			NULL)
 
-	return NodePath::any_path(mSteerVehicles[index]);
+	return mSteerVehicles[index];
 }
 
 /**

@@ -50,7 +50,7 @@ PUBLISHED:
 	///@{
 	NodePath create_steer_plug_in();
 	bool destroy_steer_plug_in(NodePath plugInNP);
-	NodePath get_steer_plug_in(int index) const;
+	PT(OSSteerPlugIn) get_steer_plug_in(int index) const;
 	INLINE int get_num_steer_plug_ins() const;
 	MAKE_SEQ(get_steer_plug_ins, get_num_steer_plug_ins, get_steer_plug_in);
 	///@}
@@ -61,7 +61,7 @@ PUBLISHED:
 	///@{
 	NodePath create_steer_vehicle(const string& name);
 	bool destroy_steer_vehicle(NodePath steerVehicleNP);
-	NodePath get_steer_vehicle(int index) const;
+	PT(OSSteerVehicle) get_steer_vehicle(int index) const;
 	INLINE int get_num_steer_vehicles() const;
 	MAKE_SEQ(get_steer_vehicles, get_num_steer_vehicles, get_steer_vehicle);
 	///@}
