@@ -4,6 +4,11 @@
  * \date 2016-05-13
  * \author consultit
  */
+
+#if !defined(CPPPARSER) && defined(_WIN32)
+#include "support/pstdint.h"
+#endif
+
 #include "osSteerVehicle.h"
 #include "throw_event.h"
 #include "support/PlugIn_OneTurning.h"

@@ -5,6 +5,10 @@
  * \author consultit
  */
 
+#if !defined(CPPPARSER) && defined(_WIN32)
+#include "support/pstdint.h"
+#endif
+
 #include "osSteerPlugIn.h"
 
 #include "osSteerVehicle.h"
