@@ -138,7 +138,7 @@ PUBLISHED:
 	///@}
 
 	/**
-	 * Equivalent to duDebugDrawPrimitives.
+	 * Equivalent to DrawMeshDrawer::DrawPrimitive.
 	 */
 	enum OSDebugDrawPrimitives
 	{
