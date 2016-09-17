@@ -608,7 +608,7 @@ void OSSteerManager::debug_draw_primitive(OSDebugDrawPrimitives primitive,
 		mDD->vertex(points[i], color);
 	}
 	mDD->end();
-#endif //RN_DEBUG
+#endif //OS_DEBUG
 }
 
 /**
@@ -616,9 +616,9 @@ void OSSteerManager::debug_draw_primitive(OSDebugDrawPrimitives primitive,
  */
 void OSSteerManager::debug_draw_reset()
 {
-#ifdef RN_DEBUG
+#ifdef OS_DEBUG
 	mDD->reset();
-#endif //RN_DEBUG
+#endif //OS_DEBUG
 }
 
 /**
