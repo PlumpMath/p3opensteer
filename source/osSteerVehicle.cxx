@@ -250,8 +250,6 @@ void OSSteerVehicle::do_initialize()
 	///Configure this OSSteerVehicle and the underlying OpenSteer vehicle
 	float value;
 	OSVehicleSettings settings;
-	//get a NodePath for this
-	NodePath thisNP = NodePath::any_path(this);
 	//mov type
 	param = mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
 			string("mov_type"));
@@ -306,18 +304,18 @@ void OSSteerVehicle::do_initialize()
 	settings.set_maxSpeed(value >= 0.0 ? value : 1.0);
 	//forward
 	LVector3f forward = mReferenceNP.get_relative_vector(
-			thisNP, -LVector3f::forward());
+			mThisNP, -LVector3f::forward());
 	settings.set_forward(forward);
 	//up
 	LVector3f up = mReferenceNP.get_relative_vector(
-			thisNP, LVector3f::up());
+			mThisNP, LVector3f::up());
 	settings.set_up(up);
 	//side
 	settings.set_side(forward.cross(up).normalize());
 	//position
-	settings.set_position(thisNP.get_pos());
+	settings.set_position(mThisNP.get_pos());
 	//start
-	settings.set_start(thisNP.get_pos());
+	settings.set_start(mThisNP.get_pos());
 	//path pred time
 	value = STRTOF(mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
 					string("path_pred_time")).c_str(),
@@ -387,8 +385,8 @@ void OSSteerVehicle::do_initialize()
 	set_settings(settings);
 	//
 	// set the collide mask to avoid hit with the steer manager ray
-	thisNP.set_collide_mask(~mTmpl->get_collide_mask() &
-			thisNP.get_collide_mask());
+	mThisNP.set_collide_mask(~mTmpl->get_collide_mask() &
+			mThisNP.get_collide_mask());
 	//
 	//thrown events
 	string mThrownEventsParam = mTmpl->get_parameter_value(OSSteerManager::STEERVEHICLE,
@@ -510,7 +508,7 @@ void OSSteerVehicle::do_initialize()
 		plugIn = OSSteerManager::get_global_ptr()->get_steer_plug_in(index);
 		if (plugIn->get_name() == mSteerPlugInObjectId)
 		{
-			plugIn->add_steer_vehicle(thisNP);
+			plugIn->add_steer_vehicle(mThisNP);
 			break;
 		}
 	}
@@ -987,7 +985,6 @@ void OSSteerVehicle::set_update_callback(UPDATECALLBACKFUNC value)
 void OSSteerVehicle::do_update_steer_vehicle(const float currentTime,
 		const float elapsedTime)
 {
-	NodePath thisNP = NodePath::any_path(this);
 	LPoint3f updatedPos = ossup::OpenSteerVec3ToLVecBase3f(
 			mVehicle->position());
 	//update node path position
@@ -1009,7 +1006,7 @@ void OSSteerVehicle::do_update_steer_vehicle(const float currentTime,
 			mVehicle->setPosition(ossup::LVecBase3fToOpenSteerVec3(updatedPos));
 		}
 	}
-	thisNP.set_pos(updatedPos);
+	mThisNP.set_pos(updatedPos);
 
 	if (mVehicle->speed() > 0.0)
 	{
@@ -1017,7 +1014,7 @@ void OSSteerVehicle::do_update_steer_vehicle(const float currentTime,
 		if (mUpAxisFixed)
 		{
 			//up axis fixed: z
-			thisNP.heads_up(
+			mThisNP.heads_up(
 					updatedPos
 							- ossup::OpenSteerVec3ToLVecBase3f(
 									mVehicle->forward()), LVector3f::up());
@@ -1067,7 +1064,7 @@ void OSSteerVehicle::do_update_steer_vehicle(const float currentTime,
 		else
 		{
 				//up axis free: from mVehicle
-				thisNP.heads_up(
+				mThisNP.heads_up(
 						updatedPos
 								- ossup::OpenSteerVec3ToLVecBase3f(
 										mVehicle->forward()),
@@ -1142,20 +1139,19 @@ void OSSteerVehicle::do_update_steer_vehicle(const float currentTime,
 void OSSteerVehicle::do_external_update_steer_vehicle(const float currentTime,
 		const float elapsedTime)
 {
-	NodePath thisNP = NodePath::any_path(this);
 	OpenSteer::Vec3 oldPos = mVehicle->position();
 	//update steer vehicle's
 	//position,
-	mVehicle->setPosition(ossup::LVecBase3fToOpenSteerVec3(thisNP.get_pos()));
+	mVehicle->setPosition(ossup::LVecBase3fToOpenSteerVec3(mThisNP.get_pos()));
 	//forward,
 	mVehicle->setForward(
 			ossup::LVecBase3fToOpenSteerVec3(
-					mReferenceNP.get_relative_vector(thisNP,
+					mReferenceNP.get_relative_vector(mThisNP,
 							-LVector3f::forward())).normalize());
 	//up,
 	mVehicle->setUp(
 			ossup::LVecBase3fToOpenSteerVec3(
-					mReferenceNP.get_relative_vector(thisNP, LVector3f::up())).normalize());
+					mReferenceNP.get_relative_vector(mThisNP, LVector3f::up())).normalize());
 	//side,
 	mVehicle->setUnitSideFromForwardAndUp();
 	//speed (elapsedTime should be != 0)
@@ -1658,7 +1654,7 @@ void OSSteerVehicle::finalize(BamReader *manager)
 TypedWritable *OSSteerVehicle::make_from_bam(const FactoryParams &params)
 {
 	// return NULL if OSSteerManager if doesn't exist
-	nassertr_always(OSSteerManager::get_global_ptr(), NULL)
+	CONTINUE_IF_ELSE_R(OSSteerManager::get_global_ptr(), NULL)
 
 	// create a OSSteerVehicle with default parameters' values: they'll be restored later
 	OSSteerManager::get_global_ptr()->set_parameters_defaults(

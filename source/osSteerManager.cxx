@@ -171,9 +171,9 @@ PT(OSSteerPlugIn) OSSteerManager::get_steer_plug_in(int index) const
  */
 NodePath OSSteerManager::create_steer_vehicle(const string& name)
 {
-	nassertr_always(! name.empty(), NodePath::fail())
+	nassertr_always(!name.empty(), NodePath::fail())
 
-	PT(OSSteerVehicle) newSteerVehicle = new OSSteerVehicle(name);
+	PT(OSSteerVehicle)newSteerVehicle = new OSSteerVehicle(name);
 	nassertr_always(newSteerVehicle, NodePath::fail())
 
 	// set reference node
@@ -183,10 +183,10 @@ NodePath OSSteerManager::create_steer_vehicle(const string& name)
 
 	//add the new SteerVehicle to the inner list
 	mSteerVehicles.push_back(newSteerVehicle);
-	// reparent to reference node
-	NodePath np = mReferenceNP.attach_new_node(newSteerVehicle);
+	// reparent to reference node and set "this" NodePath
+	newSteerVehicle->mThisNP = mReferenceNP.attach_new_node(newSteerVehicle);
 	//
-	return np;
+	return newSteerVehicle->mThisNP;
 }
 
 /**
