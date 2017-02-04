@@ -178,15 +178,15 @@ NodePath OSSteerManager::create_steer_vehicle(const string& name)
 
 	// set reference node
 	newSteerVehicle->mReferenceNP = mReferenceNP;
-	//initialize the new SteerVehicle
+	// reparent to reference node and set "this" NodePath
+	NodePath np = mReferenceNP.attach_new_node(newSteerVehicle);
+	//initialize the new SteerVehicle (could use mReferenceNP and mThisNP)
 	newSteerVehicle->do_initialize();
 
 	//add the new SteerVehicle to the inner list
 	mSteerVehicles.push_back(newSteerVehicle);
-	// reparent to reference node and set "this" NodePath
-	newSteerVehicle->mThisNP = mReferenceNP.attach_new_node(newSteerVehicle);
 	//
-	return newSteerVehicle->mThisNP;
+	return np;
 }
 
 /**

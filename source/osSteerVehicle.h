@@ -352,8 +352,6 @@ protected:
 	virtual ~OSSteerVehicle();
 
 private:
-	///This NodePath.
-	NodePath mThisNP;
 	///Current underlying OpenSteer Vehicle.
 	OpenSteer::AbstractVehicle* mVehicle;
 	///The type of this OSSteerPlugIn.
