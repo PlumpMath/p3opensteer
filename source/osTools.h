@@ -344,7 +344,7 @@ PUBLISHED:
 	{
 		return _vehicleSettings;
 	}
-#endif
+#endif //CPPPARSER
 	INLINE float get_mass() const;
 	INLINE void set_mass(float value);
 	INLINE float get_radius() const;
@@ -393,7 +393,9 @@ PUBLISHED:
 	INLINE void set_target_speed(float value);
 	void output(ostream &out) const;
 private:
+#ifndef CPPPARSER
 	ossup::VehicleSettings _vehicleSettings;
+#endif //CPPPARSER
 
 public:
 	void write_datagram(Datagram &dg) const;
@@ -408,7 +410,7 @@ PUBLISHED:
 	OSFlockSettings();
 #ifndef CPPPARSER
 	OSFlockSettings(float sW, float aW,	float cW);
-#endif
+#endif //CPPPARSER
 
 	INLINE float get_separation_weight() const;
 	INLINE void set_separation_weight(float value);
@@ -421,7 +423,7 @@ PUBLISHED:
 	float& separation_weight(){return _separationWeight;}
 	float& alignment_weight(){return _alignmentWeight;}
 	float& cohesion_weight(){return _cohesionWeight;}
-#endif
+#endif //CPPPARSER
 private:
 	float _separationWeight;
 	float _alignmentWeight;
@@ -479,8 +481,10 @@ private:
 	float _depth;
 	float _radius;
 	int _ref;
+#ifndef CPPPARSER
 	//not serialized
 	OpenSteer::AbstractObstacle* _obstacle;
+#endif //CPPPARSER
 
 public:
 	void write_datagram(Datagram &dg) const;
